@@ -480,49 +480,36 @@ BaseAddress = ApiConfiguration.BaseUri,
         object sender,
         RoutedEventArgs e)
     {
-        if (TablaRecibos.SelectedItem
-            is not FilaRecibo fila ||
+        if (TablaRecibos.SelectedItem is not FilaRecibo fila ||
             fila.Pago is null)
         {
             return;
         }
 
-        var visor = new FlowDocumentReader
+        try
         {
-            Document = CrearDocumento(fila),
+            var ventana = new VistaPreviaReciboWindow(
+                fila.Recibo,
+                fila.Pago,
+                fila.CodigoUnidad,
+                fila.Bloque,
+                fila.Moneda);
 
-            ViewingMode =
-                FlowDocumentReaderViewingMode.Page,
-
-            IsFindEnabled = true,
-
-            IsPrintEnabled = false
-        };
-
-        var ventana = new Window
+            ventana.Owner = Window.GetWindow(this);
+            ventana.ShowDialog();
+        }
+        catch (Exception ex)
         {
-            Title =
-                $"Vista previa â€” Recibo N.º {fila.Numero}",
-
-            Width = 780,
-            Height = 750,
-
-            MinWidth = 550,
-            MinHeight = 450,
-
-            Content = visor,
-
-            WindowStartupLocation =
-                WindowStartupLocation.CenterOwner,
-
-            Owner = Window.GetWindow(this)
-        };
-
-        ventana.ShowDialog();
+            MessageBox.Show(
+                "No se pudo abrir la vista previa.\n\n" +
+                ex.Message,
+                "Mercadex",
+                MessageBoxButton.OK,
+                MessageBoxImage.Warning);
+        }
     }
 
-    // REIMPRESIÃ“N
-
+    // REIMPRESION
     private void Imprimir_Click(
         object sender,
         RoutedEventArgs e)

@@ -91,6 +91,20 @@ public sealed class VistaPreviaReciboWindow : Window
         cerrar.Click += (_, _) => Close();
 
         botones.Children.Add(imprimir);
+        var guardarPdf = new Button
+        {
+            Content = "Guardar PDF",
+            Padding = new Thickness(18, 9, 18, 9),
+            Margin = new Thickness(0, 0, 12, 0),
+            Background = new SolidColorBrush(
+                Color.FromRgb(40, 122, 66)),
+            Foreground = Brushes.White,
+            FontWeight = FontWeights.Bold
+        };
+
+        guardarPdf.Click += GuardarPdf_Click;
+
+        botones.Children.Add(guardarPdf);
         botones.Children.Add(cerrar);
 
         DockPanel.SetDock(botones, Dock.Top);
@@ -99,7 +113,10 @@ public sealed class VistaPreviaReciboWindow : Window
         var visor = new FlowDocumentReader
         {
             Document = CrearDocumento(),
-            ViewingMode = FlowDocumentReaderViewingMode.Page,
+            ViewingMode = FlowDocumentReaderViewingMode.Scroll,
+            Zoom = 125,
+            MinZoom = 70,
+            MaxZoom = 300,
             IsPrintEnabled = false,
             IsFindEnabled = true
         };
@@ -229,6 +246,76 @@ public sealed class VistaPreviaReciboWindow : Window
             });
     }
 
+    private void GuardarPdf_Click(
+        object sender,
+        RoutedEventArgs e)
+    {
+        try
+        {
+            var dialogo = new Microsoft.Win32.SaveFileDialog
+            {
+                Title = "Guardar recibo en PDF",
+                Filter = "Documento PDF (*.pdf)|*.pdf",
+                DefaultExt = ".pdf",
+                FileName = $"Recibo_{_recibo.Numero}.pdf",
+                AddExtension = true,
+                OverwritePrompt = true
+            };
+
+            if (dialogo.ShowDialog(this) != true)
+                return;
+
+            Mercadex.Desktop.App.Services.ReciboPdfService.Guardar(
+                dialogo.FileName,
+                _recibo,
+                _pago,
+                _caseta,
+                _bloque,
+                _moneda);
+
+            var respuesta = MessageBox.Show(
+                this,
+                "El recibo PDF se guardó correctamente.\n\n" +
+                "¿Deseas abrirlo ahora?",
+                "Mercadex - Recibo PDF",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Information);
+
+            if (respuesta == MessageBoxResult.Yes)
+            {
+                try
+                {
+                    System.Diagnostics.Process.Start(
+                        new System.Diagnostics.ProcessStartInfo
+                        {
+                            FileName = dialogo.FileName,
+                            UseShellExecute = true
+                        });
+                }
+                catch (Exception exAbrir)
+                {
+                    MessageBox.Show(
+                        this,
+                        "El PDF está guardado, pero no se pudo abrir.\n\n" +
+                        exAbrir.Message,
+                        "Aviso",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Warning);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(
+                this,
+                "No se pudo guardar el PDF.\n\n" +
+                "Si el cobro ya fue registrado, no lo repitas.\n\n" +
+                ex.Message,
+                "Error al generar PDF",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+        }
+    }
     private void Imprimir_Click(
         object sender,
         RoutedEventArgs e)

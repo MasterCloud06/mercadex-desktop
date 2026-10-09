@@ -1,7 +1,8 @@
 
 <UserControl x:Class="Mercadex.Desktop.App.Views.IngresosView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:local="clr-namespace:Mercadex.Desktop.App.Views">
 
     <Grid Margin="20">
 
@@ -552,6 +553,12 @@
 
                 </Grid>
 
+            </TabItem>
+
+            <!-- ARQUEO DIARIO -->
+
+            <TabItem Header="Arqueo diario">
+                <local:ArqueoDiarioView/>
             </TabItem>
 
         </TabControl>

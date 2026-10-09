@@ -16,6 +16,7 @@ public sealed class VistaPreviaReciboWindow : Window
     private readonly string _caseta;
     private readonly string _bloque;
     private readonly string _moneda;
+    private string _titular = "Consultando titular...";
 
     public VistaPreviaReciboWindow(
         ReciboDto recibo,
@@ -80,6 +81,7 @@ public sealed class VistaPreviaReciboWindow : Window
         };
 
         imprimir.Click += Imprimir_Click;
+        imprimir.IsEnabled = false;
 
         var cerrar = new Button
         {
@@ -103,6 +105,7 @@ public sealed class VistaPreviaReciboWindow : Window
         };
 
         guardarPdf.Click += GuardarPdf_Click;
+        guardarPdf.IsEnabled = false;
 
         botones.Children.Add(guardarPdf);
         botones.Children.Add(cerrar);
@@ -124,6 +127,29 @@ public sealed class VistaPreviaReciboWindow : Window
         contenedor.Children.Add(visor);
 
         Content = contenedor;
+
+        Loaded += async (_, _) =>
+        {
+            try
+            {
+                var servicio =
+                    new Mercadex.Desktop.App.Services.TitularCasetaService();
+
+                _titular = await servicio.ObtenerAsync(
+                    _recibo.UnidadComercialId);
+            }
+            catch (Exception)
+            {
+                _titular = "No disponible: error de consulta";
+            }
+            finally
+            {
+                visor.Document = CrearDocumento();
+
+                imprimir.IsEnabled = true;
+                guardarPdf.IsEnabled = true;
+            }
+        };
     }
 
     private FlowDocument CrearDocumento()
@@ -173,6 +199,10 @@ public sealed class VistaPreviaReciboWindow : Window
         {
             AgregarLinea(documento, $"Bloque: {_bloque}");
         }
+
+        AgregarLinea(
+            documento,
+            $"Titular actual registrado: {_titular}");
 
         AgregarLinea(
             documento,
@@ -271,7 +301,8 @@ public sealed class VistaPreviaReciboWindow : Window
                 _pago,
                 _caseta,
                 _bloque,
-                _moneda);
+                _moneda,
+                _titular);
 
             var respuesta = MessageBox.Show(
                 this,

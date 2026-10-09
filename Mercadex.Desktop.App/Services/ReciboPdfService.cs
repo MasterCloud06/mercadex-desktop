@@ -16,7 +16,8 @@ public static class ReciboPdfService
         PagoDto pago,
         string caseta,
         string bloque,
-        string moneda)
+        string moneda,
+        string titular)
     {
         ArgumentNullException.ThrowIfNull(recibo);
         ArgumentNullException.ThrowIfNull(pago);
@@ -173,6 +174,10 @@ public static class ReciboPdfService
 
         if (!string.IsNullOrWhiteSpace(bloque))
             Linea($"Bloque: {bloque}", normal);
+
+        Linea(
+            $"Titular actual registrado: {titular}",
+            normal);
 
         Linea(
             $"Persona que realizó el pago: {pago.NombrePagador}",

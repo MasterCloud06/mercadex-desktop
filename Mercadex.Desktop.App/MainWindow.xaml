@@ -1,0 +1,136 @@
+﻿
+<Window x:Class="Mercadex.Desktop.App.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="clr-namespace:Mercadex.Desktop.App.ViewModels"
+        xmlns:views="clr-namespace:Mercadex.Desktop.App.Views"
+        Title="Mercadex"
+        Height="700"
+        Width="1200"
+        MinHeight="600"
+        MinWidth="950"
+        WindowStartupLocation="CenterScreen">
+
+    <Window.DataContext>
+        <vm:MainViewModel/>
+    </Window.DataContext>
+
+    <Grid>
+
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="230"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+
+        <!-- MENÚ LATERAL -->
+
+        <Border Grid.Column="0"
+                Background="#1F4E79">
+
+            <StackPanel>
+
+                <TextBlock Text="Mercadex"
+                           Foreground="White"
+                           FontSize="32"
+                           Margin="20"/>
+
+                <Button Content="Dashboard"
+                        Height="45"
+                        Margin="10"
+                        Command="{Binding MostrarDashboardCommand}"/>
+
+                <Button Content="Caja"
+                        Height="45"
+                        Margin="10"
+                        Command="{Binding MostrarCajaCommand}"/>
+
+                <Button Content="Obligaciones"
+                        Height="45"
+                        Margin="10"
+                        Command="{Binding MostrarObligacionesCommand}"/>
+
+                <Button Content="Ingresos"
+                        Height="45"
+                        Margin="10"
+                        Command="{Binding MostrarIngresosCommand}"/>
+
+<Button Content="Gastos / Egresos"
+        Height="45"
+        Margin="10"
+        Command="{Binding MostrarEgresosCommand}"/>
+
+                <Button Content="Socios"
+                        Height="45"
+                        Margin="10"
+                        Command="{Binding MostrarSociosCommand}"/>
+
+                <Button Content="Casetas"
+                        Height="45"
+                        Margin="10"
+                        Command="{Binding MostrarCasetasCommand}"/>
+
+
+<Button Content="Recibos"
+        Height="45"
+        Margin="10"
+        Command="{Binding MostrarRecibosCommand}"/>
+
+
+
+<Button Content="Reportes"
+        Height="45"
+        Margin="10"
+        Command="{Binding MostrarReportesCommand}"/>
+
+<Button Content="Kardex"
+        Height="45"
+        Margin="10"
+        Command="{Binding MostrarKardexCommand}"/>
+
+
+            </StackPanel>
+
+        </Border>
+
+        <!-- CONTENIDO PRINCIPAL -->
+
+        <Border Grid.Column="1"
+                Background="White">
+
+            <ContentControl Content="{Binding CurrentView}">
+
+                <ContentControl.Resources>
+
+                    <DataTemplate DataType="{x:Type views:DashboardView}">
+                        <views:DashboardView/>
+                    </DataTemplate>
+
+                    <DataTemplate DataType="{x:Type views:CajaView}">
+                        <views:CajaView/>
+                    </DataTemplate>
+
+                    <DataTemplate DataType="{x:Type views:ObligacionesView}">
+                        <views:ObligacionesView/>
+                    </DataTemplate>
+
+                    <DataTemplate DataType="{x:Type views:IngresosView}">
+                        <views:IngresosView/>
+                    </DataTemplate>
+
+                    <DataTemplate DataType="{x:Type views:SociosView}">
+                        <views:SociosView/>
+                    </DataTemplate>
+
+                    <DataTemplate DataType="{x:Type views:CasetasView}">
+                        <views:CasetasView/>
+                    </DataTemplate>
+
+                </ContentControl.Resources>
+
+            </ContentControl>
+
+        </Border>
+
+    </Grid>
+
+</Window>

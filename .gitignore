@@ -1,0 +1,19 @@
+﻿**/bin/
+**/obj/
+**/publish/
+**/.vs/
+**/*.bak
+**/appsettings*.json
+**/*.pfx
+**/*.pem
+**/*.key
+**/*.p12
+**/*.db
+**/*.sqlite
+**/.env*
+
+# Instaladores y ejecutables generados
+**/installer/
+**/*.exe
+**/*.msi
+**/*.msix

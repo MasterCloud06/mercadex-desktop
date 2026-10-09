@@ -1,0 +1,164 @@
+
+<UserControl x:Class="Mercadex.Desktop.App.Views.CajaView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <Grid Background="#F3F6FA">
+
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- TÍTULO -->
+
+        <Border Grid.Row="0"
+                Background="White"
+                Padding="24,18"
+                BorderBrush="#DFE6EE"
+                BorderThickness="0,0,0,1">
+
+            <StackPanel>
+
+                <TextBlock Text="Caja"
+                           FontSize="28"
+                           FontWeight="Bold"
+                           Foreground="#173B5C"/>
+
+                <TextBlock
+                    Text="Control y consulta de recibos emitidos"
+                    Foreground="#60748A"
+                    Margin="0,5,0,0"/>
+
+            </StackPanel>
+
+        </Border>
+
+        <!-- INFORMACIÓN -->
+
+        <Border Grid.Row="1"
+                Margin="20,20,20,15"
+                Background="#E8F0F8"
+                CornerRadius="7"
+                Padding="14">
+
+            <TextBlock
+                Text="Los cobros nuevos se registran en Ingresos. Aquí puedes consultar los recibos que ya fueron emitidos, sin generar nuevos cobros."
+                TextWrapping="Wrap"
+                Foreground="#1F4E79"/>
+
+        </Border>
+
+        <!-- BÚSQUEDA -->
+
+        <StackPanel Grid.Row="2"
+                    Margin="20,0,20,15">
+
+            <TextBlock Text="Recibos registrados"
+                       FontSize="21"
+                       FontWeight="SemiBold"
+                       Foreground="#173B5C"
+                       Margin="0,0,0,12"/>
+
+            <StackPanel Orientation="Horizontal">
+
+                <TextBox x:Name="TxtBuscarRecibo"
+                         Width="240"
+                         Height="36"
+                         VerticalContentAlignment="Center"
+                         Margin="0,0,12,0"
+                         ToolTip="Buscar por número de recibo"
+                         TextChanged="BuscarRecibo_TextChanged"/>
+
+                <Button Content="Actualizar"
+                        Click="Actualizar_Click"
+                        Width="120"
+                        Height="36"
+                        Background="#1F4E79"
+                        Foreground="White"
+                        BorderThickness="0"/>
+
+            </StackPanel>
+
+            <TextBlock x:Name="TxtEstado"
+                       Text="Preparado para consultar los recibos."
+                       Foreground="#60748A"
+                       TextWrapping="Wrap"
+                       Margin="0,12,0,0"/>
+
+        </StackPanel>
+
+        <!-- RECIBOS -->
+
+        <DataGrid x:Name="TablaRecibos"
+                  Grid.Row="3"
+                  Margin="20,0,20,15"
+                  AutoGenerateColumns="False"
+                  CanUserAddRows="False"
+                  CanUserDeleteRows="False"
+                  IsReadOnly="True"
+                  SelectionMode="Single"
+                  SelectionChanged="TablaRecibos_SelectionChanged">
+
+            <DataGrid.Columns>
+
+                <DataGridTextColumn
+                    Header="Recibo"
+                    Binding="{Binding Numero}"
+                    Width="90"/>
+
+                <DataGridTextColumn
+                    Header="Fecha"
+                    Binding="{Binding Fecha}"
+                    Width="150"/>
+
+                <DataGridTextColumn
+                    Header="Importe"
+                    Binding="{Binding Total, StringFormat=N2}"
+                    Width="120"/>
+
+                <DataGridTextColumn
+                    Header="Estado"
+                    Binding="{Binding Estado}"
+                    Width="120"/>
+
+                <DataGridTextColumn
+                    Header="ID de unidad comercial"
+                    Binding="{Binding UnidadComercialId}"
+                    Width="*"/>
+
+            </DataGrid.Columns>
+
+        </DataGrid>
+
+        <!-- DETALLE -->
+
+        <Border Grid.Row="4"
+                Background="White"
+                BorderBrush="#DFE6EE"
+                BorderThickness="1"
+                CornerRadius="7"
+                Margin="20,0,20,20"
+                Padding="14">
+
+            <StackPanel>
+
+                <TextBlock Text="Detalle del recibo"
+                           FontWeight="SemiBold"
+                           Foreground="#173B5C"
+                           Margin="0,0,0,8"/>
+
+                <TextBlock x:Name="TxtDetalle"
+                           Text="Selecciona un recibo para consultar su información."
+                           TextWrapping="Wrap"/>
+
+            </StackPanel>
+
+        </Border>
+
+    </Grid>
+
+</UserControl>

@@ -1,0 +1,369 @@
+
+<UserControl x:Class="Mercadex.Desktop.App.Views.ReportesView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:views="clr-namespace:Mercadex.Desktop.App.Views">
+
+    <Grid Background="#F3F6FA">
+
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- ENCABEZADO -->
+
+        <Border Grid.Row="0"
+                Background="White"
+                Padding="24,18"
+                BorderBrush="#DFE6EE"
+                BorderThickness="0,0,0,1">
+
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <StackPanel>
+                    <TextBlock Text="Reportes"
+                               FontSize="28"
+                               FontWeight="Bold"
+                               Foreground="#173B5C"/>
+
+                    <TextBlock
+                        Text="Listas de deudores para corte y contabilidad"
+                        FontSize="14"
+                        Foreground="#60748A"
+                        Margin="0,5,0,0"/>
+                </StackPanel>
+
+                <Button Grid.Column="1"
+                        Content="Actualizar"
+                        Click="Actualizar_Click"
+                        Width="120"
+                        Height="38"
+                        Background="#1F4E79"
+                        Foreground="White"
+                        BorderThickness="0"
+                        VerticalAlignment="Center"/>
+            </Grid>
+        </Border>
+
+        <!-- FILTROS -->
+
+        <Border Grid.Row="1"
+                Margin="20,18,20,12"
+                Background="White"
+                Padding="15"
+                CornerRadius="8"
+                BorderBrush="#DFE6EE"
+                BorderThickness="1">
+
+            <StackPanel>
+
+                <TextBlock Text="Filtros del informe"
+                           FontSize="18"
+                           FontWeight="SemiBold"
+                           Margin="0,0,0,14"/>
+
+                <WrapPanel>
+
+                    <StackPanel Margin="0,0,15,12">
+                        <TextBlock Text="Bloque"
+                                   Margin="0,0,0,5"/>
+
+                        <ComboBox x:Name="FiltroBloque"
+                                  Width="155"
+                                  Height="34"
+                                  SelectionChanged="Filtros_Changed"/>
+                    </StackPanel>
+
+                    <StackPanel Margin="0,0,15,12">
+                        <TextBlock Text="Concepto"
+                                   Margin="0,0,0,5"/>
+
+                        <ComboBox x:Name="FiltroConcepto"
+                                  Width="185"
+                                  Height="34"
+                                  DisplayMemberPath="Nombre"
+                                  SelectionChanged="Filtros_Changed"/>
+                    </StackPanel>
+
+                    <StackPanel Margin="0,0,15,12">
+                        <TextBlock Text="Moneda"
+                                   Margin="0,0,0,5"/>
+
+                        <ComboBox x:Name="FiltroMoneda"
+                                  Width="125"
+                                  Height="34"
+                                  SelectionChanged="Filtros_Changed"/>
+                    </StackPanel>
+
+                    <StackPanel Margin="0,0,15,12">
+                        <TextBlock Text="Caseta"
+                                   Margin="0,0,0,5"/>
+
+                        <TextBox x:Name="FiltroCaseta"
+                                 Width="115"
+                                 Height="34"
+                                 VerticalContentAlignment="Center"
+                                 TextChanged="Caseta_Changed"/>
+                    </StackPanel>
+
+                    <StackPanel Margin="0,0,15,12">
+                        <TextBlock Text="Emitidas desde"
+                                   Margin="0,0,0,5"/>
+
+                        <DatePicker x:Name="FechaDesde"
+                                    Width="140"
+                                    Height="34"
+                                    SelectedDateChanged="Fechas_Changed"/>
+                    </StackPanel>
+
+                    <StackPanel Margin="0,0,15,12">
+                        <TextBlock Text="Emitidas hasta"
+                                   Margin="0,0,0,5"/>
+
+                        <DatePicker x:Name="FechaHasta"
+                                    Width="140"
+                                    Height="34"
+                                    SelectedDateChanged="Fechas_Changed"/>
+                    </StackPanel>
+
+                </WrapPanel>
+
+                <TextBlock x:Name="TxtEstado"
+                           Text="Cargando informes..."
+                           Foreground="#1F4E79"
+                           TextWrapping="Wrap"/>
+
+            </StackPanel>
+
+        </Border>
+
+        <!-- RESUMEN -->
+
+        <Border Grid.Row="2"
+                Background="#E8F0F8"
+                CornerRadius="7"
+                Padding="15"
+                Margin="20,0,20,15">
+
+            <StackPanel>
+
+                <TextBlock x:Name="TxtResumen"
+                           Text="Preparando resumen de deudores..."
+                           FontWeight="SemiBold"
+                           Foreground="#173B5C"
+                           TextWrapping="Wrap"/>
+
+                <TextBlock x:Name="TxtTotales"
+                           Margin="0,7,0,0"
+                           FontSize="17"
+                           FontWeight="Bold"
+                           Foreground="#287A42"
+                           TextWrapping="Wrap"/>
+
+            </StackPanel>
+
+        </Border>
+
+        <!-- INFORMES -->
+
+        <TabControl x:Name="Pestanas"
+                    Grid.Row="3"
+                    Margin="20,0,20,20">
+
+            <!-- LISTA PARA CORTE -->
+
+            <TabItem Header="Lista para corte">
+
+                <Grid Background="White"
+                      Margin="10">
+
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <TextBlock Grid.Row="0"
+                               Text="Cada caseta deudora aparece una sola vez, aunque tenga varias obligaciones."
+                               TextWrapping="Wrap"
+                               Foreground="#60748A"
+                               Margin="0,0,0,12"/>
+
+                    <DataGrid x:Name="TablaCorte"
+                              Grid.Row="1"
+                              AutoGenerateColumns="False"
+                              IsReadOnly="True"
+                              CanUserAddRows="False"
+                              AlternatingRowBackground="#F1F5FA">
+
+                        <DataGrid.Columns>
+
+                            <DataGridTextColumn
+                                Header="Caseta"
+                                Binding="{Binding Codigo}"
+                                Width="90"/>
+
+                            <DataGridTextColumn
+                                Header="Bloque"
+                                Binding="{Binding Bloque}"
+                                Width="135"/>
+
+                            <DataGridTextColumn
+                                Header="Servicios pendientes"
+                                Binding="{Binding Servicios}"
+                                Width="*"
+                                MinWidth="200"/>
+
+                            <DataGridTextColumn
+                                Header="Cantidad"
+                                Binding="{Binding Cantidad}"
+                                Width="85"/>
+
+                            <DataGridTextColumn
+                                Header="Moneda"
+                                Binding="{Binding Moneda}"
+                                Width="85"/>
+
+                            <DataGridTextColumn
+                                Header="Total"
+                                Binding="{Binding Total,
+                                    StringFormat=N2}"
+                                Width="115"/>
+
+                        </DataGrid.Columns>
+
+                    </DataGrid>
+
+                    <Button Grid.Row="2"
+                            Content="Exportar lista para corte"
+                            Click="ExportarCorte_Click"
+                            Height="38"
+                            Width="220"
+                            HorizontalAlignment="Right"
+                            Margin="0,12,0,0"
+                            Background="#287A42"
+                            Foreground="White"
+                            BorderThickness="0"/>
+
+                </Grid>
+
+            </TabItem>
+
+            <!-- LISTA PARA CONTABILIDAD -->
+
+            <TabItem Header="Lista para contabilidad">
+
+                <Grid Background="White"
+                      Margin="10">
+
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <TextBlock Grid.Row="0"
+                               Text="Detalle de cada deuda pendiente, con importe individual y total por caseta y moneda."
+                               Foreground="#60748A"
+                               TextWrapping="Wrap"
+                               Margin="0,0,0,12"/>
+
+                    <DataGrid x:Name="TablaContabilidad"
+                              Grid.Row="1"
+                              AutoGenerateColumns="False"
+                              IsReadOnly="True"
+                              CanUserAddRows="False"
+                              AlternatingRowBackground="#F1F5FA">
+
+                        <DataGrid.Columns>
+
+                            <DataGridTextColumn
+                                Header="Caseta"
+                                Binding="{Binding Codigo}"
+                                Width="75"/>
+
+                            <DataGridTextColumn
+                                Header="Bloque"
+                                Binding="{Binding Bloque}"
+                                Width="100"/>
+
+                            <DataGridTextColumn
+                                Header="Fecha"
+                                Binding="{Binding Fecha}"
+                                Width="110"/>
+
+                            <DataGridTextColumn
+                                Header="Servicio"
+                                Binding="{Binding Concepto}"
+                                Width="*"
+                                MinWidth="140"/>
+
+                            <DataGridTextColumn
+                                Header="Período"
+                                Binding="{Binding Periodo}"
+                                Width="85"/>
+
+                            <DataGridTextColumn
+                                Header="Moneda"
+                                Binding="{Binding Moneda}"
+                                Width="75"/>
+
+                            <DataGridTextColumn
+                                Header="Importe"
+                                Binding="{Binding Monto,
+                                    StringFormat=N2}"
+                                Width="100"/>
+
+                            <DataGridTextColumn
+                                Header="Total caseta"
+                                Binding="{Binding TotalCaseta,
+                                    StringFormat=N2}"
+                                Width="115"/>
+
+                        </DataGrid.Columns>
+
+                    </DataGrid>
+
+                    <Button Grid.Row="2"
+                            Content="Exportar para contabilidad"
+                            Click="ExportarContabilidad_Click"
+                            Height="38"
+                            Width="225"
+                            HorizontalAlignment="Right"
+                            Margin="0,12,0,0"
+                            Background="#287A42"
+                            Foreground="White"
+                            BorderThickness="0"/>
+
+                </Grid>
+
+            </TabItem>
+
+
+            <TabItem Header="Ingresos recaudados">
+                <views:ReportesIngresosView/>
+            </TabItem>
+
+<TabItem Header="Extracto de deuda">
+    <views:ExtractoDeudaView/>
+</TabItem>
+
+            <TabItem Header="Aviso para corte">
+                <views:AvisoCorteView/>
+            </TabItem>
+
+            <TabItem Header="Anular cobro">
+                <views:AnularCobroView/>
+            </TabItem>
+</TabControl>
+
+    </Grid>
+
+</UserControl>

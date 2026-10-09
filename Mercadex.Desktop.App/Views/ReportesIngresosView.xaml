@@ -1,0 +1,362 @@
+
+<UserControl x:Class="Mercadex.Desktop.App.Views.ReportesIngresosView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Background="#F3F6FA">
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto"
+                  HorizontalScrollBarVisibility="Disabled">
+
+        <Grid Margin="16">
+
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <!-- ENCABEZADO -->
+
+            <StackPanel Grid.Row="0"
+                        Margin="0,0,0,16">
+
+                <TextBlock Text="Reportes de ingresos"
+                           FontSize="25"
+                           FontWeight="Bold"
+                           Foreground="#173B5C"/>
+
+                <TextBlock
+                    Text="Recaudación por fechas, servicios y operaciones"
+                    Foreground="#60748A"
+                    TextWrapping="Wrap"
+                    Margin="0,5,0,0"/>
+
+            </StackPanel>
+
+            <!-- FILTROS -->
+
+            <Border Grid.Row="1"
+                    Background="White"
+                    BorderBrush="#DFE6EE"
+                    BorderThickness="1"
+                    CornerRadius="8"
+                    Padding="15"
+                    Margin="0,0,0,14">
+
+                <StackPanel>
+
+                    <TextBlock Text="Seleccionar período"
+                               FontSize="18"
+                               FontWeight="SemiBold"
+                               Foreground="#173B5C"
+                               Margin="0,0,0,12"/>
+
+                    <WrapPanel>
+
+                        <StackPanel Width="155"
+                                    Margin="0,0,15,12">
+
+                            <TextBlock Text="Fecha inicial"
+                                       Margin="0,0,0,5"/>
+
+                            <DatePicker x:Name="FechaDesde"
+                                        Height="35"/>
+
+                        </StackPanel>
+
+                        <StackPanel Width="155"
+                                    Margin="0,0,15,12">
+
+                            <TextBlock Text="Fecha final"
+                                       Margin="0,0,0,5"/>
+
+                            <DatePicker x:Name="FechaHasta"
+                                        Height="35"/>
+
+                        </StackPanel>
+
+<Button Content="DIARIO DE HOY"
+        Click="Hoy_Click"
+        Height="38"
+        MinWidth="145"
+        Margin="0,19,12,12"
+        Padding="12,0"
+        Background="#A66A00"
+        Foreground="White"
+        FontWeight="Bold"
+        BorderThickness="0"/>
+
+                        <Button x:Name="BtnConsultar"
+                                Content="GENERAR REPORTES"
+                                Click="Consultar_Click"
+                                Height="38"
+                                MinWidth="170"
+                                Margin="0,19,12,12"
+                                Padding="12,0"
+                                Background="#1F4E79"
+                                Foreground="White"
+                                FontWeight="Bold"
+                                BorderThickness="0"/>
+
+                        <Button Content="EXPORTAR CSV"
+                                Click="Exportar_Click"
+                                Height="38"
+                                MinWidth="145"
+                                Margin="0,19,0,12"
+                                Padding="12,0"
+                                Background="#287A42"
+                                Foreground="White"
+                                FontWeight="Bold"
+                                BorderThickness="0"/>
+
+                    </WrapPanel>
+
+                    <TextBlock x:Name="TxtEstado"
+                               Text="Selecciona las fechas y genera los reportes."
+                               TextWrapping="Wrap"
+                               Foreground="#1F4E79"/>
+
+                </StackPanel>
+
+            </Border>
+
+            <!-- RESUMEN -->
+
+            <Border Grid.Row="2"
+                    Background="#E8F0F8"
+                    CornerRadius="8"
+                    Padding="16"
+                    Margin="0,0,0,14">
+
+                <StackPanel>
+
+                    <TextBlock Text="Resumen del período"
+                               FontSize="17"
+                               FontWeight="SemiBold"
+                               Foreground="#173B5C"/>
+
+                    <TextBlock x:Name="TxtResumen"
+                               Text="Sin consultar"
+                               FontSize="14"
+                               Margin="0,9,0,6"
+                               TextWrapping="Wrap"/>
+
+                    <TextBlock x:Name="TxtTotales"
+                               FontSize="19"
+                               FontWeight="Bold"
+                               Foreground="#287A42"
+                               TextWrapping="Wrap"/>
+
+                </StackPanel>
+
+            </Border>
+
+            <!-- LOS TRES REPORTES -->
+
+            <TabControl x:Name="Pestanas"
+                        Grid.Row="3"
+                        MinHeight="415">
+
+                <!-- A. TOTAL POR FECHAS -->
+
+                <TabItem Header="A. Recaudación total">
+
+                    <Grid Background="White"
+                          Margin="10">
+
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+
+                        <TextBlock Grid.Row="0"
+                                   Text="Total recaudado por moneda dentro del período seleccionado."
+                                   TextWrapping="Wrap"
+                                   Foreground="#60748A"
+                                   Margin="0,0,0,12"/>
+
+                        <DataGrid x:Name="TablaTotales"
+                                  Grid.Row="1"
+                                  Height="310"
+                                  AutoGenerateColumns="False"
+                                  IsReadOnly="True"
+                                  CanUserAddRows="False"
+                                  AlternatingRowBackground="#F1F5FA">
+
+                            <DataGrid.Columns>
+
+                                <DataGridTextColumn
+                                    Header="Moneda"
+                                    Binding="{Binding Moneda}"
+                                    Width="*"/>
+
+                                <DataGridTextColumn
+                                    Header="Recibos"
+                                    Binding="{Binding Recibos}"
+                                    Width="110"/>
+
+                                <DataGridTextColumn
+                                    Header="Total recaudado"
+                                    Binding="{Binding Total,
+                                        StringFormat=N2}"
+                                    Width="170"/>
+
+                            </DataGrid.Columns>
+
+                        </DataGrid>
+
+                    </Grid>
+
+                </TabItem>
+
+                <!-- B. POR SERVICIO -->
+
+                <TabItem Header="B. Servicios por fechas / acumulados">
+
+                    <Grid Background="White"
+                          Margin="10">
+
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+
+                        <TextBlock Grid.Row="0"
+                                   Text="Cantidad de pagos y recaudación por cada concepto y moneda."
+                                   TextWrapping="Wrap"
+                                   Foreground="#60748A"
+                                   Margin="0,0,0,12"/>
+
+                        <DataGrid x:Name="TablaConceptos"
+                                  Grid.Row="1"
+                                  Height="310"
+                                  AutoGenerateColumns="False"
+                                  IsReadOnly="True"
+                                  CanUserAddRows="False"
+                                  AlternatingRowBackground="#F1F5FA"
+                                  HorizontalScrollBarVisibility="Auto">
+
+                            <DataGrid.Columns>
+
+                                <DataGridTextColumn
+                                    Header="Servicio o concepto"
+                                    Binding="{Binding Concepto}"
+                                    Width="*"
+                                    MinWidth="165"/>
+
+                                <DataGridTextColumn
+                                    Header="Moneda"
+                                    Binding="{Binding Moneda}"
+                                    Width="90"/>
+
+                                <DataGridTextColumn
+                                    Header="Pagos"
+                                    Binding="{Binding CantidadPagos}"
+                                    Width="90"/>
+
+                                <DataGridTextColumn
+                                    Header="Total"
+                                    Binding="{Binding Total,
+                                        StringFormat=N2}"
+                                    Width="130"/>
+
+                            </DataGrid.Columns>
+
+                        </DataGrid>
+
+                    </Grid>
+
+                </TabItem>
+
+                <!-- C. DETALLE DE COBROS -->
+
+                <TabItem Header="C. Diario de Recaudaciones">
+
+                    <Grid Background="White"
+                          Margin="10">
+
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+
+                        <TextBlock Grid.Row="0"
+                                   Text="Cada concepto cobrado aparece con su recibo y los datos de la operación."
+                                   TextWrapping="Wrap"
+                                   Foreground="#60748A"
+                                   Margin="0,0,0,12"/>
+
+                        <DataGrid x:Name="TablaDetalle"
+                                  Grid.Row="1"
+                                  Height="310"
+                                  AutoGenerateColumns="False"
+                                  IsReadOnly="True"
+                                  CanUserAddRows="False"
+                                  AlternatingRowBackground="#F1F5FA"
+                                  HorizontalScrollBarVisibility="Auto">
+
+                            <DataGrid.Columns>
+
+                                <DataGridTextColumn
+                                    Header="Fecha"
+                                    Binding="{Binding Fecha}"
+                                    Width="140"/>
+
+                                <DataGridTextColumn
+                                    Header="Recibo"
+                                    Binding="{Binding NumeroRecibo}"
+                                    Width="75"/>
+
+                                <DataGridTextColumn
+                                    Header="Caseta"
+                                    Binding="{Binding Caseta}"
+                                    Width="80"/>
+
+                                <DataGridTextColumn
+                                    Header="Bloque"
+                                    Binding="{Binding Bloque}"
+                                    Width="115"/>
+
+                                <DataGridTextColumn
+                                    Header="Pagador"
+                                    Binding="{Binding Pagador}"
+                                    Width="150"/>
+
+                                <DataGridTextColumn
+                                    Header="Concepto"
+                                    Binding="{Binding Concepto}"
+                                    Width="*"
+                                    MinWidth="150"/>
+
+                                <DataGridTextColumn
+                                    Header="Forma de pago"
+                                    Binding="{Binding FormaPago}"
+                                    Width="110"/>
+
+                                <DataGridTextColumn
+                                    Header="Moneda"
+                                    Binding="{Binding Moneda}"
+                                    Width="80"/>
+
+                                <DataGridTextColumn
+                                    Header="Importe"
+                                    Binding="{Binding Monto,
+                                        StringFormat=N2}"
+                                    Width="110"/>
+
+                            </DataGrid.Columns>
+
+                        </DataGrid>
+
+                    </Grid>
+
+                </TabItem>
+
+            </TabControl>
+
+        </Grid>
+
+    </ScrollViewer>
+
+</UserControl>

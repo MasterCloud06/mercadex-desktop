@@ -1,0 +1,324 @@
+<UserControl x:Class="Mercadex.Desktop.App.Views.EgresosView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Background="#F3F6FA">
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+
+        <StackPanel Margin="20">
+
+            <TextBlock Text="Gastos / Egresos"
+                       FontSize="28"
+                       FontWeight="Bold"
+                       Foreground="#173B5C"/>
+
+            <TextBlock Text="Registro, control y reporte de egresos"
+                       Margin="0,4,0,18"
+                       Foreground="#60748A"/>
+
+            <!-- NUEVO EGRESO -->
+
+            <Border Background="White"
+                    BorderBrush="#DFE6EE"
+                    BorderThickness="1"
+                    CornerRadius="8"
+                    Padding="16"
+                    Margin="0,0,0,15">
+
+                <StackPanel>
+
+                    <TextBlock Text="Registrar nuevo egreso"
+                               FontSize="19"
+                               FontWeight="SemiBold"
+                               Foreground="#173B5C"
+                               Margin="0,0,0,14"/>
+
+                    <WrapPanel>
+
+                        <StackPanel Width="150"
+                                    Margin="0,0,14,12">
+                            <TextBlock Text="Fecha"/>
+                            <DatePicker SelectedDate="{Binding Fecha}"
+                                        Height="32"/>
+                        </StackPanel>
+
+                        <StackPanel Width="180"
+                                    Margin="0,0,14,12">
+                            <TextBlock Text="Categoría"/>
+                            <ComboBox ItemsSource="{Binding Categorias}"
+                                      SelectedItem="{Binding CategoriaSeleccionada}"
+                                      Height="32"/>
+                        </StackPanel>
+
+                        <StackPanel Width="280"
+                                    Margin="0,0,14,12">
+                            <TextBlock Text="Concepto"/>
+                            <TextBox Text="{Binding Concepto,
+                                      UpdateSourceTrigger=PropertyChanged}"
+                                     Height="32"/>
+                        </StackPanel>
+
+                        <StackPanel Width="250"
+                                    Margin="0,0,14,12">
+                            <TextBlock Text="Beneficiario / proveedor"/>
+                            <TextBox Text="{Binding Beneficiario,
+                                      UpdateSourceTrigger=PropertyChanged}"
+                                     Height="32"/>
+                        </StackPanel>
+
+                        <StackPanel Width="130"
+                                    Margin="0,0,14,12">
+                            <TextBlock Text="Monto"/>
+                            <TextBox Text="{Binding MontoTexto,
+                                      UpdateSourceTrigger=PropertyChanged}"
+                                     Height="32"/>
+                        </StackPanel>
+
+                        <StackPanel Width="120"
+                                    Margin="0,0,14,12">
+                            <TextBlock Text="Moneda"/>
+                            <ComboBox ItemsSource="{Binding Monedas}"
+                                      SelectedItem="{Binding MonedaSeleccionada}"
+                                      DisplayMemberPath="Codigo"
+                                      Height="32"/>
+                        </StackPanel>
+
+                        <StackPanel Width="160"
+                                    Margin="0,0,14,12">
+                            <TextBlock Text="Forma de pago"/>
+                            <ComboBox ItemsSource="{Binding FormasPago}"
+                                      SelectedItem="{Binding FormaPagoSeleccionada}"
+                                      Height="32"/>
+                        </StackPanel>
+
+                        <StackPanel Width="180"
+                                    Margin="0,0,14,12">
+                            <TextBlock Text="N.º comprobante"/>
+                            <TextBox Text="{Binding NumeroComprobante,
+                                      UpdateSourceTrigger=PropertyChanged}"
+                                     Height="32"/>
+                        </StackPanel>
+
+                    </WrapPanel>
+
+                    <TextBlock Text="Observación"/>
+
+                    <TextBox Text="{Binding Observacion,
+                              UpdateSourceTrigger=PropertyChanged}"
+                             Height="65"
+                             AcceptsReturn="True"
+                             TextWrapping="Wrap"
+                             VerticalScrollBarVisibility="Auto"
+                             Margin="0,4,0,14"/>
+
+                    <WrapPanel>
+
+                        <Button Content="GUARDAR EGRESO"
+                                Command="{Binding GuardarCommand}"
+                                Background="#1F4E79"
+                                Foreground="White"
+                                FontWeight="Bold"
+                                Height="38"
+                                Width="175"
+                                Margin="0,0,10,0"/>
+
+                        <Button Content="LIMPIAR"
+                                Command="{Binding LimpiarCommand}"
+                                Height="38"
+                                Width="100"/>
+
+                    </WrapPanel>
+
+                </StackPanel>
+
+            </Border>
+
+            <!-- FILTROS -->
+
+            <Border Background="White"
+                    BorderBrush="#DFE6EE"
+                    BorderThickness="1"
+                    CornerRadius="8"
+                    Padding="16"
+                    Margin="0,0,0,15">
+
+                <StackPanel>
+
+                    <TextBlock Text="Historial y reportes"
+                               FontSize="19"
+                               FontWeight="SemiBold"
+                               Foreground="#173B5C"
+                               Margin="0,0,0,12"/>
+
+                    <WrapPanel>
+
+                        <StackPanel Width="150"
+                                    Margin="0,0,14,10">
+                            <TextBlock Text="Desde"/>
+                            <DatePicker SelectedDate="{Binding FechaDesde}"
+                                        Height="32"/>
+                        </StackPanel>
+
+                        <StackPanel Width="150"
+                                    Margin="0,0,14,10">
+                            <TextBlock Text="Hasta"/>
+                            <DatePicker SelectedDate="{Binding FechaHasta}"
+                                        Height="32"/>
+                        </StackPanel>
+
+                        <StackPanel Width="190"
+                                    Margin="0,0,14,10">
+                            <TextBlock Text="Categoría"/>
+                            <ComboBox ItemsSource="{Binding CategoriasFiltro}"
+                                      SelectedItem="{Binding CategoriaFiltro}"
+                                      Height="32"/>
+                        </StackPanel>
+
+                        <Button Content="ACTUALIZAR"
+                                Command="{Binding ActualizarCommand}"
+                                Width="120"
+                                Height="36"
+                                Margin="0,17,10,10"
+                                Background="#1F4E79"
+                                Foreground="White"/>
+
+                        <Button Content="EXPORTAR CSV"
+                                Command="{Binding ExportarCommand}"
+                                Width="130"
+                                Height="36"
+                                Margin="0,17,10,10"
+                                Background="#287A42"
+                                Foreground="White"/>
+
+                        <Button Content="ANULAR EGRESO"
+                                Command="{Binding AnularCommand}"
+                                Width="140"
+                                Height="36"
+                                Margin="0,17,0,10"
+                                Background="#A23B3B"
+                                Foreground="White"/>
+
+                    </WrapPanel>
+
+                    <Border Background="#E8F0F8"
+                            CornerRadius="6"
+                            Padding="12"
+                            Margin="0,5,0,12">
+
+                        <StackPanel>
+
+                            <TextBlock Text="{Binding Mensaje}"
+                                       Foreground="#173B5C"/>
+
+                            <TextBlock Text="{Binding TotalPeriodo}"
+                                       FontSize="18"
+                                       FontWeight="Bold"
+                                       Foreground="#287A42"
+                                       Margin="0,6,0,0"/>
+
+                        </StackPanel>
+
+                    </Border>
+
+                    <TabControl MinHeight="380">
+
+                        <TabItem Header="Historial de egresos">
+
+                            <DataGrid ItemsSource="{Binding Egresos}"
+                                      SelectedItem="{Binding EgresoSeleccionado}"
+                                      AutoGenerateColumns="False"
+                                      IsReadOnly="True"
+                                      CanUserAddRows="False"
+                                      AlternatingRowBackground="#F1F5FA"
+                                      HorizontalScrollBarVisibility="Auto">
+
+                                <DataGrid.Columns>
+
+                                    <DataGridTextColumn Header="Fecha"
+                                                        Binding="{Binding FechaTexto}"
+                                                        Width="95"/>
+
+                                    <DataGridTextColumn Header="Categoría"
+                                                        Binding="{Binding Categoria}"
+                                                        Width="130"/>
+
+                                    <DataGridTextColumn Header="Concepto"
+                                                        Binding="{Binding Concepto}"
+                                                        Width="*"
+                                                        MinWidth="180"/>
+
+                                    <DataGridTextColumn Header="Beneficiario"
+                                                        Binding="{Binding Beneficiario}"
+                                                        Width="170"/>
+
+                                    <DataGridTextColumn Header="Moneda"
+                                                        Binding="{Binding MonedaCodigo}"
+                                                        Width="80"/>
+
+                                    <DataGridTextColumn Header="Monto"
+                                                        Binding="{Binding Monto,
+                                                        StringFormat=N2}"
+                                                        Width="100"/>
+
+                                    <DataGridTextColumn Header="Forma de pago"
+                                                        Binding="{Binding FormaPago}"
+                                                        Width="120"/>
+
+                                    <DataGridTextColumn Header="Comprobante"
+                                                        Binding="{Binding NumeroComprobante}"
+                                                        Width="120"/>
+
+                                    <DataGridTextColumn Header="Estado"
+                                                        Binding="{Binding Estado}"
+                                                        Width="100"/>
+
+                                </DataGrid.Columns>
+
+                            </DataGrid>
+
+                        </TabItem>
+
+                        <TabItem Header="Resumen por categoría">
+
+                            <DataGrid ItemsSource="{Binding Resumen}"
+                                      AutoGenerateColumns="False"
+                                      IsReadOnly="True"
+                                      CanUserAddRows="False"
+                                      AlternatingRowBackground="#F1F5FA">
+
+                                <DataGrid.Columns>
+
+                                    <DataGridTextColumn Header="Categoría"
+                                                        Binding="{Binding Categoria}"
+                                                        Width="*"/>
+
+                                    <DataGridTextColumn Header="Moneda"
+                                                        Binding="{Binding MonedaCodigo}"
+                                                        Width="110"/>
+
+                                    <DataGridTextColumn Header="Cantidad"
+                                                        Binding="{Binding Cantidad}"
+                                                        Width="120"/>
+
+                                    <DataGridTextColumn Header="Total"
+                                                        Binding="{Binding Total,
+                                                        StringFormat=N2}"
+                                                        Width="150"/>
+
+                                </DataGrid.Columns>
+
+                            </DataGrid>
+
+                        </TabItem>
+
+                    </TabControl>
+
+                </StackPanel>
+
+            </Border>
+
+        </StackPanel>
+
+    </ScrollViewer>
+
+</UserControl>

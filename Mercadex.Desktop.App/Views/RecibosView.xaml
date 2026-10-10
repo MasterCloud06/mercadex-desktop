@@ -1,135 +1,94 @@
-﻿
-<UserControl x:Class="Mercadex.Desktop.App.Views.RecibosView"
-             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             SizeChanged="RecibosView_SizeChanged"
-             Background="#F3F6FA">
+
+<UserControl x:Class="Mercadex.Desktop.App.Views.RecibosView" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" SizeChanged="RecibosView_SizeChanged" Background="#F3F6FA" FontFamily="Segoe UI" FontSize="14" Language="es-BO">
 
     <UserControl.Resources>
 
         <Style x:Key="Tarjeta" TargetType="Border">
-            <Setter Property="Background" Value="White"/>
-            <Setter Property="BorderBrush" Value="#DFE6EE"/>
-            <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="CornerRadius" Value="8"/>
-            <Setter Property="Padding" Value="14"/>
+            <Setter Property="Background" Value="White" />
+            <Setter Property="BorderBrush" Value="#DFE6EE" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="11" />
+            <Setter Property="Padding" Value="16,14" />
         </Style>
 
         <Style x:Key="TituloSeccion" TargetType="TextBlock">
-            <Setter Property="FontSize" Value="18"/>
-            <Setter Property="FontWeight" Value="SemiBold"/>
-            <Setter Property="Foreground" Value="#173B5C"/>
+            <Setter Property="FontSize" Value="17" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Foreground" Value="#173B5C" />
         </Style>
 
-        <Style x:Key="BotonAzul" TargetType="Button">
-            <Setter Property="Height" Value="40"/>
-            <Setter Property="Background" Value="#1F4E79"/>
-            <Setter Property="Foreground" Value="White"/>
-            <Setter Property="FontWeight" Value="SemiBold"/>
-            <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="Padding" Value="15,0"/>
+        <Style x:Key="BotonAzul" TargetType="Button" BasedOn="{StaticResource Mx.PrimaryButton}">
+            <Setter Property="Height" Value="38" />
+            <Setter Property="Background" Value="#1F4E79" />
+            <Setter Property="Foreground" Value="White" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Padding" Value="15,0" />
         </Style>
 
     </UserControl.Resources>
 
-    <ScrollViewer VerticalScrollBarVisibility="Auto"
-                  HorizontalScrollBarVisibility="Disabled">
+    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
 
-        <Grid Margin="16">
+        <Grid Margin="18,16,18,20">
 
             <Grid.RowDefinitions>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
 
             <!-- ENCABEZADO -->
 
-            <StackPanel Grid.Row="0"
-                        Margin="0,0,0,18">
+            <StackPanel Grid.Row="0" Margin="0,0,0,14">
 
-                <TextBlock Text="Recibos"
-                           FontSize="28"
-                           FontWeight="Bold"
-                           Foreground="#173B5C"/>
+                <TextBlock Text="Recibos" FontSize="27" FontWeight="Bold" Foreground="#173B5C" />
 
-                <TextBlock
-                    Text="Consulta, impresi&#243;n y reimpresi&#243;n de comprobantes"
-                    Foreground="#60748A"
-                    TextWrapping="Wrap"
-                    Margin="0,4,0,0"/>
+                <TextBlock Text="Consulta, impresión y reimpresión de comprobantes" Foreground="#60748A" TextWrapping="Wrap" Margin="0,4,0,0" />
 
             </StackPanel>
 
             <!-- FILTROS -->
 
-            <Border Grid.Row="1"
-                    Style="{StaticResource Tarjeta}"
-                    Margin="0,0,0,14">
+            <Border Grid.Row="1" Style="{StaticResource Tarjeta}" Margin="0,0,0,12">
 
                 <StackPanel>
 
-                    <TextBlock Text="Buscar comprobante"
-                               Style="{StaticResource TituloSeccion}"
-                               Margin="0,0,0,14"/>
+                    <TextBlock Text="Buscar comprobante" Style="{StaticResource TituloSeccion}" Margin="0,0,0,12" />
 
                     <WrapPanel>
 
-                        <StackPanel Width="165"
-                                    Margin="0,0,12,12">
+                        <StackPanel Width="180" Margin="0,0,14,10">
 
-                            <TextBlock Text="N&#250;mero de recibo"
-                                       Margin="0,0,0,5"/>
+                            <TextBlock Text="Número de recibo" Margin="0,0,0,5" FontSize="13" FontWeight="SemiBold" Foreground="#4A5E73" />
 
-                            <TextBox x:Name="TxtNumero"
-                                     Height="36"
-                                     VerticalContentAlignment="Center"
-                                     TextChanged="Filtros_Changed"/>
+                            <TextBox x:Name="TxtNumero" Height="38" VerticalContentAlignment="Center" TextChanged="Filtros_Changed" Style="{StaticResource Mx.TextBox}" />
 
                         </StackPanel>
 
-                        <StackPanel Width="155"
-                                    Margin="0,0,12,12">
+                        <StackPanel Width="165" Margin="0,0,14,10">
 
-                            <TextBlock Text="Desde"
-                                       Margin="0,0,0,5"/>
+                            <TextBlock Text="Desde" Margin="0,0,0,5" FontSize="13" FontWeight="SemiBold" Foreground="#4A5E73" />
 
-                            <DatePicker x:Name="FechaDesde"
-                                        Height="36"
-                                        SelectedDateChanged="Fechas_Changed"/>
+                            <DatePicker x:Name="FechaDesde" Height="38" SelectedDateChanged="Fechas_Changed" FontSize="14" BorderBrush="#C5D1DE" />
 
                         </StackPanel>
 
-                        <StackPanel Width="155"
-                                    Margin="0,0,12,12">
+                        <StackPanel Width="165" Margin="0,0,14,10">
 
-                            <TextBlock Text="Hasta"
-                                       Margin="0,0,0,5"/>
+                            <TextBlock Text="Hasta" Margin="0,0,0,5" FontSize="13" FontWeight="SemiBold" Foreground="#4A5E73" />
 
-                            <DatePicker x:Name="FechaHasta"
-                                        Height="36"
-                                        SelectedDateChanged="Fechas_Changed"/>
+                            <DatePicker x:Name="FechaHasta" Height="38" SelectedDateChanged="Fechas_Changed" FontSize="14" BorderBrush="#C5D1DE" />
 
                         </StackPanel>
 
-                        <Button Content="Actualizar"
-                                Click="Actualizar_Click"
-                                Style="{StaticResource BotonAzul}"
-                                MinWidth="115"
-                                Margin="0,20,12,12"/>
+                        <Button Content="Actualizar" Click="Actualizar_Click" Style="{StaticResource BotonAzul}" MinWidth="115" Margin="0,20,12,12" Height="38" />
 
-                        <Button Content="Limpiar filtros"
-                                Click="Limpiar_Click"
-                                Style="{StaticResource BotonAzul}"
-                                MinWidth="125"
-                                Margin="0,20,0,12"/>
+                        <Button Content="Limpiar filtros" Click="Limpiar_Click" Style="{StaticResource Mx.SecondaryButton}" MinWidth="125" Margin="0,20,0,12" Height="38" />
 
                     </WrapPanel>
 
-                    <TextBlock x:Name="TxtEstado"
-                               Text="Cargando recibos..."
-                               TextWrapping="Wrap"
-                               Foreground="#1F4E79"/>
+                    <TextBlock x:Name="TxtEstado" Text="Cargando recibos..." TextWrapping="Wrap" Foreground="#1F4E79" />
 
                 </StackPanel>
 
@@ -137,83 +96,48 @@
 
             <!-- RESULTADOS ADAPTABLES -->
 
-            <Grid x:Name="ResultadosGrid"
-                  Grid.Row="2">
+            <Grid x:Name="ResultadosGrid" Grid.Row="2">
 
                 <Grid.ColumnDefinitions>
 
-                    <ColumnDefinition x:Name="ColListado"
-                                      Width="2*"/>
+                    <ColumnDefinition x:Name="ColListado" Width="2*" />
 
-                    <ColumnDefinition x:Name="ColDetalle"
-                                      Width="3*"/>
+                    <ColumnDefinition x:Name="ColDetalle" Width="3*" />
 
                 </Grid.ColumnDefinitions>
 
                 <Grid.RowDefinitions>
 
-                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto" />
 
-                    <RowDefinition x:Name="FilaDetalle"
-                                   Height="0"/>
+                    <RowDefinition x:Name="FilaDetalle" Height="0" />
 
                 </Grid.RowDefinitions>
 
                 <!-- LISTA DE RECIBOS -->
 
-                <Border x:Name="TarjetaListado"
-                        Grid.Row="0"
-                        Grid.Column="0"
-                        Style="{StaticResource Tarjeta}"
-                        Margin="0,0,12,0">
+                <Border x:Name="TarjetaListado" Grid.Row="0" Grid.Column="0" Style="{StaticResource Tarjeta}" Margin="0,0,12,0" BorderBrush="#DFE6EE">
 
                     <Grid>
 
                         <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
                         </Grid.RowDefinitions>
 
-                        <TextBlock Grid.Row="0"
-                                   Text="Comprobantes registrados"
-                                   Style="{StaticResource TituloSeccion}"
-                                   Margin="0,0,0,14"/>
+                        <TextBlock Grid.Row="0" Text="Comprobantes registrados" Style="{StaticResource TituloSeccion}" Margin="0,0,0,14" />
 
-                        <DataGrid x:Name="TablaRecibos"
-                                  Grid.Row="1"
-                                  Height="345"
-                                  AutoGenerateColumns="False"
-                                  CanUserAddRows="False"
-                                  CanUserDeleteRows="False"
-                                  IsReadOnly="True"
-                                  SelectionMode="Single"
-                                  SelectionChanged="TablaRecibos_SelectionChanged"
-                                  AlternatingRowBackground="#F1F5FA"
-                                  HeadersVisibility="Column"
-                                  HorizontalScrollBarVisibility="Auto">
+                        <DataGrid x:Name="TablaRecibos" Grid.Row="1" Height="300" AutoGenerateColumns="False" CanUserAddRows="False" CanUserDeleteRows="False" IsReadOnly="True" SelectionMode="Single" SelectionChanged="TablaRecibos_SelectionChanged" AlternatingRowBackground="#F1F5FA" HeadersVisibility="Column" HorizontalScrollBarVisibility="Auto" Style="{StaticResource Mx.DataGrid}" RowHeight="36" ColumnHeaderHeight="38" VerticalScrollBarVisibility="Auto">
 
                             <DataGrid.Columns>
 
-                                <DataGridTextColumn
-                                    Header="N.º"
-                                    Binding="{Binding Numero}"
-                                    Width="55"/>
+                                <DataGridTextColumn Header="N.º" Binding="{Binding Numero}" Width="55" />
 
-                                <DataGridTextColumn
-                                    Header="Fecha"
-                                    Binding="{Binding FechaTexto}"
-                                    Width="120"/>
+                                <DataGridTextColumn Header="Fecha" Binding="{Binding FechaTexto}" Width="120" />
 
-                                <DataGridTextColumn
-                                    Header="Importe"
-                                    Binding="{Binding Total, StringFormat=N2}"
-                                    Width="90"/>
+                                <DataGridTextColumn Header="Importe" Binding="{Binding Total, StringFormat=N2}" Width="90" />
 
-                                <DataGridTextColumn
-                                    Header="Estado"
-                                    Binding="{Binding Estado}"
-                                    Width="*"
-                                    MinWidth="80"/>
+                                <DataGridTextColumn Header="Estado" Binding="{Binding Estado}" Width="*" MinWidth="80" />
 
                             </DataGrid.Columns>
 
@@ -225,92 +149,43 @@
 
                 <!-- DETALLE DEL RECIBO -->
 
-                <Border x:Name="TarjetaDetalle"
-                        Grid.Row="0"
-                        Grid.Column="1"
-                        Style="{StaticResource Tarjeta}">
+                <Border x:Name="TarjetaDetalle" Grid.Row="0" Grid.Column="1" Style="{StaticResource Tarjeta}" BorderBrush="#DFE6EE">
 
                     <Grid>
 
                         <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
                         </Grid.RowDefinitions>
 
-                        <TextBlock Grid.Row="0"
-                                   Text="Detalle del comprobante"
-                                   Style="{StaticResource TituloSeccion}"
-                                   Margin="0,0,0,14"/>
+                        <TextBlock Grid.Row="0" Text="Detalle del comprobante" Style="{StaticResource TituloSeccion}" Margin="0,0,0,14" />
 
-                        <TextBlock Grid.Row="1"
-                                   x:Name="TxtDetalle"
-                                   Text="Selecciona un recibo para consultar sus datos."
-                                   TextWrapping="Wrap"
-                                   Margin="0,0,0,14"/>
+                        <TextBlock Grid.Row="1" x:Name="TxtDetalle" Text="Selecciona un recibo para consultar sus datos." TextWrapping="Wrap" Margin="0,0,0,12" FontSize="13" Foreground="#31465A" LineHeight="21" />
 
-                        <DataGrid Grid.Row="2"
-                                  x:Name="TablaDetalles"
-                                  Height="190"
-                                  AutoGenerateColumns="False"
-                                  CanUserAddRows="False"
-                                  IsReadOnly="True"
-                                  AlternatingRowBackground="#F1F5FA"
-                                  HorizontalScrollBarVisibility="Auto"
-                                  Margin="0,0,0,12">
+                        <DataGrid Grid.Row="2" x:Name="TablaDetalles" Height="158" AutoGenerateColumns="False" CanUserAddRows="False" IsReadOnly="True" AlternatingRowBackground="#F1F5FA" HorizontalScrollBarVisibility="Auto" Margin="0,0,0,12" Style="{StaticResource Mx.DataGrid}" RowHeight="36" ColumnHeaderHeight="38" VerticalScrollBarVisibility="Auto">
 
                             <DataGrid.Columns>
 
-                                <DataGridTextColumn
-                                    Header="Concepto"
-                                    Binding="{Binding Concepto}"
-                                    Width="*"
-                                    MinWidth="130"/>
+                                <DataGridTextColumn Header="Concepto" Binding="{Binding Concepto}" Width="*" MinWidth="130" />
 
-                                <DataGridTextColumn
-                                    Header="Per&#237;odo"
-                                    Binding="{Binding Periodo}"
-                                    Width="85"/>
+                                <DataGridTextColumn Header="Período" Binding="{Binding Periodo}" Width="85" />
 
-                                <DataGridTextColumn
-                                    Header="Importe"
-                                    Binding="{Binding Monto, StringFormat=N2}"
-                                    Width="90"/>
+                                <DataGridTextColumn Header="Importe" Binding="{Binding Monto, StringFormat=N2}" Width="90" />
 
                             </DataGrid.Columns>
 
                         </DataGrid>
 
-                        <TextBlock Grid.Row="3"
-                                   Text="La reimpresi&#243;n no genera otro cobro ni modifica las obligaciones."
-                                   TextWrapping="Wrap"
-                                   Foreground="#60748A"
-                                   Margin="0,0,0,12"/>
+                        <TextBlock Grid.Row="3" Text="La reimpresión no genera otro cobro ni modifica las obligaciones." TextWrapping="Wrap" Foreground="#60748A" Margin="0,0,0,12" />
 
                         <WrapPanel Grid.Row="4">
 
-                            <Button x:Name="BtnVistaPrevia"
-                                    Content="VISTA PREVIA"
-                                    Click="VistaPrevia_Click"
-                                    IsEnabled="False"
-                                    Style="{StaticResource BotonAzul}"
-                                    MinWidth="155"
-                                    Margin="0,0,10,10"/>
+                            <Button x:Name="BtnVistaPrevia" Content="VISTA PREVIA" Click="VistaPrevia_Click" IsEnabled="False" Style="{StaticResource BotonAzul}" MinWidth="155" Margin="0,0,10,10" Height="40" />
 
-                            <Button x:Name="BtnImprimir"
-                                    Content="IMPRIMIR / REIMPRIMIR"
-                                    Click="Imprimir_Click"
-                                    IsEnabled="False"
-                                    Height="40"
-                                    MinWidth="185"
-                                    Padding="12,0"
-                                    Background="#287A42"
-                                    Foreground="White"
-                                    FontWeight="Bold"
-                                    BorderThickness="0"
-                                    Margin="0,0,0,10"/>
+                            <Button x:Name="BtnImprimir" Content="IMPRIMIR / REIMPRIMIR" Click="Imprimir_Click" IsEnabled="False" Height="40" MinWidth="185" Padding="12,0" Background="#287A42" Foreground="White" FontWeight="Bold" BorderThickness="0" Margin="0,0,0,10" Style="{StaticResource Mx.PrimaryButton}" BorderBrush="#287A42" />
 
                         </WrapPanel>
 

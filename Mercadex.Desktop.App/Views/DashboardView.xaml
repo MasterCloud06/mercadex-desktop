@@ -10,19 +10,19 @@
             <Setter Property="BorderBrush" Value="#DFE6EE"/>
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="CornerRadius" Value="10"/>
-            <Setter Property="Padding" Value="20"/>
-            <Setter Property="Margin" Value="0,0,14,14"/>
+            <Setter Property="Padding" Value="17,15"/>
+            <Setter Property="Margin" Value="0,0,12,12"/>
         </Style>
 
         <Style x:Key="Etiqueta" TargetType="TextBlock">
             <Setter Property="Foreground" Value="#60748A"/>
             <Setter Property="FontSize" Value="14"/>
-            <Setter Property="Margin" Value="0,0,0,9"/>
+            <Setter Property="Margin" Value="0,0,0,6"/>
         </Style>
 
         <Style x:Key="Numero" TargetType="TextBlock">
             <Setter Property="Foreground" Value="#173B5C"/>
-            <Setter Property="FontSize" Value="29"/>
+            <Setter Property="FontSize" Value="27"/>
             <Setter Property="FontWeight" Value="Bold"/>
         </Style>
 
@@ -32,11 +32,11 @@
 
         <ScrollViewer VerticalScrollBarVisibility="Auto">
 
-            <StackPanel Margin="28">
+            <StackPanel Margin="22,20,22,20">
 
                 <!-- ENCABEZADO -->
 
-                <Grid Margin="0,0,0,22">
+                <Grid Margin="0,0,0,16">
 
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
@@ -46,7 +46,7 @@
                     <StackPanel>
 
                         <TextBlock Text="Panel principal"
-                                   FontSize="30"
+                                   FontSize="28"
                                    FontWeight="Bold"
                                    Foreground="#173B5C"/>
 
@@ -62,11 +62,11 @@
 
                     </StackPanel>
 
-                    <Button Grid.Column="1"
+                    <Button Grid.Column="1" Style="{StaticResource Mx.PrimaryButton}"
                             Content="Actualizar datos"
                             Click="Actualizar_Click"
                             Width="145"
-                            Height="38"
+                            Height="40"
                             VerticalAlignment="Center"
                             Background="#1F4E79"
                             Foreground="White"
@@ -80,7 +80,7 @@
                 <Border Background="#E7F0F9"
                         CornerRadius="6"
                         Padding="12"
-                        Margin="0,0,0,22">
+                        Margin="0,0,0,16">
 
                     <TextBlock x:Name="TxtEstado"
                                Text="Preparando el panel..."
@@ -92,13 +92,13 @@
                 <!-- RESUMEN DE LOCALES -->
 
                 <TextBlock Text="Unidades comerciales"
-                           FontSize="21"
+                           FontSize="19"
                            FontWeight="SemiBold"
                            Foreground="#173B5C"
-                           Margin="0,0,0,15"/>
+                           Margin="0,0,0,11"/>
 
                 <UniformGrid Columns="2"
-                             Margin="0,0,0,12">
+                             Margin="0,0,0,8">
 
                     <Border Style="{StaticResource Tarjeta}">
 
@@ -165,13 +165,13 @@
                 <!-- RESUMEN DE COBRANZA -->
 
                 <TextBlock Text="Cobranza"
-                           FontSize="21"
+                           FontSize="19"
                            FontWeight="SemiBold"
                            Foreground="#173B5C"
-                           Margin="0,4,0,15"/>
+                           Margin="0,4,0,11"/>
 
                 <UniformGrid Columns="2"
-                             Margin="0,0,0,12">
+                             Margin="0,0,0,8">
 
                     <Border Style="{StaticResource Tarjeta}">
 
@@ -216,10 +216,10 @@
                 <!-- IMPORTES SEPARADOS POR MONEDA -->
 
                 <TextBlock Text="Importes pendientes"
-                           FontSize="21"
+                           FontSize="19"
                            FontWeight="SemiBold"
                            Foreground="#173B5C"
-                           Margin="0,4,0,15"/>
+                           Margin="0,4,0,11"/>
 
                 <UniformGrid Columns="2">
 
@@ -268,7 +268,7 @@
                 <Border Background="#FFF4D6"
                         Padding="14"
                         CornerRadius="7"
-                        Margin="0,10,14,10">
+                        Margin="0,4,12,8">
 
                     <TextBlock
                         Text="Este panel muestra información registrada en el sistema. Los importes pendientes no son dinero recaudado. Las deudas en BOB y USD se presentan por separado."

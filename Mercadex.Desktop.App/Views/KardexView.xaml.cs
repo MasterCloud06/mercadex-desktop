@@ -24,7 +24,6 @@ private readonly HttpClient _api = new()
 
     private bool _cargando;
     private bool _inicializado;
-    private string? _tokenKardex;
     private Guid? _unidadAutorizadaId;
 
     public KardexView()
@@ -39,7 +38,6 @@ private readonly HttpClient _api = new()
 
         Unloaded += (_, _) =>
         {
-            _tokenKardex = null;
             _unidadAutorizadaId = null;
             _inicializado = false;
 
@@ -329,7 +327,6 @@ private readonly HttpClient _api = new()
                 if (respuesta.StatusCode == HttpStatusCode.Unauthorized ||
                     respuesta.StatusCode == HttpStatusCode.Forbidden)
                 {
-                    _tokenKardex = null;
                     _unidadAutorizadaId = null;
                     _api.DefaultRequestHeaders.Authorization = null;
                     Formulario.IsEnabled = false;

@@ -85,7 +85,7 @@ public partial class IngresosView : UserControl
             vm.Mensaje =
                 $"Hay {coincidencias.Count} unidades con " +
                 $"el código {numero}. " +
-                "Selecciona la correcta en la lista desplegable.";
+                "Revisa los codigos en Casetas.";
 
             return;
         }

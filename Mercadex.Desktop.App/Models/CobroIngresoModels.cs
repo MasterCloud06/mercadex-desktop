@@ -1,4 +1,4 @@
-﻿namespace Mercadex.Desktop.App.Models;
+namespace Mercadex.Desktop.App.Models;
 
 public sealed class UnidadIngresoModel
 {
@@ -8,6 +8,24 @@ public sealed class UnidadIngresoModel
     public Guid? PasilloId { get; set; }
     public string? Bloque { get; set; }
     public bool Activa { get; set; }
+
+    // Texto que confirma al cajero que unidad esta cobrando.
+    public string Descripcion
+    {
+        get
+        {
+            var tipo = Tipo switch
+            {
+                2 => "Comedor",
+                3 => "Ambulante",
+                _ => "Caseta"
+            };
+
+            return string.IsNullOrWhiteSpace(Bloque)
+                ? $"{tipo} {Codigo}"
+                : $"{tipo} {Codigo}  ·  Bloque {Bloque}";
+        }
+    }
 }
 
 public sealed class MonedaIngresoModel

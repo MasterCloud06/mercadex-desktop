@@ -1,0 +1,256 @@
+
+<UserControl x:Class="Mercadex.Desktop.App.Views.AvisoCorteView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Background="#F3F6FA">
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto"
+                  HorizontalScrollBarVisibility="Disabled">
+
+        <StackPanel Margin="16">
+
+            <!-- ENCABEZADO -->
+
+            <TextBlock Text="Aviso para corte"
+                       FontSize="27"
+                       FontWeight="Bold"
+                       Foreground="#173B5C"/>
+
+            <TextBlock
+                Text="Casetas con conceptos pendientes de pago"
+                Foreground="#60748A"
+                TextWrapping="Wrap"
+                Margin="0,5,0,16"/>
+
+            <!-- FILTROS -->
+
+            <Border Background="White"
+                    BorderBrush="#DFE6EE"
+                    BorderThickness="1"
+                    CornerRadius="8"
+                    Padding="16"
+                    Margin="0,0,0,14">
+
+                <StackPanel>
+
+                    <TextBlock Text="Filtros del aviso"
+                               FontSize="18"
+                               FontWeight="SemiBold"
+                               Foreground="#173B5C"
+                               Margin="0,0,0,14"/>
+
+                    <WrapPanel>
+
+                        <StackPanel Width="150"
+                                    Margin="0,0,14,12">
+
+                            <TextBlock Text="Emitidas desde"
+                                       Margin="0,0,0,5"/>
+
+                            <DatePicker x:Name="FechaDesde"
+                                        Height="36"/>
+
+                        </StackPanel>
+
+                        <StackPanel Width="150"
+                                    Margin="0,0,14,12">
+
+                            <TextBlock Text="Emitidas hasta"
+                                       Margin="0,0,0,5"/>
+
+                            <DatePicker x:Name="FechaHasta"
+                                        Height="36"/>
+
+                        </StackPanel>
+
+                        <StackPanel Width="160"
+                                    Margin="0,0,14,12">
+
+                            <TextBlock Text="Bloque"
+                                       Margin="0,0,0,5"/>
+
+                            <ComboBox x:Name="FiltroBloque"
+                                      Height="36"/>
+
+                        </StackPanel>
+
+                        <StackPanel Width="135"
+                                    Margin="0,0,14,12">
+
+                            <TextBlock Text="Moneda"
+                                       Margin="0,0,0,5"/>
+
+                            <ComboBox x:Name="FiltroMoneda"
+                                      Height="36"/>
+
+                        </StackPanel>
+
+                    </WrapPanel>
+
+                    <TextBlock Text="Conceptos pendientes"
+                               FontWeight="SemiBold"
+                               FontSize="15"
+                               Margin="0,5,0,10"/>
+
+                    <TextBlock
+                        Text="Marca uno o varios servicios. Si no seleccionas ninguno, no se generará el aviso."
+                        Foreground="#60748A"
+                        TextWrapping="Wrap"
+                        Margin="0,0,0,10"/>
+
+                    <ScrollViewer MaxHeight="170"
+                                  VerticalScrollBarVisibility="Auto">
+
+                        <WrapPanel x:Name="PanelConceptos"/>
+
+                    </ScrollViewer>
+
+                    <WrapPanel Margin="0,15,0,0">
+
+                        <Button x:Name="BtnGenerar"
+                                Content="GENERAR AVISO"
+                                Click="Generar_Click"
+                                Height="40"
+                                MinWidth="160"
+                                Margin="0,0,12,10"
+                                Padding="15,0"
+                                Background="#1F4E79"
+                                Foreground="White"
+                                FontWeight="Bold"
+                                BorderThickness="0"/>
+
+                        <Button Content="ACTUALIZAR DATOS"
+                                Click="Actualizar_Click"
+                                Height="40"
+                                MinWidth="160"
+                                Margin="0,0,12,10"
+                                Padding="15,0"/>
+
+                        <Button x:Name="BtnImprimir"
+                                Content="VISTA PREVIA DEL AVISO"
+                                Click="Imprimir_Click"
+                                IsEnabled="False"
+                                Height="40"
+                                MinWidth="160"
+                                Margin="0,0,0,10"
+                                Padding="15,0"
+                                Background="#287A42"
+                                Foreground="White"
+                                FontWeight="Bold"
+                                BorderThickness="0"/>
+
+                    </WrapPanel>
+
+                    <TextBlock x:Name="TxtEstado"
+                               Text="Cargando conceptos y filtros..."
+                               TextWrapping="Wrap"
+                               Foreground="#1F4E79"
+                               Margin="0,5,0,0"/>
+
+                </StackPanel>
+
+            </Border>
+
+            <!-- RESUMEN -->
+
+            <Border Background="#E8F0F8"
+                    CornerRadius="8"
+                    Padding="16"
+                    Margin="0,0,0,14">
+
+                <StackPanel>
+
+                    <TextBlock Text="Resumen del aviso"
+                               FontSize="17"
+                               FontWeight="SemiBold"
+                               Foreground="#173B5C"/>
+
+                    <TextBlock x:Name="TxtResumen"
+                               Text="Genera el aviso para consultar las casetas."
+                               TextWrapping="Wrap"
+                               Margin="0,10,0,6"/>
+
+                    <TextBlock x:Name="TxtTotales"
+                               FontSize="18"
+                               FontWeight="Bold"
+                               Foreground="#173B5C"
+                               TextWrapping="Wrap"/>
+
+                </StackPanel>
+
+            </Border>
+
+            <!-- LISTADO -->
+
+            <Border Background="White"
+                    BorderBrush="#DFE6EE"
+                    BorderThickness="1"
+                    CornerRadius="8"
+                    Padding="14">
+
+                <StackPanel>
+
+                    <TextBlock
+                        Text="CASETAS CON OBLIGACIONES PENDIENTES"
+                        FontSize="18"
+                        FontWeight="Bold"
+                        Foreground="#173B5C"
+                        TextWrapping="Wrap"
+                        Margin="0,0,0,8"/>
+
+                    <TextBlock
+                        Text="Listado preventivo para revisión. No constituye una orden automática de corte."
+                        Foreground="#60748A"
+                        TextWrapping="Wrap"
+                        Margin="0,0,0,14"/>
+
+                    <DataGrid x:Name="TablaAvisos"
+                              AutoGenerateColumns="False"
+                              CanUserAddRows="False"
+                              CanUserDeleteRows="False"
+                              IsReadOnly="True"
+                              AlternatingRowBackground="#F1F5FA"
+                              HorizontalScrollBarVisibility="Auto"
+                              Height="340">
+
+                        <DataGrid.Columns>
+
+                            <DataGridTextColumn
+                                Header="Caseta"
+                                Binding="{Binding Caseta}"
+                                Width="90"/>
+
+                            <DataGridTextColumn
+                                Header="Bloque"
+                                Binding="{Binding Bloque}"
+                                Width="125"/>
+
+                            <DataGridTextColumn
+                                Header="Conceptos pendientes"
+                                Binding="{Binding Servicios}"
+                                Width="*"
+                                MinWidth="220"/>
+
+                            <DataGridTextColumn
+                                Header="Obligaciones"
+                                Binding="{Binding Cantidad}"
+                                Width="100"/>
+
+                            <DataGridTextColumn
+                                Header="Totales por moneda"
+                                Binding="{Binding Totales}"
+                                Width="220"/>
+
+                        </DataGrid.Columns>
+
+                    </DataGrid>
+
+                </StackPanel>
+
+            </Border>
+
+        </StackPanel>
+
+    </ScrollViewer>
+
+</UserControl>

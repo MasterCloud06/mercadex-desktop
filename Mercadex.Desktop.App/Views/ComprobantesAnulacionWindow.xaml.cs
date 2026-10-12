@@ -1,3 +1,4 @@
+using Mercadex.Desktop.App.Configuration;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -31,14 +32,7 @@ public partial class ComprobantesAnulacionWindow : Window
 
     private bool EntornoLocal()
     {
-        var uri = _api.BaseAddress;
-
-        return uri is not null &&
-               uri.Scheme == Uri.UriSchemeHttp &&
-               uri.Host == "127.0.0.1" &&
-               uri.Port == 5189 &&
-               Environment.GetEnvironmentVariable(
-                   "MERCADEX_TARIFAS_DEV_MODE") == "SI";
+        return EntornoApi.ConexionValida(_api);
     }
 
     private async void Actualizar_Click(
@@ -56,7 +50,7 @@ public partial class ComprobantesAnulacionWindow : Window
         if (!EntornoLocal())
         {
             TxtEstado.Text =
-                "Esta ventana solo funciona con la API local.";
+                "La URL de la API configurada no es valida.";
             return;
         }
 

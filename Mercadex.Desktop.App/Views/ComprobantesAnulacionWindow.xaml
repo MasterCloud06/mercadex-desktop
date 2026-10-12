@@ -155,7 +155,7 @@
                        Foreground="#375A77"
                        VerticalAlignment="Center"
                        TextWrapping="Wrap"
-                       Text="Conectando con la API local..."/>
+                       Text="Conectando con Mercadex..."/>
 
         </DockPanel>
 

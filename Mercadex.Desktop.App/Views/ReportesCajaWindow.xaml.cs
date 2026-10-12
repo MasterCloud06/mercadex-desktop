@@ -1,3 +1,4 @@
+using Mercadex.Desktop.App.Configuration;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -48,15 +49,7 @@ public partial class ReportesCajaWindow : Window
 
     private bool EntornoPermitido()
     {
-        var uri = _api.BaseAddress;
-
-        return uri is not null &&
-               uri.Scheme == Uri.UriSchemeHttp &&
-               uri.Host == "127.0.0.1" &&
-               uri.Port == 5189 &&
-               Environment.GetEnvironmentVariable(
-                   "MERCADEX_TARIFAS_DEV_MODE") == "SI" &&
-               _api.DefaultRequestHeaders.Authorization is not null;
+        return EntornoApi.ConexionAutenticada(_api);
     }
 
     private async void Hoy_Click(
@@ -98,7 +91,7 @@ public partial class ReportesCajaWindow : Window
         if (!EntornoPermitido())
         {
             TxtEstado.Text =
-                "Los reportes requieren la API local de Mercadex 1.5.0.";
+                "Inicia sesion como administrador para ver los reportes.";
             return;
         }
 

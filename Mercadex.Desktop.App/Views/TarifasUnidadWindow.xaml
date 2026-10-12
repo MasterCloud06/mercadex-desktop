@@ -1,7 +1,7 @@
 <Window x:Class="Mercadex.Desktop.App.Views.TarifasUnidadWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Mercadex 1.5.0 - Tarifas por caseta (desarrollo local)"
+        Title="Mercadex - Tarifas por caseta"
         Width="1090"
         Height="850"
         MinWidth="900"
@@ -221,7 +221,7 @@
 
         <TextBlock Grid.Row="4"
                    x:Name="TxtEstado"
-                   Text="Conectando automaticamente a la API local..."
+                   Text="Inicia sesion como administrador..."
                    TextWrapping="Wrap"
                    Foreground="#375A77"
                    FontWeight="SemiBold"

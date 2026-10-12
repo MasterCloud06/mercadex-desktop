@@ -1,3 +1,4 @@
+using Mercadex.Desktop.App.Configuration;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -50,15 +51,7 @@ public partial class DocumentosKardexWindow : Window
 
     private bool EntornoLocal()
     {
-        var uri = _api.BaseAddress;
-
-        return uri is not null &&
-               uri.Scheme == Uri.UriSchemeHttp &&
-               uri.Host == "127.0.0.1" &&
-               uri.Port == 5189 &&
-               Environment.GetEnvironmentVariable(
-                   "MERCADEX_TARIFAS_DEV_MODE") == "SI" &&
-               _api.DefaultRequestHeaders.Authorization is not null;
+        return EntornoApi.ConexionAutenticada(_api);
     }
 
     private async Task IniciarAsync()
@@ -66,7 +59,7 @@ public partial class DocumentosKardexWindow : Window
         if (!EntornoLocal())
         {
             TxtEstado.Text =
-                "Kardex bloqueado: se requiere la API local de desarrollo.";
+                "Kardex bloqueado: inicia sesion como administrador.";
             return;
         }
 
@@ -319,7 +312,7 @@ public partial class DocumentosKardexWindow : Window
 
         if (!EntornoLocal())
         {
-            TxtEstado.Text = "Solo se permite la API local.";
+            TxtEstado.Text = "Inicia sesion como administrador.";
             return;
         }
 

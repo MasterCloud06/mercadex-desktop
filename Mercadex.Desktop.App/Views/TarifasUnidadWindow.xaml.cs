@@ -74,110 +74,6 @@ public partial class TarifasUnidadWindow : Window
         };
     }
 
-    // MERCADEX_TARIFAS_SIN_LOGIN
-    // Conexion automatica solo para la API local de desarrollo.
-    // La autorizacion del Backend permanece habilitada.
-
-    [System.Runtime.InteropServices.StructLayout(
-        System.Runtime.InteropServices.LayoutKind.Sequential)]
-    private struct DataBlob
-    {
-        public int cbData;
-        public IntPtr pbData;
-    }
-
-    [System.Runtime.InteropServices.DllImport(
-        "crypt32.dll", SetLastError = true)]
-    [return: System.Runtime.InteropServices.MarshalAs(
-        System.Runtime.InteropServices.UnmanagedType.Bool)]
-    private static extern bool CryptUnprotectData(
-        ref DataBlob input,
-        IntPtr description,
-        IntPtr optionalEntropy,
-        IntPtr reserved,
-        IntPtr prompt,
-        int flags,
-        out DataBlob output);
-
-    [System.Runtime.InteropServices.DllImport("kernel32.dll")]
-    private static extern IntPtr LocalFree(IntPtr handle);
-
-    private static string LeerClaveAdministradorLocal()
-    {
-        var archivo = System.IO.Path.Combine(
-            Environment.GetFolderPath(
-                Environment.SpecialFolder.LocalApplicationData),
-            "MercadexDev",
-            "Tarifas",
-            "admin-password.dpapi");
-
-        if (!System.IO.File.Exists(archivo))
-            throw new InvalidOperationException(
-                "No existe la credencial de desarrollo local.");
-
-        var contenido = System.IO.File.ReadAllText(archivo).Trim();
-
-        var cifrado = Convert.FromHexString(contenido);
-
-        var entrada = new DataBlob
-        {
-            cbData = cifrado.Length,
-            pbData = System.Runtime.InteropServices.Marshal
-                .AllocHGlobal(cifrado.Length)
-        };
-
-        var salida = new DataBlob();
-
-        try
-        {
-            System.Runtime.InteropServices.Marshal.Copy(
-                cifrado,
-                0,
-                entrada.pbData,
-                cifrado.Length);
-
-            if (!CryptUnprotectData(
-                    ref entrada,
-                    IntPtr.Zero,
-                    IntPtr.Zero,
-                    IntPtr.Zero,
-                    IntPtr.Zero,
-                    0,
-                    out salida))
-            {
-                throw new InvalidOperationException(
-                    "Windows no pudo recuperar la credencial local.");
-            }
-
-            var bytes = new byte[salida.cbData];
-
-            try
-            {
-                System.Runtime.InteropServices.Marshal.Copy(
-                    salida.pbData,
-                    bytes,
-                    0,
-                    bytes.Length);
-
-                return System.Text.Encoding.Unicode.GetString(bytes);
-            }
-            finally
-            {
-                Array.Clear(bytes, 0, bytes.Length);
-            }
-        }
-        finally
-        {
-            Array.Clear(cifrado, 0, cifrado.Length);
-
-            System.Runtime.InteropServices.Marshal.FreeHGlobal(
-                entrada.pbData);
-
-            if (salida.pbData != IntPtr.Zero)
-                LocalFree(salida.pbData);
-        }
-    }
-
     private async Task ConectarAutomaticamenteAsync()
     {
         if (_ocupado || _autorizado)
@@ -536,16 +432,10 @@ public partial class TarifasUnidadWindow : Window
         if (_ocupado || !ValidarConsulta(out var conceptoId))
             return;
 
-        var uri = ApiConfiguration.BaseUri;
-
-        if (!uri.IsLoopback ||
-            uri.Port != 5189 ||
-            uri.Scheme != Uri.UriSchemeHttp ||
-            Environment.GetEnvironmentVariable(
-                "MERCADEX_TARIFAS_DEV_MODE") != "SI")
+        if (!EntornoApi.ConexionValida(ApiConfiguration.BaseUri))
         {
             TxtEstado.Text =
-                "Guardado bloqueado: solo se admite la API local de pruebas.";
+                "Guardado bloqueado: la URL de la API no es valida.";
             return;
         }
 
@@ -792,13 +682,7 @@ public partial class TarifasUnidadWindow : Window
 
     private bool EntornoLocalParaGeneracion()
     {
-        var uri = ApiConfiguration.BaseUri;
-
-        return uri.Scheme == Uri.UriSchemeHttp &&
-               uri.Host == "127.0.0.1" &&
-               uri.Port == 5189 &&
-               Environment.GetEnvironmentVariable(
-                   "MERCADEX_TARIFAS_DEV_MODE") == "SI";
+        return EntornoApi.ConexionValida(ApiConfiguration.BaseUri);
     }
 
     // MERCADEX_PREVIA_CORREGIDA_V2
@@ -913,7 +797,7 @@ public partial class TarifasUnidadWindow : Window
         if (!EntornoLocalParaGeneracion())
         {
             TxtEstado.Text =
-                "Generacion bloqueada fuera de la API local.";
+                "Generacion bloqueada: la URL de la API no es valida.";
             return;
         }
 
@@ -1241,7 +1125,7 @@ public partial class TarifasUnidadWindow : Window
         if (!_autorizado)
         {
             TxtEstado.Text =
-                "Esperando conexion automatica a la API local.";
+                "Inicia sesion como administrador para continuar.";
             return false;
         }
 

@@ -79,109 +79,11 @@ public partial class TarifasUnidadWindow : Window
         if (_ocupado || _autorizado)
             return;
 
-        var dialogo = new Window
-        {
-            Title = "Administrador - Mercadex",
-            Width = 370,
-            Height = 270,
-            ResizeMode = ResizeMode.NoResize,
-            WindowStartupLocation =
-                WindowStartupLocation.CenterOwner,
-            Owner = this
-        };
-
-        var panel = new StackPanel
-        {
-            Margin = new Thickness(22)
-        };
-
-        panel.Children.Add(new TextBlock
-        {
-            Text = "Usuario administrador"
-        });
-
-        var usuario = new TextBox
-        {
-            Margin = new Thickness(0, 5, 0, 12)
-        };
-
-        panel.Children.Add(usuario);
-
-        panel.Children.Add(new TextBlock
-        {
-            Text = "Contrasena"
-        });
-
-        var clave = new PasswordBox
-        {
-            Margin = new Thickness(0, 5, 0, 15)
-        };
-
-        panel.Children.Add(clave);
-
-        var aceptar = new Button
-        {
-            Content = "Iniciar sesion",
-            Height = 35,
-            IsDefault = true
-        };
-
-        aceptar.Click += (_, _) =>
-        {
-            if (string.IsNullOrWhiteSpace(usuario.Text) ||
-                string.IsNullOrWhiteSpace(clave.Password))
-            {
-                MessageBox.Show(
-                    "Completa tus credenciales.");
-                return;
-            }
-
-            dialogo.DialogResult = true;
-        };
-
-        panel.Children.Add(aceptar);
-        dialogo.Content = panel;
-
-        if (dialogo.ShowDialog() != true)
-        {
-            TxtEstado.Text = "Inicio de sesion cancelado.";
-            return;
-        }
-
         _ocupado = true;
 
         try
         {
             TxtEstado.Text = "Conectando con Mercadex...";
-
-            var password = clave.Password;
-            clave.Clear();
-
-            using var respuesta = await _api.PostAsJsonAsync(
-                "/api/auth/login",
-                new
-                {
-                    usuario = usuario.Text.Trim(),
-                    password
-                });
-
-            password = null;
-
-            if (!respuesta.IsSuccessStatusCode)
-                throw new InvalidOperationException(
-                    "Credenciales incorrectas o acceso no configurado.");
-
-            var sesion = await respuesta.Content
-                .ReadFromJsonAsync<SesionTarifas>();
-
-            if (string.IsNullOrWhiteSpace(sesion?.Token))
-                throw new InvalidOperationException(
-                    "No se recibio un token valido.");
-
-            _api.DefaultRequestHeaders.Authorization =
-                new AuthenticationHeaderValue(
-                    "Bearer",
-                    sesion.Token);
 
             var catalogos = await _api
                 .GetFromJsonAsync<CatalogosIngresosModel>(
@@ -215,7 +117,6 @@ public partial class TarifasUnidadWindow : Window
         catch (Exception ex)
         {
             _autorizado = false;
-            _api.DefaultRequestHeaders.Authorization = null;
             TxtEstado.Text = ex.Message;
         }
         finally
@@ -1125,7 +1026,7 @@ public partial class TarifasUnidadWindow : Window
         if (!_autorizado)
         {
             TxtEstado.Text =
-                "Inicia sesion como administrador para continuar.";
+                "Espera a que se carguen los datos.";
             return false;
         }
 

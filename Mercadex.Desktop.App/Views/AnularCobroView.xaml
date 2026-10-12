@@ -198,7 +198,7 @@
                              Margin="0,0,0,12"/>
 
                     <TextBlock
-                        Text="Requiere usuario y contrase&#241;a de administrador. El recibo queda registrado como ANULADO, las deudas vuelven a estar pendientes y se genera un comprobante de anulaci&#243;n."
+                        Text="El recibo queda registrado como ANULADO, las deudas vuelven a estar pendientes y se genera un comprobante de anulaci&#243;n."
                         TextWrapping="Wrap"
                         Foreground="#A52A2A"
                         Margin="0,0,0,12"/>

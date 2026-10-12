@@ -198,7 +198,7 @@
                              Margin="0,0,0,12"/>
 
                     <TextBlock
-                        Text="La anulaci&#243;n se habilitar&#225; despu&#233;s de comprobar la operaci&#243;n en una base de datos de pruebas."
+                        Text="Requiere usuario y contrase&#241;a de administrador. El recibo queda registrado como ANULADO, las deudas vuelven a estar pendientes y se genera un comprobante de anulaci&#243;n."
                         TextWrapping="Wrap"
                         Foreground="#A52A2A"
                         Margin="0,0,0,12"/>
@@ -206,6 +206,7 @@
                     <Button x:Name="BtnAnular"
                             Content="ANULAR COBRO"
                             IsEnabled="False"
+                            Click="Anular_Click"
                             Height="42"
                             MinWidth="185"
                             HorizontalAlignment="Right"

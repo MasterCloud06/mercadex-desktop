@@ -865,8 +865,8 @@ public partial class TarifasUnidadWindow : Window
                 $"Total:\n{totales}\n\n" +
                 $"Emision: {emision:dd/MM/yyyy}\n" +
                 $"Vencimiento: {vencimiento:dd/MM/yyyy}\n\n" +
-                "Se crearan obligaciones en PostgreSQL " +
-                "LOCAL de desarrollo.\n\n" +
+                "Se crearan las obligaciones del periodo " +
+                "para todas las casetas listadas.\n\n" +
                 "¿Confirmas la generacion?",
                 "Confirmar obligaciones mensuales",
                 MessageBoxButton.YesNo,

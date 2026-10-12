@@ -351,7 +351,7 @@ public partial class DocumentosKardexWindow : Window
             $"Tipo: {tipo.Nombre}\n" +
             $"Archivo: {Path.GetFileName(ruta)}\n\n" +
             "¿Confirmas que deseas adjuntar este documento " +
-            "al kardex local?",
+            "al kardex?",
             "Confirmar documento",
             MessageBoxButton.YesNo,
             MessageBoxImage.Question,
@@ -431,7 +431,7 @@ public partial class DocumentosKardexWindow : Window
             MessageBox.Show(
                 this,
                 "El documento se adjuntó correctamente " +
-                "al kardex local.",
+                "al kardex.",
                 "Documento registrado",
                 MessageBoxButton.OK,
                 MessageBoxImage.Information);

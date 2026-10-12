@@ -1,7 +1,7 @@
 <Window x:Class="Mercadex.Desktop.App.Views.ReportesCajaWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Mercadex 1.5.0 - Reportes de caja"
+        Title="Mercadex - Reportes de caja"
         Width="1160"
         Height="790"
         MinWidth="900"

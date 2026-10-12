@@ -109,12 +109,6 @@
                                 <TextBlock Text="Recibos" VerticalAlignment="Center"/>
                             </StackPanel>
                         </RadioButton>
-                        <RadioButton GroupName="MenuMercadex" Style="{StaticResource Mx.NavRadio}" Command="{Binding MostrarPagosAppCommand}">
-                            <StackPanel Orientation="Horizontal">
-                                <TextBlock Text="&#xE8EA;" FontFamily="Segoe MDL2 Assets" FontSize="15" Width="28" VerticalAlignment="Center"/>
-                                <TextBlock Text="Pagos por app" VerticalAlignment="Center"/>
-                            </StackPanel>
-                        </RadioButton>
                         <RadioButton GroupName="MenuMercadex" Style="{StaticResource Mx.NavRadio}" Command="{Binding MostrarCajaCommand}">
                             <StackPanel Orientation="Horizontal">
                                 <TextBlock Text="&#xE8D4;" FontFamily="Segoe MDL2 Assets" FontSize="15" Width="28" VerticalAlignment="Center"/>

@@ -30,12 +30,6 @@ public partial class MainViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private void MostrarPagosApp()
-    {
-        CurrentView = new PagosAppView();
-    }
-
-    [RelayCommand]
     private void MostrarCaja()
     {
         CurrentView = new CajaView();

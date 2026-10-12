@@ -1,4 +1,4 @@
-﻿using System.Collections.ObjectModel;
+using System.Collections.ObjectModel;
 using System.Net;
 using System.Net.Http;
 
@@ -55,7 +55,46 @@ public sealed class UnidadComercialItem
 
     public string PasilloNombre { get; set; } =
         "Sin pasillo";
+
+    public Guid? TitularId { get; set; }
+
+    public string Titular { get; set; } =
+        "Sin titular";
 }
+
+public sealed class SocioOpcion
+{
+    public Guid Id { get; set; }
+
+    public string NombreCompleto { get; set; } = "";
+
+    public string? DocumentoIdentidad { get; set; }
+
+    public bool Activo { get; set; }
+
+    public string Descripcion =>
+        string.IsNullOrWhiteSpace(DocumentoIdentidad)
+            ? NombreCompleto
+            : $"{NombreCompleto} - CI {DocumentoIdentidad}";
+}
+
+public sealed class AsignacionTitularItem
+{
+    public Guid Id { get; set; }
+
+    public Guid SocioId { get; set; }
+
+    public Guid UnidadComercialId { get; set; }
+
+    public DateTimeOffset FechaAsignacion { get; set; }
+
+    public bool Activa { get; set; }
+}
+
+public sealed record CrearAsignacionTitularRequest(
+    Guid SocioId,
+    Guid UnidadComercialId
+);
 
 public sealed record TipoUnidadOpcion(
     int Valor,
@@ -92,6 +131,9 @@ public partial class CasetasViewModel : ObservableObject
         = new();
 
     public ObservableCollection<UnidadComercialItem> Unidades { get; }
+        = new();
+
+    public ObservableCollection<SocioOpcion> Socios { get; }
         = new();
 
     public IReadOnlyList<TipoUnidadOpcion> Tipos { get; } =
@@ -141,6 +183,16 @@ public partial class CasetasViewModel : ObservableObject
     private string bloqueEdicion = "";
 
     // ========================================================
+    // TITULAR DE LA UNIDAD
+    // ========================================================
+
+    [ObservableProperty]
+    private SocioOpcion? socioTitularSeleccionado;
+
+    [ObservableProperty]
+    private string titularActual = "";
+
+    // ========================================================
     // ESTADO GENERAL
     // ========================================================
 
@@ -167,8 +219,16 @@ public partial class CasetasViewModel : ObservableObject
         {
             PasilloEdicionSeleccionado = null;
             BloqueEdicion = "";
+            TitularActual = "";
+            SocioTitularSeleccionado = null;
             return;
         }
+
+        TitularActual = value.Titular;
+
+        SocioTitularSeleccionado =
+            Socios.FirstOrDefault(
+                s => s.Id == value.TitularId);
 
         PasilloEdicionSeleccionado =
             Pasillos.FirstOrDefault(
@@ -212,9 +272,46 @@ public partial class CasetasViewModel : ObservableObject
                 _api.GetAsync<List<UnidadComercialItem>>(
                     "/api/unidades-comerciales");
 
+            var sociosTask =
+                _api.GetAsync<List<SocioOpcion>>(
+                    "/api/socios");
+
+            var asignacionesTask =
+                _api.GetAsync<List<AsignacionTitularItem>>(
+                    "/api/asignaciones-socio-caseta");
+
             await Task.WhenAll(
                 pasillosTask,
-                unidadesTask);
+                unidadesTask,
+                sociosTask,
+                asignacionesTask);
+
+            var socios =
+                await sociosTask
+                ?? new List<SocioOpcion>();
+
+            var asignaciones =
+                await asignacionesTask
+                ?? new List<AsignacionTitularItem>();
+
+            Socios.Clear();
+
+            foreach (var socio in socios
+                .Where(x => x.Activo)
+                .OrderBy(x => x.NombreCompleto))
+            {
+                Socios.Add(socio);
+            }
+
+            var sociosPorId =
+                socios.ToDictionary(x => x.Id);
+
+            var titularPorUnidad = asignaciones
+                .Where(x => x.Activa)
+                .GroupBy(x => x.UnidadComercialId)
+                .ToDictionary(
+                    g => g.Key,
+                    g => g.OrderByDescending(x => x.FechaAsignacion).First().SocioId);
 
             var pasillos =
                 await pasillosTask
@@ -245,6 +342,13 @@ public partial class CasetasViewModel : ObservableObject
                     )?.Nombre
                     ?? "Sin pasillo";
 
+                if (titularPorUnidad.TryGetValue(unidad.Id, out var socioId) &&
+                    sociosPorId.TryGetValue(socioId, out var titular))
+                {
+                    unidad.TitularId = titular.Id;
+                    unidad.Titular = titular.NombreCompleto;
+                }
+
                 Unidades.Add(unidad);
             }
 
@@ -270,6 +374,14 @@ public partial class CasetasViewModel : ObservableObject
                         p => p.Id == pasilloEdicionId);
             }
 
+            if (UnidadSeleccionada is not null)
+            {
+                TitularActual = UnidadSeleccionada.Titular;
+                SocioTitularSeleccionado =
+                    Socios.FirstOrDefault(
+                        x => x.Id == UnidadSeleccionada.TitularId);
+            }
+
             var casetas =
                 Unidades.Count(
                     u => u.Tipo == 1);
@@ -286,7 +398,8 @@ public partial class CasetasViewModel : ObservableObject
             Mensaje =
                 $"Pasillos: {Pasillos.Count}. " +
                 $"Unidades comerciales: {Unidades.Count}. " +
-                $"Casetas sin pasillo: {sinPasillo}.";
+                $"Casetas sin pasillo: {sinPasillo}. " +
+                $"Sin titular: {Unidades.Count(u => u.TitularId is null)}.";
         }
         catch (HttpRequestException ex)
             when (ex.StatusCode ==
@@ -700,6 +813,99 @@ public partial class CasetasViewModel : ObservableObject
         foreach (var pasillo in ordenados)
         {
             Pasillos.Add(pasillo);
+        }
+    }
+
+    // ========================================================
+    // ASIGNAR O CAMBIAR TITULAR
+    // ========================================================
+
+    [RelayCommand]
+    private async Task AsignarTitularAsync()
+    {
+        if (EstaOcupado)
+            return;
+
+        if (UnidadSeleccionada is null)
+        {
+            Mensaje =
+                "Selecciona una unidad comercial en la tabla.";
+
+            return;
+        }
+
+        if (SocioTitularSeleccionado is null)
+        {
+            Mensaje =
+                "Selecciona el socio que sera titular.";
+
+            return;
+        }
+
+        var unidad = UnidadSeleccionada;
+        var socio = SocioTitularSeleccionado;
+
+        if (unidad.TitularId == socio.Id)
+        {
+            Mensaje =
+                $"{socio.NombreCompleto} ya es titular de la unidad {unidad.Codigo}.";
+
+            return;
+        }
+
+        if (unidad.TitularId is not null)
+        {
+            var confirmar = System.Windows.MessageBox.Show(
+                $"La unidad {unidad.Codigo} tiene como titular a " +
+                $"{unidad.Titular}.\n\n" +
+                $"¿Cambiar el titular a {socio.NombreCompleto}?\n" +
+                "La asignacion anterior queda en el historial.",
+                "Cambiar titular",
+                System.Windows.MessageBoxButton.YesNo,
+                System.Windows.MessageBoxImage.Question);
+
+            if (confirmar != System.Windows.MessageBoxResult.Yes)
+                return;
+        }
+
+        EstaOcupado = true;
+
+        Mensaje =
+            $"Asignando titular a la unidad {unidad.Codigo}...";
+
+        try
+        {
+            await _api.PostAsync<CrearAsignacionTitularRequest, AsignacionTitularItem>(
+                "/api/asignaciones-socio-caseta",
+                new CrearAsignacionTitularRequest(
+                    socio.Id,
+                    unidad.Id));
+
+            unidad.TitularId = socio.Id;
+            unidad.Titular = socio.NombreCompleto;
+
+            var indice = Unidades.IndexOf(unidad);
+
+            if (indice >= 0)
+            {
+                Unidades.RemoveAt(indice);
+                Unidades.Insert(indice, unidad);
+            }
+
+            UnidadSeleccionada = unidad;
+            TitularActual = unidad.Titular;
+
+            Mensaje =
+                $"Titular de la unidad {unidad.Codigo}: {socio.NombreCompleto}.";
+        }
+        catch (Exception ex)
+        {
+            Mensaje =
+                $"No se pudo asignar el titular: {ex.Message}";
+        }
+        finally
+        {
+            EstaOcupado = false;
         }
     }
 }

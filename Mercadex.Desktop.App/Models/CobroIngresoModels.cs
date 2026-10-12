@@ -9,6 +9,8 @@ public sealed class UnidadIngresoModel
     public string? Bloque { get; set; }
     public bool Activa { get; set; }
 
+    public string? Titular { get; set; }
+
     // Texto que confirma al cajero que unidad esta cobrando.
     public string Descripcion
     {
@@ -21,9 +23,12 @@ public sealed class UnidadIngresoModel
                 _ => "Caseta"
             };
 
-            return string.IsNullOrWhiteSpace(Bloque)
+            var texto = string.IsNullOrWhiteSpace(Bloque)
                 ? $"{tipo} {Codigo}"
                 : $"{tipo} {Codigo}  ·  Bloque {Bloque}";
+
+            return texto + "  ·  Titular: " +
+                   (string.IsNullOrWhiteSpace(Titular) ? "sin registrar" : Titular);
         }
     }
 }

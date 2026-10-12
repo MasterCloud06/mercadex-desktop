@@ -16,6 +16,25 @@ public sealed class IngresosService
         => await _apiClient.GetAsync<List<UnidadIngresoModel>>(
             "/api/unidades-comerciales") ?? new();
 
+    /// <summary>
+    /// Titular activo de cada unidad: Id de unidad -> nombre del socio.
+    /// </summary>
+    public async Task<Dictionary<Guid, string>> ObtenerTitularesAsync()
+    {
+        var asignaciones = await _apiClient.GetAsync<List<AsignacionTitularDto>>(
+            "/api/asignaciones-socio-caseta") ?? new();
+
+        var socios = await _apiClient.GetAsync<List<SocioTitularDto>>(
+            "/api/socios") ?? new();
+
+        var nombres = socios.ToDictionary(x => x.Id, x => x.NombreCompleto);
+
+        return asignaciones
+            .Where(x => x.Activa && nombres.ContainsKey(x.SocioId))
+            .GroupBy(x => x.UnidadComercialId)
+            .ToDictionary(g => g.Key, g => nombres[g.First().SocioId]);
+    }
+
     public async Task<List<MonedaIngresoModel>> ObtenerMonedasAsync()
         => await _apiClient.GetAsync<List<MonedaIngresoModel>>(
             "/api/monedas") ?? new();

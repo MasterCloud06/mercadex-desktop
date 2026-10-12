@@ -225,7 +225,7 @@
 
                 <StackPanel>
 
-                    <TextBlock Text="Asignar o cambiar pasillo"
+                    <TextBlock Text="Ubicación y titular de la unidad"
                                FontSize="18"
                                FontWeight="Bold"
                                Foreground="#8A5A00"/>
@@ -294,6 +294,52 @@
 
                     </WrapPanel>
 
+                    <!-- TITULAR -->
+
+                    <WrapPanel Margin="0,4,0,0">
+
+                        <StackPanel Margin="0,0,16,10">
+
+                            <TextBlock Text="Titular actual"
+                                       FontWeight="SemiBold"
+                                       Margin="0,0,0,5"/>
+
+                            <TextBox Style="{StaticResource Mx.TextBox}" Width="300"
+                                     Height="36"
+                                     IsReadOnly="True"
+                                     Text="{Binding TitularActual}"/>
+
+                        </StackPanel>
+
+                        <StackPanel Margin="0,0,16,10">
+
+                            <TextBlock Text="Nuevo titular (socio)"
+                                       FontWeight="SemiBold"
+                                       Margin="0,0,0,5"/>
+
+                            <ComboBox FontSize="14" BorderBrush="#C5D1DE" Background="White" Width="340"
+                                      Height="36"
+                                      IsEditable="True"
+                                      IsTextSearchEnabled="True"
+                                      TextSearch.TextPath="NombreCompleto"
+                                      ItemsSource="{Binding Socios}"
+                                      SelectedItem="{Binding SocioTitularSeleccionado}"
+                                      DisplayMemberPath="Descripcion"
+                                      ToolTip="Escribe el nombre para buscar. Los socios se registran en el menú Socios."/>
+
+                        </StackPanel>
+
+                        <StackPanel Margin="0,0,16,10" VerticalAlignment="Bottom">
+
+                            <Button Style="{StaticResource Mx.PrimaryButton}" Content="ASIGNAR TITULAR"
+                                    Width="170"
+                                    Height="36"
+                                    Command="{Binding AsignarTitularCommand}"/>
+
+                        </StackPanel>
+
+                    </WrapPanel>
+
                     <StackPanel Orientation="Horizontal">
 
                         <Button Style="{StaticResource Mx.PrimaryButton}" Content="GUARDAR UBICACIÓN"
@@ -352,11 +398,15 @@
                     <DataGridTextColumn Header="Pasillo"
                                         Binding="{Binding PasilloNombre}"
                                         Width="*"
-                                        MinWidth="220"/>
+                                        MinWidth="180"/>
 
                     <DataGridTextColumn Header="Bloque"
                                         Binding="{Binding Bloque}"
                                         Width="140"/>
+
+                    <DataGridTextColumn Header="Titular"
+                                        Binding="{Binding Titular}"
+                                        Width="220"/>
 
                     <DataGridCheckBoxColumn Header="Activa"
                                             Binding="{Binding Activa}"

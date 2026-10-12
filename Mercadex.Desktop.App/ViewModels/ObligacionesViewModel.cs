@@ -60,6 +60,16 @@ public partial class ObligacionesViewModel : ObservableObject
     [ObservableProperty]
     private int anioSeleccionado = DateTime.Today.Year;
 
+    // Cargo eventual: sin mes/año. Permite registrar el mismo
+    // concepto varias veces en el mes (p. ej. ingreso para acomodar,
+    // excedente de luz). Las mensualidades siguen protegidas
+    // contra duplicados por período.
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(PeriodoHabilitado))]
+    private bool cargoEventual;
+
+    public bool PeriodoHabilitado => !CargoEventual;
+
     [ObservableProperty]
     private string montoTexto = string.Empty;
 
@@ -200,8 +210,9 @@ public partial class ObligacionesViewModel : ObservableObject
             return;
         }
 
-        if (MesSeleccionado < 1 ||
-            MesSeleccionado > 12)
+        if (!CargoEventual &&
+            (MesSeleccionado < 1 ||
+             MesSeleccionado > 12))
         {
             Mensaje =
                 "Selecciona un mes válido.";
@@ -209,8 +220,9 @@ public partial class ObligacionesViewModel : ObservableObject
             return;
         }
 
-        if (AnioSeleccionado < 2000 ||
-            AnioSeleccionado > 2200)
+        if (!CargoEventual &&
+            (AnioSeleccionado < 2000 ||
+             AnioSeleccionado > 2200))
         {
             Mensaje =
                 "Selecciona un año válido.";
@@ -229,6 +241,7 @@ public partial class ObligacionesViewModel : ObservableObject
         }
 
         var duplicada =
+            !CargoEventual &&
             _todas.Any(x =>
                 x.UnidadId ==
                     UnidadSeleccionada.Id &&
@@ -285,10 +298,10 @@ public partial class ObligacionesViewModel : ObservableObject
                             : null,
 
                     PeriodoAnio =
-                        AnioSeleccionado,
+                        CargoEventual ? null : AnioSeleccionado,
 
                     PeriodoMes =
-                        MesSeleccionado
+                        CargoEventual ? null : MesSeleccionado
                 };
 
             await _obligacionesService

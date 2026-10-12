@@ -201,7 +201,7 @@ public partial class MapaMercadoView : UserControl
             var encabezado = new DockPanel { Margin = new Thickness(0, 14, 0, 10) };
             var resumen = new TextBlock
             {
-                Text = $"{bloque.Unidades.Count} unidades · {conDeuda} con deuda",
+                Text = $"{bloque.Unidades.Count} {(bloque.Unidades.Count == 1 ? "unidad" : "unidades")} · {conDeuda} con deuda",
                 Foreground = Pincel("#5A6B7D"),
                 FontSize = 12.5,
                 VerticalAlignment = VerticalAlignment.Bottom
@@ -210,7 +210,7 @@ public partial class MapaMercadoView : UserControl
             encabezado.Children.Add(resumen);
             encabezado.Children.Add(new TextBlock
             {
-                Text = "Bloque " + bloque.Bloque,
+                Text = bloque.Bloque == "Sin bloque" ? "Sin bloque asignado" : "Bloque " + bloque.Bloque,
                 FontSize = 16,
                 FontWeight = FontWeights.SemiBold,
                 Foreground = Pincel("#12304D")
@@ -313,7 +313,7 @@ public partial class MapaMercadoView : UserControl
         });
         PanelDetalle.Children.Add(new TextBlock
         {
-            Text = "Bloque " + u.Bloque,
+            Text = u.Bloque == "Sin bloque" ? "Sin bloque asignado" : "Bloque " + u.Bloque,
             Foreground = Pincel("#5A6B7D"),
             Margin = new Thickness(0, 2, 0, 12)
         });

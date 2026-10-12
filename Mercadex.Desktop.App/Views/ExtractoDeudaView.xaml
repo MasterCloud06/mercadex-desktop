@@ -197,7 +197,7 @@
                     </Border>
 
                     <Button x:Name="BtnImprimir"
-                            Content="IMPRIMIR EXTRACTO DE DEUDA"
+                            Content="Imprimir extracto de deuda"
                             Click="Imprimir_Click"
                             IsEnabled="False"
                             Height="42"

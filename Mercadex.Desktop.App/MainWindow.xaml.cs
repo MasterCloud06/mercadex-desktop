@@ -19,5 +19,9 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
+
+        var version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version;
+        if (version != null)
+            VersionTexto.Text = $"Versión {version.Major}.{version.Minor}.{version.Build}";
     }
 }

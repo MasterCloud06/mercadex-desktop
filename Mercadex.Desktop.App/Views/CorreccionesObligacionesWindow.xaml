@@ -8,7 +8,7 @@
         MinHeight="660"
         WindowStartupLocation="CenterOwner"
         Background="#F3F6FA"
-        FontFamily="Segoe UI">
+        FontFamily="{StaticResource Mx.Font}">
 
     <Grid Margin="18">
 

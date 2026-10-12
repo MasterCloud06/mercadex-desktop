@@ -7,7 +7,7 @@
         MinWidth="850"
         MinHeight="630"
         Background="#F3F6FA"
-        FontFamily="Segoe UI"
+        FontFamily="{StaticResource Mx.Font}"
         WindowStartupLocation="CenterOwner">
 
     <Grid Margin="18">

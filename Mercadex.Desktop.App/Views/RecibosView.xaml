@@ -185,7 +185,7 @@
 
                             <Button x:Name="BtnVistaPrevia" Content="Vista previa" Click="VistaPrevia_Click" IsEnabled="False" Style="{StaticResource BotonAzul}" MinWidth="155" Margin="0,0,10,10" Height="40" />
 
-                            <Button x:Name="BtnImprimir" Content="IMPRIMIR / REIMPRIMIR" Click="Imprimir_Click" IsEnabled="False" Height="40" MinWidth="185" Padding="12,0" Background="#287A42" Foreground="White" FontWeight="Bold" BorderThickness="0" Margin="0,0,0,10" Style="{StaticResource Mx.PrimaryButton}" BorderBrush="#287A42" />
+                            <Button x:Name="BtnImprimir" Content="Imprimir / reimprimir" Click="Imprimir_Click" IsEnabled="False" Height="40" MinWidth="185" Padding="12,0" Background="#287A42" Foreground="White" FontWeight="Bold" BorderThickness="0" Margin="0,0,0,10" Style="{StaticResource Mx.PrimaryButton}" BorderBrush="#287A42" />
 
                         </WrapPanel>
 

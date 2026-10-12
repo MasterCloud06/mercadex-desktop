@@ -183,7 +183,7 @@
                                         Height="42" Padding="18,0" Margin="0,0,10,10"
                                         Background="#287A42" BorderBrush="#287A42" Foreground="White" FontWeight="Bold"
                                         Style="{StaticResource Mx.PrimaryButton}"/>
-                                <Button x:Name="BtnActa" Content="VISTA PREVIA / IMPRIMIR / PDF" Click="Acta_Click"
+                                <Button x:Name="BtnActa" Content="Vista previa / imprimir / PDF" Click="Acta_Click"
                                         Height="42" Padding="18,0" Margin="0,0,10,10"
                                         Style="{StaticResource Mx.SecondaryButton}"/>
                             </WrapPanel>

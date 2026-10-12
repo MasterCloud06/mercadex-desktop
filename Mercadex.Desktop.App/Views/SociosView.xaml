@@ -100,7 +100,7 @@
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
 
-                <TextBox Grid.Column="0" Height="38" Margin="0,0,12,0" Text="{Binding TextoBusqueda,&#xD;&#xA;                         UpdateSourceTrigger=PropertyChanged}" ToolTip="Buscar por nombre, documento o teléfono" Style="{StaticResource Mx.TextBox}" FontSize="14" />
+                <TextBox Grid.Column="0" Height="38" Margin="0,0,12,0" Text="{Binding TextoBusqueda,&#xD;&#xA;                         UpdateSourceTrigger=PropertyChanged}" Tag="Buscar por nombre, documento o teléfono" Style="{StaticResource Mx.TextBox}" FontSize="14" />
 
                 <CheckBox Grid.Column="1" Content="Solo activos" IsChecked="{Binding SoloActivos}" VerticalAlignment="Center" Margin="0,0,18,0" FontSize="13" Foreground="#31465A" />
 

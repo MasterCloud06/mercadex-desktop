@@ -24,6 +24,12 @@ public partial class MainViewModel : ObservableObject
     }
 
     [RelayCommand]
+    private void MostrarMapa()
+    {
+        CurrentView = new MapaMercadoView();
+    }
+
+    [RelayCommand]
     private void MostrarCaja()
     {
         CurrentView = new CajaView();

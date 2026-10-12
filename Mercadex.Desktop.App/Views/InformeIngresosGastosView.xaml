@@ -119,9 +119,9 @@
             </Grid>
 
             <WrapPanel HorizontalAlignment="Right">
-                <Button x:Name="BtnExcel" Content="EXPORTAR A EXCEL (uso interno)" Click="Excel_Click" Height="40" Padding="16,0"
+                <Button x:Name="BtnExcel" Content="Exportar a Excel (uso interno)" Click="Excel_Click" Height="40" Padding="16,0"
                         Margin="0,0,10,0" IsEnabled="False" Style="{StaticResource Mx.SecondaryButton}"/>
-                <Button x:Name="BtnImprimir" Content="VISTA PREVIA / IMPRIMIR / PDF" Click="Imprimir_Click" Height="40" Padding="16,0"
+                <Button x:Name="BtnImprimir" Content="Vista previa / imprimir / PDF" Click="Imprimir_Click" Height="40" Padding="16,0"
                         IsEnabled="False" Background="#287A42" BorderBrush="#287A42" Foreground="White"
                         Style="{StaticResource Mx.PrimaryButton}"/>
             </WrapPanel>

@@ -17,3 +17,6 @@
 **/*.exe
 **/*.msi
 **/*.msix
+
+# URL publica de la API, sin credenciales
+!Mercadex.Desktop.App/appsettings.json

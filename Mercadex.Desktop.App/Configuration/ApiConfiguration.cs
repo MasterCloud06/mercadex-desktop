@@ -16,25 +16,7 @@ public static class ApiConfiguration
     public static Uri BaseUri { get; } = CrearBaseUri();
 
     private static Uri CrearBaseUri()
-    {
-        var modoDesarrollo = Environment.GetEnvironmentVariable(
-            "MERCADEX_TARIFAS_DEV_MODE");
-
-        if (!string.Equals(
-                modoDesarrollo,
-                "SI",
-                StringComparison.Ordinal))
-        {
-            throw new InvalidOperationException(
-                "Mercadex 1.5.0 esta en desarrollo. " +
-                "Inicia con MERCADEX_TARIFAS_DEV_MODE=SI. " +
-                "No se permite utilizar la API de produccion.");
-        }
-
-        // CONFIGURACION TEMPORAL EXCLUSIVA DE DESARROLLO.
-        // Retirar este bloqueo solamente al preparar
-        // una version definitiva verificada.
-        var baseUrl = "http://127.0.0.1:5189/";
+    {var baseUrl = Configuration["ApiSettings:BaseUrl"];
 
         if (string.IsNullOrWhiteSpace(baseUrl))
         {

@@ -76,7 +76,7 @@
 
                         </StackPanel>
 
-<Button Content="DIARIO DE HOY"
+<Button Content="Diario de hoy"
         Click="Hoy_Click"
         Height="38"
         MinWidth="145"
@@ -88,7 +88,7 @@
         BorderThickness="0"/>
 
                         <Button x:Name="BtnConsultar"
-                                Content="GENERAR REPORTES"
+                                Content="Generar reportes"
                                 Click="Consultar_Click"
                                 Height="38"
                                 MinWidth="170"
@@ -99,7 +99,7 @@
                                 FontWeight="Bold"
                                 BorderThickness="0"/>
 
-                        <Button Content="EXPORTAR CSV"
+                        <Button Content="Exportar CSV"
                                 Click="Exportar_Click"
                                 Height="38"
                                 MinWidth="145"

@@ -63,7 +63,7 @@
 
                         </StackPanel>
 
-                        <Button Content="BUSCAR"
+                        <Button Content="Buscar"
                                 Click="Buscar_Click"
                                 Height="38"
                                 MinWidth="115"
@@ -74,7 +74,7 @@
                                 FontWeight="Bold"
                                 BorderThickness="0"/>
 
-                        <Button Content="ACTUALIZAR"
+                        <Button Content="Actualizar"
                                 Click="Actualizar_Click"
                                 Height="38"
                                 MinWidth="125"
@@ -204,7 +204,7 @@
                         Margin="0,0,0,12"/>
 
                     <Button x:Name="BtnAnular"
-                            Content="ANULAR COBRO"
+                            Content="Anular cobro"
                             IsEnabled="False"
                             Click="Anular_Click"
                             Height="42"

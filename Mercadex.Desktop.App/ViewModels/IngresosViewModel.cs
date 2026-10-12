@@ -523,7 +523,8 @@ public partial class IngresosViewModel : ObservableObject
 
             foreach (var item in ingresos.Where(i =>
                 i.Fecha.Date >= FechaInicio.Date &&
-                i.Fecha.Date <= FechaFin.Date))
+                i.Fecha.Date <= FechaFin.Date)
+                .OrderByDescending(i => i.Fecha))
             {
                 Movimientos.Add(item);
             }

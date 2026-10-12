@@ -26,4 +26,13 @@ public partial class CasetasView : UserControl
             await _viewModel.CargarAsync();
         };
     }
+
+    private async void ImportarExcel_Click(object sender, System.Windows.RoutedEventArgs e)
+    {
+        var ventana = new ImportarPadronWindow { Owner = System.Windows.Window.GetWindow(this) };
+        ventana.ShowDialog();
+
+        if (ventana.SeImporto)
+            await _viewModel.CargarAsync();
+    }
 }

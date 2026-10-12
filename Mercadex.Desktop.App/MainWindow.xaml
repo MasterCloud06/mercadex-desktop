@@ -9,7 +9,7 @@
         Width="1180"
         MinHeight="620"
         MinWidth="900"
-        WindowStartupLocation="CenterScreen" UseLayoutRounding="True" SnapsToDevicePixels="True">
+        WindowStartupLocation="CenterScreen" PreviewKeyDown="Window_PreviewKeyDown" FontFamily="{StaticResource Mx.Font}" Background="{StaticResource Mx.SurfaceBrush}" UseLayoutRounding="True" SnapsToDevicePixels="True">
 
     <Window.DataContext>
         <vm:MainViewModel/>
@@ -18,15 +18,13 @@
     <Grid>
 
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="210"/>
+            <ColumnDefinition Width="224"/>
             <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
 
-                <!-- MENU LATERAL MODERNO -->
+        <!-- MENÚ LATERAL -->
 
-        <Border Grid.Column="0"
-                Background="{StaticResource Mx.SidebarBrush}">
-
+        <Border Grid.Column="0" Background="{StaticResource Mx.SidebarBrush}">
             <Grid>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
@@ -34,209 +32,112 @@
                     <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
 
-                <!-- MARCA -->
-                <Border Grid.Row="0"
-                        Padding="18,19,12,17"
-                        BorderBrush="#365875"
-                        BorderThickness="0,0,0,1">
-
-                    <StackPanel>
-                        <TextBlock Text="MERCADEX"
-                                   Foreground="White"
-                                   FontSize="23"
-                                   FontWeight="Bold"/>
-
-                        <TextBlock Text="GESTION COMERCIAL"
-                                   Foreground="#B5CDE2"
-                                   FontSize="10"
-                                   FontWeight="SemiBold"
-                                   Margin="1,4,0,0"/>
+                <!-- MARCA: cuadro amarillo como sello + nombre -->
+                <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="20,22,12,10">
+                    <Border Width="34" Height="34" CornerRadius="9" Background="{StaticResource Mx.AccentBrush}">
+                        <TextBlock Text="M" FontSize="19" FontWeight="Bold" Foreground="#163A5B"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,-1,0,0"/>
+                    </Border>
+                    <StackPanel Margin="11,0,0,0" VerticalAlignment="Center">
+                        <TextBlock Text="Mercadex" Foreground="White" FontSize="19" FontWeight="SemiBold"/>
+                        <TextBlock Text="Gestión del mercado" Foreground="#8FA9C1" FontSize="11.5" Margin="0,1,0,0"/>
                     </StackPanel>
+                </StackPanel>
 
-                </Border>
-
-                <!-- NAVEGACION -->
-                <ScrollViewer Grid.Row="1"
-                              VerticalScrollBarVisibility="Auto"
-                              HorizontalScrollBarVisibility="Disabled">
-
-                    <StackPanel Margin="10,12,10,12">
-
-                    <RadioButton GroupName="MenuMercadex"
-                                 Style="{StaticResource Mx.NavRadio}"
-                                 Command="{Binding MostrarDashboardCommand}"
-                                 IsChecked="True">
-                        <StackPanel Orientation="Horizontal"
-                                    VerticalAlignment="Center">
-                            <TextBlock Text="&#xE80F;"
-                                       FontFamily="Segoe MDL2 Assets"
-                                       FontSize="17"
-                                       Width="30"
-                                       VerticalAlignment="Center"/>
-                            <TextBlock Text="Dashboard"
-                                       VerticalAlignment="Center"/>
-                        </StackPanel>
-                    </RadioButton>
-                    <RadioButton GroupName="MenuMercadex"
-                                 Style="{StaticResource Mx.NavRadio}"
-                                 Command="{Binding MostrarCajaCommand}"
-                                 >
-                        <StackPanel Orientation="Horizontal"
-                                    VerticalAlignment="Center">
-                            <TextBlock Text="&#xE8D4;"
-                                       FontFamily="Segoe MDL2 Assets"
-                                       FontSize="17"
-                                       Width="30"
-                                       VerticalAlignment="Center"/>
-                            <TextBlock Text="Caja"
-                                       VerticalAlignment="Center"/>
-                        </StackPanel>
-                    </RadioButton>
-                    <RadioButton GroupName="MenuMercadex"
-                                 Style="{StaticResource Mx.NavRadio}"
-                                 Command="{Binding MostrarObligacionesCommand}"
-                                 >
-                        <StackPanel Orientation="Horizontal"
-                                    VerticalAlignment="Center">
-                            <TextBlock Text="&#xE8A5;"
-                                       FontFamily="Segoe MDL2 Assets"
-                                       FontSize="17"
-                                       Width="30"
-                                       VerticalAlignment="Center"/>
-                            <TextBlock Text="Obligaciones"
-                                       VerticalAlignment="Center"/>
-                        </StackPanel>
-                    </RadioButton>
-                    <RadioButton GroupName="MenuMercadex"
-                                 Style="{StaticResource Mx.NavRadio}"
-                                 Command="{Binding MostrarIngresosCommand}"
-                                 >
-                        <StackPanel Orientation="Horizontal"
-                                    VerticalAlignment="Center">
-                            <TextBlock Text="&#xE8FB;"
-                                       FontFamily="Segoe MDL2 Assets"
-                                       FontSize="17"
-                                       Width="30"
-                                       VerticalAlignment="Center"/>
-                            <TextBlock Text="Ingresos"
-                                       VerticalAlignment="Center"/>
-                        </StackPanel>
-                    </RadioButton>
-                    <RadioButton GroupName="MenuMercadex"
-                                 Style="{StaticResource Mx.NavRadio}"
-                                 Command="{Binding MostrarEgresosCommand}"
-                                 >
-                        <StackPanel Orientation="Horizontal"
-                                    VerticalAlignment="Center">
-                            <TextBlock Text="&#xE8D0;"
-                                       FontFamily="Segoe MDL2 Assets"
-                                       FontSize="17"
-                                       Width="30"
-                                       VerticalAlignment="Center"/>
-                            <TextBlock Text="Gastos / Egresos"
-                                       VerticalAlignment="Center"/>
-                        </StackPanel>
-                    </RadioButton>
-                    <RadioButton GroupName="MenuMercadex"
-                                 Style="{StaticResource Mx.NavRadio}"
-                                 Command="{Binding MostrarSociosCommand}"
-                                 >
-                        <StackPanel Orientation="Horizontal"
-                                    VerticalAlignment="Center">
-                            <TextBlock Text="&#xE77B;"
-                                       FontFamily="Segoe MDL2 Assets"
-                                       FontSize="17"
-                                       Width="30"
-                                       VerticalAlignment="Center"/>
-                            <TextBlock Text="Socios"
-                                       VerticalAlignment="Center"/>
-                        </StackPanel>
-                    </RadioButton>
-                    <RadioButton GroupName="MenuMercadex"
-                                 Style="{StaticResource Mx.NavRadio}"
-                                 Command="{Binding MostrarCasetasCommand}"
-                                 >
-                        <StackPanel Orientation="Horizontal"
-                                    VerticalAlignment="Center">
-                            <TextBlock Text="&#xE80A;"
-                                       FontFamily="Segoe MDL2 Assets"
-                                       FontSize="17"
-                                       Width="30"
-                                       VerticalAlignment="Center"/>
-                            <TextBlock Text="Casetas"
-                                       VerticalAlignment="Center"/>
-                        </StackPanel>
-                    </RadioButton>
-                    <RadioButton GroupName="MenuMercadex"
-                                 Style="{StaticResource Mx.NavRadio}"
-                                 Command="{Binding MostrarRecibosCommand}"
-                                 >
-                        <StackPanel Orientation="Horizontal"
-                                    VerticalAlignment="Center">
-                            <TextBlock Text="&#xE8A1;"
-                                       FontFamily="Segoe MDL2 Assets"
-                                       FontSize="17"
-                                       Width="30"
-                                       VerticalAlignment="Center"/>
-                            <TextBlock Text="Recibos"
-                                       VerticalAlignment="Center"/>
-                        </StackPanel>
-                    </RadioButton>
-                    <RadioButton GroupName="MenuMercadex"
-                                 Style="{StaticResource Mx.NavRadio}"
-                                 Command="{Binding MostrarReportesCommand}"
-                                 >
-                        <StackPanel Orientation="Horizontal"
-                                    VerticalAlignment="Center">
-                            <TextBlock Text="&#xE9D2;"
-                                       FontFamily="Segoe MDL2 Assets"
-                                       FontSize="17"
-                                       Width="30"
-                                       VerticalAlignment="Center"/>
-                            <TextBlock Text="Reportes"
-                                       VerticalAlignment="Center"/>
-                        </StackPanel>
-                    </RadioButton>
-                    <RadioButton GroupName="MenuMercadex"
-                                 Style="{StaticResource Mx.NavRadio}"
-                                 Command="{Binding MostrarKardexCommand}"
-                                 >
-                        <StackPanel Orientation="Horizontal"
-                                    VerticalAlignment="Center">
-                            <TextBlock Text="&#xE8B7;"
-                                       FontFamily="Segoe MDL2 Assets"
-                                       FontSize="17"
-                                       Width="30"
-                                       VerticalAlignment="Center"/>
-                            <TextBlock Text="Kardex"
-                                       VerticalAlignment="Center"/>
-                        </StackPanel>
-                    </RadioButton>
-
+                <!-- NAVEGACIÓN, agrupada como trabaja la asociación -->
+                <ScrollViewer Grid.Row="1" x:Name="MenuScroll" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                    <StackPanel Margin="0,8,0,12">
+                        <!-- Cobro rápido: ir directo a cobrar una caseta desde cualquier pantalla -->
+                        <Button Click="CobroRapido_Click" Margin="14,4,14,10" Height="40" Padding="12,0"
+                                HorizontalContentAlignment="Stretch" Background="#F2B705" BorderBrush="#F2B705"
+                                Foreground="#163A5B" Style="{StaticResource Mx.ButtonBase}"
+                                ToolTip="Escribe el número de caseta y cobra (Ctrl + K)">
+                            <DockPanel>
+                                <TextBlock DockPanel.Dock="Right" Text="Ctrl K" FontSize="11.5" FontWeight="Normal"
+                                           Opacity="0.75" VerticalAlignment="Center"/>
+                                <TextBlock Text="&#xE8FB;" FontFamily="Segoe MDL2 Assets" FontSize="14" Width="24" VerticalAlignment="Center"/>
+                                <TextBlock Text="Cobro rápido" VerticalAlignment="Center"/>
+                            </DockPanel>
+                        </Button>
+                        <RadioButton GroupName="MenuMercadex" Style="{StaticResource Mx.NavRadio}" Command="{Binding MostrarDashboardCommand}" IsChecked="True">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="&#xE80F;" FontFamily="Segoe MDL2 Assets" FontSize="15" Width="28" VerticalAlignment="Center"/>
+                                <TextBlock Text="Inicio" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </RadioButton>
+                        <RadioButton GroupName="MenuMercadex" Style="{StaticResource Mx.NavRadio}" Command="{Binding MostrarMapaCommand}">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="&#xE707;" FontFamily="Segoe MDL2 Assets" FontSize="15" Width="28" VerticalAlignment="Center"/>
+                                <TextBlock Text="Mapa del mercado" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </RadioButton>
+                        <TextBlock Text="Socios y casetas" Style="{StaticResource Mx.NavGroup}"/>
+                        <RadioButton GroupName="MenuMercadex" Style="{StaticResource Mx.NavRadio}" Command="{Binding MostrarSociosCommand}">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="&#xE77B;" FontFamily="Segoe MDL2 Assets" FontSize="15" Width="28" VerticalAlignment="Center"/>
+                                <TextBlock Text="Socios" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </RadioButton>
+                        <RadioButton GroupName="MenuMercadex" Style="{StaticResource Mx.NavRadio}" Command="{Binding MostrarCasetasCommand}">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="&#xE80A;" FontFamily="Segoe MDL2 Assets" FontSize="15" Width="28" VerticalAlignment="Center"/>
+                                <TextBlock Text="Casetas" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </RadioButton>
+                        <RadioButton GroupName="MenuMercadex" Style="{StaticResource Mx.NavRadio}" Command="{Binding MostrarKardexCommand}">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="&#xE8B7;" FontFamily="Segoe MDL2 Assets" FontSize="15" Width="28" VerticalAlignment="Center"/>
+                                <TextBlock Text="Kardex" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </RadioButton>
+                        <TextBlock Text="Cobranza" Style="{StaticResource Mx.NavGroup}"/>
+                        <RadioButton GroupName="MenuMercadex" Style="{StaticResource Mx.NavRadio}" Command="{Binding MostrarObligacionesCommand}">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="&#xE8A5;" FontFamily="Segoe MDL2 Assets" FontSize="15" Width="28" VerticalAlignment="Center"/>
+                                <TextBlock Text="Obligaciones" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </RadioButton>
+                        <RadioButton x:Name="NavIngresos" GroupName="MenuMercadex" Style="{StaticResource Mx.NavRadio}" Command="{Binding MostrarIngresosCommand}">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="&#xE8FB;" FontFamily="Segoe MDL2 Assets" FontSize="15" Width="28" VerticalAlignment="Center"/>
+                                <TextBlock Text="Ingresos" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </RadioButton>
+                        <RadioButton GroupName="MenuMercadex" Style="{StaticResource Mx.NavRadio}" Command="{Binding MostrarRecibosCommand}">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="&#xE8A1;" FontFamily="Segoe MDL2 Assets" FontSize="15" Width="28" VerticalAlignment="Center"/>
+                                <TextBlock Text="Recibos" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </RadioButton>
+                        <RadioButton GroupName="MenuMercadex" Style="{StaticResource Mx.NavRadio}" Command="{Binding MostrarCajaCommand}">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="&#xE8D4;" FontFamily="Segoe MDL2 Assets" FontSize="15" Width="28" VerticalAlignment="Center"/>
+                                <TextBlock Text="Caja" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </RadioButton>
+                        <TextBlock Text="Finanzas" Style="{StaticResource Mx.NavGroup}"/>
+                        <RadioButton GroupName="MenuMercadex" Style="{StaticResource Mx.NavRadio}" Command="{Binding MostrarEgresosCommand}">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="&#xE8D0;" FontFamily="Segoe MDL2 Assets" FontSize="15" Width="28" VerticalAlignment="Center"/>
+                                <TextBlock Text="Gastos y egresos" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </RadioButton>
+                        <RadioButton GroupName="MenuMercadex" Style="{StaticResource Mx.NavRadio}" Command="{Binding MostrarReportesCommand}">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="&#xE9D2;" FontFamily="Segoe MDL2 Assets" FontSize="15" Width="28" VerticalAlignment="Center"/>
+                                <TextBlock Text="Reportes" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </RadioButton>
                     </StackPanel>
                 </ScrollViewer>
 
                 <!-- PIE -->
-                <Border Grid.Row="2"
-                        BorderBrush="#365875"
-                        BorderThickness="0,1,0,0"
-                        Padding="18,13">
-
-                    <StackPanel>
-                        <TextBlock Text="MERCADEX"
-                                   Foreground="#C2D5E5"
-                                   FontSize="11"
-                                   FontWeight="SemiBold"/>
-
-                        <TextBlock Text="Sistema de administración"
-                                   Foreground="#93ADC4"
-                                   FontSize="10"
-                                   Margin="0,4,0,0"/>
-                    </StackPanel>
-
+                <Border Grid.Row="2" BorderBrush="#24496C" BorderThickness="0,1,0,0" Padding="20,12,12,14">
+                    <TextBlock x:Name="VersionTexto" Text="Versión" Foreground="#7F9BB5" FontSize="11.5"/>
                 </Border>
             </Grid>
         </Border>
+
 <!-- CONTENIDO PRINCIPAL -->
 
         <Border Grid.Column="1"
@@ -276,6 +177,24 @@
 
         </Border>
 
+
+        <!-- COBRO RÁPIDO (Ctrl + K) -->
+        <Grid x:Name="CapaCobroRapido" Grid.ColumnSpan="2" Visibility="Collapsed" Background="#99102236"
+              MouseLeftButtonDown="CapaCobroRapido_MouseLeftButtonDown">
+            <Border Width="440" VerticalAlignment="Top" Margin="0,120,0,0" Background="White"
+                    CornerRadius="14" Padding="24,20" MouseLeftButtonDown="TarjetaCobroRapido_MouseLeftButtonDown">
+                <Border.Effect>
+                    <DropShadowEffect BlurRadius="30" ShadowDepth="6" Direction="270" Opacity="0.25" Color="#0B1F33"/>
+                </Border.Effect>
+                <StackPanel>
+                    <TextBlock Text="Cobro rápido" FontSize="20" FontWeight="SemiBold" Foreground="#12304D"/>
+                    <TextBlock Text="Escribe el número de caseta y presiona Enter." Foreground="#5A6B7D" Margin="0,4,0,14"/>
+                    <TextBox x:Name="TxtCobroRapido" Height="46" FontSize="20" MaxLength="20"
+                             KeyDown="TxtCobroRapido_KeyDown"/>
+                    <TextBlock Text="Esc para cerrar" Foreground="#8696A7" FontSize="12" Margin="0,10,0,0"/>
+                </StackPanel>
+            </Border>
+        </Grid>
     </Grid>
 
 </Window>

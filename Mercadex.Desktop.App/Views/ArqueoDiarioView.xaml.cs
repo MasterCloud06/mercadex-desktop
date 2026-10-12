@@ -355,7 +355,7 @@ public partial class ArqueoDiarioView : UserControl
     }
 
     // =============================================================
-    // ACTA (VISTA PREVIA / IMPRIMIR / PDF)
+    // ACTA (Vista previa / imprimir / PDF)
     // =============================================================
 
     private void Acta_Click(object sender, RoutedEventArgs e) => AbrirActa();

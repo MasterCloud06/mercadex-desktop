@@ -1,4 +1,4 @@
-
+﻿
 using System;
 using System.Linq;
 using System.Windows;
@@ -32,6 +32,37 @@ public partial class IngresosView : UserControl
 
         e.Handled = true;
 
+        BuscarCasetaEscrita();
+    }
+
+    /// <summary>
+    /// Abre la pantalla con una unidad ya buscada (desde el Mapa del
+    /// mercado o el Cobro rápido). Espera a que se carguen las unidades.
+    /// </summary>
+    public async void PrecargarUnidad(Guid? unidadId, string codigo)
+    {
+        BuscarCaseta.Text = codigo;
+
+        if (DataContext is not IngresosViewModel vm)
+            return;
+
+        for (var i = 0; i < 150 && (vm.Unidades.Count == 0 || vm.Cargando); i++)
+            await System.Threading.Tasks.Task.Delay(100);
+
+        var porId = unidadId.HasValue
+            ? vm.Unidades.FirstOrDefault(u => u.Id == unidadId.Value)
+            : null;
+
+        if (porId != null)
+            vm.UnidadSeleccionada = porId;
+        else
+            BuscarCasetaEscrita();
+
+        BuscarCaseta.SelectAll();
+    }
+
+    private void BuscarCasetaEscrita()
+    {
         if (DataContext is not IngresosViewModel vm)
             return;
 

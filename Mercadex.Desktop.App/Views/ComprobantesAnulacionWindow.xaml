@@ -1,0 +1,163 @@
+<Window x:Class="Mercadex.Desktop.App.Views.ComprobantesAnulacionWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Mercadex 1.5.0 - Comprobantes de anulación"
+        Width="1050"
+        Height="730"
+        MinWidth="830"
+        MinHeight="560"
+        WindowStartupLocation="CenterOwner"
+        Background="#F3F6FA"
+        FontFamily="Segoe UI">
+
+    <Grid Margin="18">
+
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="250"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <StackPanel Grid.Row="0" Margin="0,0,0,14">
+
+            <TextBlock Text="Comprobantes de anulación"
+                       FontSize="26"
+                       FontWeight="Bold"
+                       Foreground="#173B5C"/>
+
+            <TextBlock Text="Consulta e impresión de comprobantes registrados"
+                       Foreground="#60748A"
+                       Margin="0,5,0,0"/>
+
+        </StackPanel>
+
+        <Border Grid.Row="1"
+                Background="White"
+                BorderBrush="#DFE6EE"
+                BorderThickness="1"
+                CornerRadius="8"
+                Padding="12"
+                Margin="0,0,0,12">
+
+            <DockPanel>
+
+                <Button Content="Actualizar listado"
+                        DockPanel.Dock="Right"
+                        Width="150"
+                        Height="34"
+                        Margin="12,0,0,0"
+                        Click="Actualizar_Click"
+                        Style="{StaticResource Mx.SecondaryButton}"/>
+
+                <TextBlock x:Name="TxtResumen"
+                           Text="Cargando comprobantes..."
+                           FontWeight="SemiBold"
+                           VerticalAlignment="Center"
+                           Foreground="#173B5C"/>
+
+            </DockPanel>
+        </Border>
+
+        <DataGrid Grid.Row="2"
+                  x:Name="TablaComprobantes"
+                  AutoGenerateColumns="False"
+                  IsReadOnly="True"
+                  CanUserAddRows="False"
+                  CanUserDeleteRows="False"
+                  SelectionMode="Single"
+                  SelectionChanged="Comprobante_Changed"
+                  RowHeight="35"
+                  ColumnHeaderHeight="38"
+                  AlternatingRowBackground="#F1F6FA">
+
+            <DataGrid.Columns>
+
+                <DataGridTextColumn Header="Número"
+                                    Binding="{Binding NumeroRecibo}"
+                                    Width="85"/>
+
+                <DataGridTextColumn Header="Referencia"
+                                    Binding="{Binding Referencia}"
+                                    Width="275"/>
+
+                <DataGridTextColumn Header="Importe"
+                                    Binding="{Binding MontoTotal, StringFormat=N2}"
+                                    Width="100"/>
+
+                <DataGridTextColumn Header="Fecha de anulación"
+                                    Binding="{Binding FechaLocal}"
+                                    Width="155"/>
+
+                <DataGridTextColumn Header="Responsable"
+                                    Binding="{Binding Responsable}"
+                                    Width="*"/>
+
+            </DataGrid.Columns>
+
+        </DataGrid>
+
+        <Border Grid.Row="3"
+                Background="White"
+                BorderBrush="#DFE6EE"
+                BorderThickness="1"
+                CornerRadius="8"
+                Padding="12"
+                Margin="0,12,0,0">
+
+            <DockPanel>
+
+                <TextBlock DockPanel.Dock="Top"
+                           Text="Detalle del comprobante"
+                           FontSize="16"
+                           FontWeight="SemiBold"
+                           Foreground="#173B5C"
+                           Margin="0,0,0,10"/>
+
+                <TextBox x:Name="TxtDetalle"
+                         Text="Selecciona un comprobante para consultar su información."
+                         IsReadOnly="True"
+                         TextWrapping="Wrap"
+                         AcceptsReturn="True"
+                         VerticalScrollBarVisibility="Auto"
+                         BorderThickness="0"
+                         Background="Transparent"
+                         Foreground="#375A77"
+                         FontSize="14"/>
+
+            </DockPanel>
+        </Border>
+
+        <DockPanel Grid.Row="4" Margin="0,12,0,0">
+
+            <StackPanel DockPanel.Dock="Right"
+                        Orientation="Horizontal">
+
+                <Button x:Name="BtnImprimir"
+                        Content="Imprimir comprobante"
+                        Width="190"
+                        Height="36"
+                        Margin="0,0,10,0"
+                        IsEnabled="False"
+                        Click="Imprimir_Click"
+                        Style="{StaticResource Mx.PrimaryButton}"/>
+
+                <Button Content="Cerrar"
+                        Width="95"
+                        Height="36"
+                        Click="Cerrar_Click"
+                        Style="{StaticResource Mx.SecondaryButton}"/>
+
+            </StackPanel>
+
+            <TextBlock x:Name="TxtEstado"
+                       Foreground="#375A77"
+                       VerticalAlignment="Center"
+                       TextWrapping="Wrap"
+                       Text="Conectando con la API local..."/>
+
+        </DockPanel>
+
+    </Grid>
+</Window>

@@ -39,4 +39,16 @@ public partial class ObligacionesView : UserControl
         await _viewModel
             .CargarPasillosMasivoAsync();
     }
+
+    private void Tarifas_Click(
+        object sender,
+        System.Windows.RoutedEventArgs e)
+    {
+        var ventana = new TarifasUnidadWindow
+        {
+            Owner = System.Windows.Window.GetWindow(this)
+        };
+
+        ventana.ShowDialog();
+    }
 }

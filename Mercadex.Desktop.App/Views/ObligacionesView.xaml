@@ -41,11 +41,23 @@
 
                 </StackPanel>
 
-                <Button Style="{StaticResource Mx.PrimaryButton}" Grid.Column="1"
-                        Content="Actualizar"
-                        Width="120"
-                        Height="38"
-                        Command="{Binding CargarCommand}"/>
+                <StackPanel Grid.Column="1"
+            Orientation="Horizontal">
+
+    <Button Style="{StaticResource Mx.PrimaryButton}"
+            Content="Actualizar"
+            Width="120"
+            Height="38"
+            Command="{Binding CargarCommand}"/>
+
+    <Button Style="{StaticResource Mx.SecondaryButton}"
+            Content="Tarifas por caseta"
+            Width="175"
+            Height="38"
+            Margin="10,0,0,0"
+            Click="Tarifas_Click"/>
+
+</StackPanel>
 
             </Grid>
 
@@ -193,6 +205,8 @@
                                 Height="40"
                                 Margin="0,0,10,0"
                                 Command="{Binding RegistrarCommand}"
+                                IsEnabled="False"
+                                ToolTip="Registro deshabilitado temporalmente en el entorno de pruebas"
                                 Background="#1F4E79"
                                 Foreground="White"
                                 FontWeight="Bold"
@@ -390,6 +404,8 @@
                             Height="42"
                             HorizontalAlignment="Left"
                             Command="{Binding GenerarMasivoCommand}"
+                            IsEnabled="False"
+                            ToolTip="Deshabilitado en 1.5.0 hasta integrar tarifas individuales"
                             Background="#A66A00"
                             Foreground="White"
                             FontWeight="Bold"

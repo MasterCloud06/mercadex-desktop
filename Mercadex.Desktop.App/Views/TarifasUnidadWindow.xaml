@@ -1,0 +1,286 @@
+<Window x:Class="Mercadex.Desktop.App.Views.TarifasUnidadWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Mercadex 1.5.0 - Tarifas por caseta (desarrollo local)"
+        Width="1090"
+        Height="850"
+        MinWidth="900"
+        MinHeight="710"
+        Background="#F3F6FA"
+        FontFamily="Segoe UI"
+        WindowStartupLocation="CenterOwner">
+
+    <Grid Margin="18">
+
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*" MinHeight="130"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <StackPanel Grid.Row="0" Margin="0,0,0,15">
+
+            <TextBlock Text="Tarifas por caseta"
+                       FontSize="27"
+                       FontWeight="Bold"
+                       Foreground="#173B5C"/>
+
+            <TextBlock
+                Text="Consulta de tarifas individuales y vista previa de generación mensual"
+                Foreground="#60748A"
+                Margin="0,5,0,0"/>
+
+        </StackPanel>
+
+        <Border Grid.Row="2"
+                Background="White"
+                BorderBrush="#DFE6EE"
+                BorderThickness="1"
+                CornerRadius="9"
+                Padding="15"
+                Margin="0,0,0,12">
+
+            <StackPanel>
+
+                <TextBlock Text="Consultar tarifas"
+                           FontSize="17"
+                           FontWeight="SemiBold"
+                           Foreground="#173B5C"
+                           Margin="0,0,0,10"/>
+
+                <WrapPanel>
+
+                    <StackPanel Margin="0,0,12,8">
+
+                        <TextBlock Text="Concepto"/>
+                        <ComboBox x:Name="CmbConceptos" SelectionChanged="Concepto_Changed"
+                                  Width="225"
+                                  Height="35"
+                                  DisplayMemberPath="Nombre"/>
+
+                    </StackPanel>
+
+                    <StackPanel Margin="0,0,12,8">
+
+                        <TextBlock Text="Mes"/>
+                        <ComboBox x:Name="CmbMes"
+                                  Width="85"
+                                  Height="35"/>
+
+                    </StackPanel>
+
+                    <StackPanel Margin="0,0,12,8">
+
+                        <TextBlock Text="Año"/>
+                        <ComboBox x:Name="CmbAnio"
+                                  Width="100"
+                                  Height="35"/>
+
+                    </StackPanel>
+
+                    <Button Content="Ver tarifas"
+                            Width="125"
+                            Height="35"
+                            Margin="0,18,10,0"
+                            Click="Listar_Click"
+                            Style="{StaticResource Mx.SecondaryButton}"/>
+
+                    <Button Content="Vista previa mensual"
+                            Width="170"
+                            Height="35"
+                            Margin="0,18,0,0"
+                            Click="PreviaMensualSegura_Click"
+                            Style="{StaticResource Mx.PrimaryButton}"/>
+                    <Button Content="Modificar deudas"
+                            Width="160"
+                            Height="35"
+                            Margin="10,18,0,0"
+                            Click="AbrirCorrecciones_Click"
+                            Style="{StaticResource Mx.SecondaryButton}"/>
+                    <Button Content="Documentos del kardex"
+                            Width="185"
+                            Height="35"
+                            Margin="10,18,0,0"
+                            Click="AbrirDocumentosKardex_Click"
+                            Style="{StaticResource Mx.SecondaryButton}"/>
+                    <Button Content="Comprobantes anulados"
+                            Width="190"
+                            Height="35"
+                            Margin="10,18,0,0"
+                            Click="AbrirComprobantesAnulacion_Click"
+                            Style="{StaticResource Mx.SecondaryButton}"/>
+                    <Button Content="Reportes de caja"
+                            Width="155"
+                            Height="35"
+                            Margin="10,18,0,0"
+                            Click="AbrirReportesCaja_Click"
+                            Style="{StaticResource Mx.SecondaryButton}"/>
+                    <Button Content="Deudas consolidadas"
+                            Width="175"
+                            Height="35"
+                            Margin="10,18,0,0"
+                            Click="AbrirDeudoresConsolidados_Click"
+                            Style="{StaticResource Mx.SecondaryButton}"/>
+
+                </WrapPanel>
+                <WrapPanel Margin="0,12,0,0">
+
+                    <StackPanel Margin="0,0,14,8">
+                        <TextBlock Text="Fecha de emision"/>
+                        <DatePicker x:Name="DpEmision" Language="es-BO" SelectedDateFormat="Short"
+                                    Width="150"
+                                    Height="35"/>
+                    </StackPanel>
+
+                    <StackPanel Margin="0,0,14,8">
+                        <TextBlock Text="Fecha de vencimiento"/>
+                        <DatePicker x:Name="DpVencimiento" Language="es-BO" SelectedDateFormat="Short"
+                                    Width="150"
+                                    Height="35"/>
+                    </StackPanel>
+
+                    <Button x:Name="BtnGenerarMensual"
+                            Content="Generar obligaciones"
+                            Width="200"
+                            Height="35"
+                            Margin="0,18,0,0"
+                            IsEnabled="False"
+                            Click="GenerarMensual_Click"
+                            Style="{StaticResource Mx.PrimaryButton}"/>
+
+                </WrapPanel>
+
+            </StackPanel>
+
+        </Border>
+
+                <!-- EDICION DE TARIFAS -->
+        <Border Grid.Row="3"
+                Background="White"
+                BorderBrush="#DFE6EE"
+                BorderThickness="1"
+                CornerRadius="9"
+                Padding="15"
+                Margin="0,0,0,12">
+
+            <StackPanel>
+
+                <TextBlock Text="Asignar o modificar tarifa"
+                           FontSize="17"
+                           FontWeight="SemiBold"
+                           Foreground="#173B5C"
+                           Margin="0,0,0,10"/>
+
+                <WrapPanel>
+
+                    <StackPanel Margin="0,0,12,8">
+                        <TextBlock Text="Caseta"/>
+                        <ComboBox x:Name="CmbCasetas"
+                                  Width="225"
+                                  Height="35"
+                                  DisplayMemberPath="Caseta"
+                                  SelectionChanged="Caseta_Changed"
+                                  IsEnabled="False"/>
+                    </StackPanel>
+
+                    <StackPanel Margin="0,0,12,8">
+                        <TextBlock Text="Moneda"/>
+                        <ComboBox x:Name="CmbMonedas"
+                                  Width="125"
+                                  Height="35"
+                                  DisplayMemberPath="Codigo"
+                                  IsEnabled="False"/>
+                    </StackPanel>
+
+                    <StackPanel Margin="0,0,12,8">
+                        <TextBlock Text="Monto"/>
+                        <TextBox x:Name="TxtMonto"
+                                 Width="160"
+                                 Height="35"
+                                 IsEnabled="False"
+                                 ToolTip="Ejemplo: 80, 120.50 o 120,50"/>
+                    </StackPanel>
+
+                    <Button x:Name="BtnGuardar"
+                            Content="Guardar tarifa"
+                            Width="160"
+                            Height="35"
+                            Margin="0,18,0,0"
+                            IsEnabled="False"
+                            Click="Guardar_Click"
+                            Style="{StaticResource Mx.PrimaryButton}"/>
+
+                </WrapPanel>
+
+            </StackPanel>
+        </Border>
+
+        <TextBlock Grid.Row="4"
+                   x:Name="TxtEstado"
+                   Text="Conectando automaticamente a la API local..."
+                   TextWrapping="Wrap"
+                   Foreground="#375A77"
+                   FontWeight="SemiBold"
+                   Margin="0,0,0,12"/>
+
+        <DataGrid Grid.Row="5"
+                  x:Name="Tabla"
+                  AutoGenerateColumns="False"
+                  IsReadOnly="True"
+                  CanUserAddRows="False"
+                  CanUserDeleteRows="False"
+                  HeadersVisibility="Column"
+                  AlternatingRowBackground="#F1F6FA"
+                  RowHeight="34"
+                  ColumnHeaderHeight="38"
+                  BorderBrush="#DFE6EE"
+                  BorderThickness="1">
+
+            <DataGrid.Columns>
+
+                <DataGridTextColumn Header="Caseta"
+                                    Binding="{Binding Caseta}"
+                                    Width="110"/>
+
+                <DataGridTextColumn Header="Bloque"
+                                    Binding="{Binding Bloque}"
+                                    Width="140"/>
+
+                <DataGridTextColumn Header="Estado"
+                                    Binding="{Binding Estado}"
+                                    Width="*"/>
+
+                <DataGridTextColumn Header="Monto"
+                                    Binding="{Binding Monto, StringFormat=N2}"
+                                    Width="140"/>
+
+                <DataGridTextColumn Header="Moneda"
+                                    Binding="{Binding Moneda}"
+                                    Width="115"/>
+
+            </DataGrid.Columns>
+
+        </DataGrid>
+
+        <Border Grid.Row="6"
+                Background="#FFF8E8"
+                BorderBrush="#E8D39D"
+                BorderThickness="1"
+                CornerRadius="7"
+                Padding="12"
+                Margin="0,12,0,0">
+
+            <TextBlock
+                Text="ENTORNO LOCAL: permite guardar tarifas individuales. Generacion con vista previa y confirmacion. Cambiar tarifas no modifica deudas ya generadas."
+                Foreground="#76520D"
+                TextWrapping="Wrap"/>
+
+        </Border>
+
+    </Grid>
+
+</Window>

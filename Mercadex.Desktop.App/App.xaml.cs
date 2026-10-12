@@ -19,6 +19,23 @@ public partial class App : Application
 
         ShutdownMode = ShutdownMode.OnExplicitShutdown;
 
+        // MERCADEX_TARIFAS_LOCAL_WINDOW
+        // Inicio directo exclusivo para pruebas locales.
+        // Evita ejecutar el actualizador de produccion.
+
+        if (Environment.GetEnvironmentVariable(
+                "MERCADEX_TARIFAS_DEV_MODE") == "SI")
+        {
+            var ventanaTarifas =
+                new Mercadex.Desktop.App.Views.TarifasUnidadWindow();
+
+            MainWindow = ventanaTarifas;
+            ShutdownMode = ShutdownMode.OnMainWindowClose;
+
+            ventanaTarifas.Show();
+            return;
+        }
+
         while (true)
         {
             DatosVersion datos;

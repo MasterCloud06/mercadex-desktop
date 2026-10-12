@@ -183,16 +183,72 @@ public partial class TarifasUnidadWindow : Window
         if (_ocupado || _autorizado)
             return;
 
-        var uri = ApiConfiguration.BaseUri;
-
-        if (uri.Host != "127.0.0.1" ||
-            uri.Port != 5189 ||
-            uri.Scheme != Uri.UriSchemeHttp ||
-            Environment.GetEnvironmentVariable(
-                "MERCADEX_TARIFAS_DEV_MODE") != "SI")
+        var dialogo = new Window
         {
-            TxtEstado.Text =
-                "Conexion bloqueada: solo se permite la API local.";
+            Title = "Administrador - Mercadex",
+            Width = 370,
+            Height = 270,
+            ResizeMode = ResizeMode.NoResize,
+            WindowStartupLocation =
+                WindowStartupLocation.CenterOwner,
+            Owner = this
+        };
+
+        var panel = new StackPanel
+        {
+            Margin = new Thickness(22)
+        };
+
+        panel.Children.Add(new TextBlock
+        {
+            Text = "Usuario administrador"
+        });
+
+        var usuario = new TextBox
+        {
+            Margin = new Thickness(0, 5, 0, 12)
+        };
+
+        panel.Children.Add(usuario);
+
+        panel.Children.Add(new TextBlock
+        {
+            Text = "Contrasena"
+        });
+
+        var clave = new PasswordBox
+        {
+            Margin = new Thickness(0, 5, 0, 15)
+        };
+
+        panel.Children.Add(clave);
+
+        var aceptar = new Button
+        {
+            Content = "Iniciar sesion",
+            Height = 35,
+            IsDefault = true
+        };
+
+        aceptar.Click += (_, _) =>
+        {
+            if (string.IsNullOrWhiteSpace(usuario.Text) ||
+                string.IsNullOrWhiteSpace(clave.Password))
+            {
+                MessageBox.Show(
+                    "Completa tus credenciales.");
+                return;
+            }
+
+            dialogo.DialogResult = true;
+        };
+
+        panel.Children.Add(aceptar);
+        dialogo.Content = panel;
+
+        if (dialogo.ShowDialog() != true)
+        {
+            TxtEstado.Text = "Inicio de sesion cancelado.";
             return;
         }
 
@@ -200,45 +256,36 @@ public partial class TarifasUnidadWindow : Window
 
         try
         {
-            TxtEstado.Text = "Conectando a Mercadex local...";
+            TxtEstado.Text = "Conectando con Mercadex...";
 
-            string? password = LeerClaveAdministradorLocal();
+            var password = clave.Password;
+            clave.Clear();
 
-            HttpResponseMessage respuesta;
+            using var respuesta = await _api.PostAsJsonAsync(
+                "/api/auth/login",
+                new
+                {
+                    usuario = usuario.Text.Trim(),
+                    password
+                });
 
-            try
-            {
-                respuesta = await _api.PostAsJsonAsync(
-                    "/api/auth/login",
-                    new
-                    {
-                        usuario = "admin_tarifas_dev",
-                        password
-                    });
-            }
-            finally
-            {
-                password = null;
-            }
+            password = null;
 
-            using (respuesta)
-            {
-                if (!respuesta.IsSuccessStatusCode)
-                    throw new InvalidOperationException(
-                        "La API local rechazo la conexion automatica.");
+            if (!respuesta.IsSuccessStatusCode)
+                throw new InvalidOperationException(
+                    "Credenciales incorrectas o acceso no configurado.");
 
-                var sesion = await respuesta.Content
-                    .ReadFromJsonAsync<SesionTarifas>();
+            var sesion = await respuesta.Content
+                .ReadFromJsonAsync<SesionTarifas>();
 
-                if (string.IsNullOrWhiteSpace(sesion?.Token))
-                    throw new InvalidOperationException(
-                        "La API no devolvio una sesion valida.");
+            if (string.IsNullOrWhiteSpace(sesion?.Token))
+                throw new InvalidOperationException(
+                    "No se recibio un token valido.");
 
-                _api.DefaultRequestHeaders.Authorization =
-                    new AuthenticationHeaderValue(
-                        "Bearer",
-                        sesion.Token);
-            }
+            _api.DefaultRequestHeaders.Authorization =
+                new AuthenticationHeaderValue(
+                    "Bearer",
+                    sesion.Token);
 
             var catalogos = await _api
                 .GetFromJsonAsync<CatalogosIngresosModel>(
@@ -250,7 +297,6 @@ public partial class TarifasUnidadWindow : Window
                 ?? new();
 
             CmbMonedas.ItemsSource = _monedas;
-
             CmbConceptos.ItemsSource =
                 catalogos?.Conceptos ?? new();
 
@@ -259,27 +305,22 @@ public partial class TarifasUnidadWindow : Window
             if (CmbConceptos.Items.Count > 0)
             {
                 CmbConceptos.SelectedIndex = 0;
-
                 await ActualizarCasetasAsync();
 
                 TxtEstado.Text =
-                    "Conexion automatica correcta. " +
-                    "Selecciona una caseta para administrar su tarifa.";
+                    "Conexion correcta. Tarifas disponibles.";
             }
             else
             {
                 TxtEstado.Text =
-                    "Conexion correcta, pero no hay conceptos registrados.";
+                    "Conexion correcta. No existen conceptos.";
             }
         }
         catch (Exception ex)
         {
             _autorizado = false;
-
             _api.DefaultRequestHeaders.Authorization = null;
-
-            TxtEstado.Text =
-                "No se pudo conectar automaticamente: " + ex.Message;
+            TxtEstado.Text = ex.Message;
         }
         finally
         {

@@ -1,3 +1,4 @@
+using System.IO;
 using Mercadex.Desktop.App.Services;
 using Xunit;
 

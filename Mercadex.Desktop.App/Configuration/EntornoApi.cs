@@ -1,3 +1,5 @@
+using System.Net.Http;
+
 namespace Mercadex.Desktop.App.Configuration;
 
 /// <summary>

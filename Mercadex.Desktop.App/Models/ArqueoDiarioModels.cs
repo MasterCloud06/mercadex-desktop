@@ -23,6 +23,16 @@ public sealed class ArqueoPreliminarResponse
 
 public sealed class ArqueoMonedaResumen
 {
+    public Guid MonedaId { get; set; }
+
+    public bool Cerrado { get; set; }
+
+    public CierreCajaModel? Cierre { get; set; }
+
+    public bool CambiosPosteriores { get; set; }
+
+    public string EstadoTexto => Cerrado ? "Cerrada" : "Abierta";
+
     public string Moneda { get; set; } = string.Empty;
 
     public string Simbolo { get; set; } = string.Empty;
@@ -52,3 +62,74 @@ public sealed class ArqueoIncidenciaResumen
 
     public decimal Monto { get; set; }
 }
+
+public sealed class CierreCajaModel
+{
+    public Guid Id { get; set; }
+
+    public string Fecha { get; set; } = string.Empty;
+
+    public Guid MonedaId { get; set; }
+
+    public string Moneda { get; set; } = string.Empty;
+
+    public decimal Efectivo { get; set; }
+
+    public decimal Qr { get; set; }
+
+    public decimal Otros { get; set; }
+
+    public decimal Total { get; set; }
+
+    public int CantidadPagos { get; set; }
+
+    public int CantidadEfectivo { get; set; }
+
+    public int CantidadQr { get; set; }
+
+    public int CantidadOtros { get; set; }
+
+    public decimal EfectivoContado { get; set; }
+
+    public decimal Diferencia { get; set; }
+
+    public string Responsable { get; set; } = string.Empty;
+
+    public string? Observacion { get; set; }
+
+    public DateTimeOffset FechaRegistro { get; set; }
+
+    public string FechaTexto =>
+        DateOnly.TryParse(Fecha, System.Globalization.CultureInfo.InvariantCulture, out var f)
+            ? f.ToString("dd/MM/yyyy")
+            : Fecha;
+
+    public string RegistradoTexto =>
+        FechaRegistro.ToLocalTime().ToString("dd/MM/yyyy HH:mm");
+}
+
+public sealed record RegistrarCierreRequest(
+    DateOnly Fecha,
+    Guid MonedaId,
+    decimal EfectivoContado,
+    string Responsable,
+    string? Observacion);
+
+/// <summary>Datos que se imprimen en el acta de arqueo.</summary>
+public sealed record ActaArqueo(
+    DateOnly Fecha,
+    string Moneda,
+    decimal Efectivo,
+    int CantidadEfectivo,
+    decimal Qr,
+    int CantidadQr,
+    decimal Otros,
+    int CantidadOtros,
+    decimal Total,
+    int CantidadPagos,
+    decimal? EfectivoContado,
+    decimal? Diferencia,
+    string? Responsable,
+    string? Observacion,
+    bool Cerrado,
+    DateTimeOffset? FechaCierre);

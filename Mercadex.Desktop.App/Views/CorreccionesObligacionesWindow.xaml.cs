@@ -35,7 +35,7 @@ public partial class CorreccionesObligacionesWindow : Window
         _mes = mes;
 
         TxtPeriodo.Text =
-            $"Obligaciones de {mes:00}/{anio} - Desarrollo local";
+            $"Obligaciones de {mes:00}/{anio}";
 
         Loaded += async (_, _) => await CargarAsync();
     }

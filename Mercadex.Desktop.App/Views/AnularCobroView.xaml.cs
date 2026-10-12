@@ -11,6 +11,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using Mercadex.Desktop.App.Configuration;
+using Mercadex.Desktop.App.Services;
 
 namespace Mercadex.Desktop.App.Views;
 
@@ -216,12 +217,17 @@ BaseAddress = ApiConfiguration.BaseUri,
                 "CONCEPTOS:\n" +
                 string.Join("\n", conceptos);
 
-            // Seguridad:
-            // No ejecutar anulaciones contra
-            // PostgreSQL de produccion.
+            // Solo los recibos emitidos pueden anularse.
+            var anulable = string.Equals(
+                recibo.Estado,
+                "Emitido",
+                StringComparison.OrdinalIgnoreCase);
 
-            BtnAnular.IsEnabled = false;
-            TxtMotivo.IsEnabled = false;
+            TxtMotivo.IsEnabled = anulable;
+            BtnAnular.IsEnabled = anulable;
+
+            if (!anulable)
+                TxtMotivo.Text = "";
         }
         catch (Exception ex)
         {
@@ -240,5 +246,180 @@ BaseAddress = ApiConfiguration.BaseUri,
 
             TxtDetalle.Text = ex.Message;
         }
+    }
+
+    private async void Anular_Click(
+        object sender,
+        RoutedEventArgs e)
+    {
+        if (_cargando ||
+            TablaRecibos.SelectedItem is not ReciboDto recibo)
+        {
+            return;
+        }
+
+        var motivo = TxtMotivo.Text.Trim();
+
+        if (motivo.Length < 5)
+        {
+            MessageBox.Show(
+                "Escribe el motivo de la anulacion " +
+                "(al menos 5 caracteres).",
+                "Anular cobro",
+                MessageBoxButton.OK,
+                MessageBoxImage.Warning);
+            return;
+        }
+
+        var confirmar = MessageBox.Show(
+            $"Se anulara el recibo N. {recibo.Numero} " +
+            $"por {recibo.Total:N2}.\n\n" +
+            "Las deudas cobradas volveran a quedar pendientes " +
+            "y se registrara un comprobante de anulacion.\n\n" +
+            "Esta operacion no se puede deshacer. ¿Continuar?",
+            "Confirmar anulacion",
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Warning,
+            MessageBoxResult.No);
+
+        if (confirmar != MessageBoxResult.Yes)
+            return;
+
+        if (!PedirCredenciales(
+                out var usuario,
+                out var contrasena))
+        {
+            return;
+        }
+
+        _cargando = true;
+        BtnAnular.IsEnabled = false;
+        TxtMotivo.IsEnabled = false;
+        TxtEstado.Text = "Anulando recibo...";
+
+        try
+        {
+            await new AnulacionAutorizadaService()
+                .AnularAsync(
+                    recibo.Id,
+                    motivo,
+                    usuario,
+                    contrasena);
+
+            TxtMotivo.Text = "";
+
+            MessageBox.Show(
+                $"El recibo N. {recibo.Numero} fue anulado.\n" +
+                "Puedes imprimir el comprobante en " +
+                "Obligaciones > Tarifas por caseta > " +
+                "Comprobantes anulados.",
+                "Anular cobro",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+        }
+        catch (Exception ex)
+        {
+            TxtEstado.Text =
+                "No se pudo anular el recibo: " + ex.Message;
+
+            MessageBox.Show(
+                ex.Message,
+                "No se pudo anular",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+
+            BtnAnular.IsEnabled = true;
+            TxtMotivo.IsEnabled = true;
+            _cargando = false;
+            return;
+        }
+
+        _cargando = false;
+
+        await CargarRecibosAsync();
+
+        TablaRecibos.SelectedItem =
+            (TablaRecibos.ItemsSource as IEnumerable<ReciboDto>)?
+                .FirstOrDefault(r => r.Id == recibo.Id);
+    }
+
+    private bool PedirCredenciales(
+        out string usuario,
+        out string contrasena)
+    {
+        usuario = "";
+        contrasena = "";
+
+        var dialogo = new Window
+        {
+            Title = "Autorizacion de administrador",
+            Width = 360,
+            SizeToContent = SizeToContent.Height,
+            ResizeMode = ResizeMode.NoResize,
+            WindowStartupLocation =
+                WindowStartupLocation.CenterOwner,
+            Owner = Window.GetWindow(this)
+        };
+
+        var panel = new StackPanel
+        {
+            Margin = new Thickness(20)
+        };
+
+        panel.Children.Add(new TextBlock
+        {
+            Text = "Usuario administrador"
+        });
+
+        var txtUsuario = new TextBox
+        {
+            Margin = new Thickness(0, 5, 0, 12),
+            Height = 30
+        };
+
+        panel.Children.Add(txtUsuario);
+
+        panel.Children.Add(new TextBlock
+        {
+            Text = "Contrasena"
+        });
+
+        var txtClave = new PasswordBox
+        {
+            Margin = new Thickness(0, 5, 0, 15),
+            Height = 30
+        };
+
+        panel.Children.Add(txtClave);
+
+        var aceptar = new Button
+        {
+            Content = "Autorizar anulacion",
+            Height = 34,
+            IsDefault = true
+        };
+
+        aceptar.Click += (_, _) =>
+        {
+            if (string.IsNullOrWhiteSpace(txtUsuario.Text) ||
+                string.IsNullOrEmpty(txtClave.Password))
+            {
+                MessageBox.Show("Completa usuario y contrasena.");
+                return;
+            }
+
+            dialogo.DialogResult = true;
+        };
+
+        panel.Children.Add(aceptar);
+        dialogo.Content = panel;
+        dialogo.Loaded += (_, _) => txtUsuario.Focus();
+
+        if (dialogo.ShowDialog() != true)
+            return false;
+
+        usuario = txtUsuario.Text.Trim();
+        contrasena = txtClave.Password;
+        return true;
     }
 }

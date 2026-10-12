@@ -1,7 +1,7 @@
 <Window x:Class="Mercadex.Desktop.App.Views.DeudoresConsolidadosWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Mercadex 1.5.0 - Deudas consolidadas"
+        Title="Mercadex - Deudas consolidadas"
         Width="1170"
         Height="810"
         MinWidth="920"

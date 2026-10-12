@@ -275,7 +275,7 @@
                 Margin="0,12,0,0">
 
             <TextBlock
-                Text="ENTORNO LOCAL: permite guardar tarifas individuales. Generacion con vista previa y confirmacion. Cambiar tarifas no modifica deudas ya generadas."
+                Text="Tarifas individuales por caseta. Generacion con vista previa y confirmacion. Cambiar tarifas no modifica deudas ya generadas."
                 Foreground="#76520D"
                 TextWrapping="Wrap"/>
 

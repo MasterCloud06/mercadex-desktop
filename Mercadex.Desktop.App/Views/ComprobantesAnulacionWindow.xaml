@@ -1,7 +1,7 @@
 <Window x:Class="Mercadex.Desktop.App.Views.ComprobantesAnulacionWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Mercadex 1.5.0 - Comprobantes de anulación"
+        Title="Mercadex - Comprobantes de anulación"
         Width="1050"
         Height="730"
         MinWidth="830"

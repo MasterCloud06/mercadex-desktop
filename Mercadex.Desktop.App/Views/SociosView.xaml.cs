@@ -36,4 +36,19 @@ public partial class SociosView : UserControl
             .ConsultarCommand
             .ExecuteAsync(null);
     }
+
+    private void AccesoApp_Click(object sender, System.Windows.RoutedEventArgs e)
+    {
+        if (TablaSocios.SelectedItem is not Mercadex.Desktop.App.Models.SocioModel socio)
+        {
+            System.Windows.MessageBox.Show("Selecciona primero un socio en la tabla.", "Acceso a la app",
+                System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Information);
+            return;
+        }
+
+        new AccesoAppWindow(socio.Id, socio.NombreCompleto, socio.DocumentoIdentidad)
+        {
+            Owner = System.Windows.Window.GetWindow(this)
+        }.ShowDialog();
+    }
 }

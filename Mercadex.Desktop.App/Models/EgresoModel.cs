@@ -4,6 +4,10 @@ public sealed class EgresoModel
 {
     public Guid Id { get; set; }
 
+    public long Numero { get; set; }
+
+    public string NumeroTexto => Numero > 0 ? Numero.ToString("000000") : "—";
+
     public DateOnly Fecha { get; set; }
 
     public string Categoria { get; set; } = string.Empty;

@@ -105,6 +105,8 @@
 
                         <Button Content="EXPORTAR CSV" Command="{Binding ExportarCommand}" Width="130" Height="40" Margin="0,17,10,10" Background="#287A42" Foreground="White" Style="{StaticResource Mx.PrimaryButton}" BorderBrush="#287A42" />
 
+                        <Button Content="IMPRIMIR COMPROBANTE" Command="{Binding ImprimirComprobanteCommand}" Width="190" Height="40" Margin="0,17,10,10" Style="{StaticResource Mx.SecondaryButton}" />
+
                         <Button Content="ANULAR EGRESO" Command="{Binding AnularCommand}" Width="140" Height="40" Margin="0,17,0,10" Background="#A23B3B" Foreground="White" Style="{StaticResource Mx.DangerButton}" BorderBrush="#A23B3B" />
 
                     </WrapPanel>
@@ -128,6 +130,8 @@
                             <DataGrid ItemsSource="{Binding Egresos}" SelectedItem="{Binding EgresoSeleccionado}" AutoGenerateColumns="False" IsReadOnly="True" CanUserAddRows="False" AlternatingRowBackground="#F1F5FA" HorizontalScrollBarVisibility="Auto" Style="{StaticResource Mx.DataGrid}" FontSize="13" RowHeight="36" ColumnHeaderHeight="38" VerticalScrollBarVisibility="Auto" CanUserResizeColumns="True" CanUserSortColumns="True">
 
                                 <DataGrid.Columns>
+
+                                    <DataGridTextColumn Header="N.º" Binding="{Binding NumeroTexto}" Width="75" />
 
                                     <DataGridTextColumn Header="Fecha" Binding="{Binding FechaTexto}" Width="95" />
 

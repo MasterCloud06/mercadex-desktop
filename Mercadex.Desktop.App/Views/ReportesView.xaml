@@ -199,6 +199,10 @@
                 <views:AvisoCorteView />
             </TabItem>
 
+            <TabItem Header="Ingresos y gastos" FontSize="13" FontWeight="SemiBold" Foreground="#173B5C" Padding="11,8">
+                <views:InformeIngresosGastosView />
+            </TabItem>
+
             <TabItem Header="Anular cobro" FontSize="13" FontWeight="SemiBold" Foreground="#173B5C" Padding="11,8">
                 <views:AnularCobroView />
             </TabItem>

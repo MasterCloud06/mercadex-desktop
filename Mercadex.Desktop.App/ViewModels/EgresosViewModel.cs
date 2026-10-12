@@ -128,7 +128,7 @@ public partial class EgresosViewModel : ObservableObject
         "QR",
         "Transferencia",
         "Cheque",
-        "Otro"
+        "Otros"
     };
 
     public ObservableCollection<MonedaIngresoModel> Monedas
@@ -360,11 +360,18 @@ public partial class EgresosViewModel : ObservableObject
                     "La API no devolvió el egreso registrado.");
             }
 
-            MessageBox.Show(
-                "Egreso registrado correctamente.",
+            resultado.MonedaCodigo =
+                MonedaSeleccionada.Codigo;
+
+            var imprimir = MessageBox.Show(
+                $"Egreso N.º {resultado.NumeroTexto} registrado correctamente.\n\n" +
+                "¿Deseas ver e imprimir el comprobante de egreso?",
                 "Gastos / Egresos",
-                MessageBoxButton.OK,
+                MessageBoxButton.YesNo,
                 MessageBoxImage.Information);
+
+            if (imprimir == MessageBoxResult.Yes)
+                AbrirComprobante(resultado);
 
             LimpiarFormulario();
 
@@ -782,7 +789,7 @@ public partial class EgresosViewModel : ObservableObject
                 new StringBuilder();
 
             csv.AppendLine(
-                "Fecha;Categoria;Concepto;" +
+                "Numero;Fecha;Categoria;Concepto;" +
                 "Beneficiario;Moneda;Monto;" +
                 "FormaPago;Comprobante;" +
                 "Estado;Observacion");
@@ -792,6 +799,7 @@ public partial class EgresosViewModel : ObservableObject
                 csv.AppendLine(
                     string.Join(
                         ";",
+                        Csv(x.NumeroTexto),
                         Csv(x.FechaTexto),
                         Csv(x.Categoria),
                         Csv(x.Concepto),
@@ -800,7 +808,7 @@ public partial class EgresosViewModel : ObservableObject
                         Csv(
                             x.Monto.ToString(
                                 "0.00",
-                                CultureInfo.InvariantCulture)),
+                                CultureInfo.CurrentCulture)),
                         Csv(x.FormaPago),
                         Csv(x.NumeroComprobante),
                         Csv(x.Estado),
@@ -853,5 +861,35 @@ public partial class EgresosViewModel : ObservableObject
                 "\"",
                 "\"\"") +
             "\"";
+    }
+
+    // ============================================================
+    // COMPROBANTE DE EGRESO
+    // ============================================================
+
+    [RelayCommand]
+    private void ImprimirComprobante()
+    {
+        if (EgresoSeleccionado == null)
+        {
+            MessageBox.Show(
+                "Selecciona un egreso del historial.",
+                "Comprobante de egreso",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+            return;
+        }
+
+        AbrirComprobante(EgresoSeleccionado);
+    }
+
+    private static void AbrirComprobante(EgresoModel egreso)
+    {
+        var ventana = new Mercadex.Desktop.App.Views.ComprobanteEgresoWindow(egreso)
+        {
+            Owner = Application.Current?.MainWindow
+        };
+
+        ventana.ShowDialog();
     }
 }

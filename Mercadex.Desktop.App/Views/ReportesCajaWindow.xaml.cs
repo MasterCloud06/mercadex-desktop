@@ -49,7 +49,7 @@ public partial class ReportesCajaWindow : Window
 
     private bool EntornoPermitido()
     {
-        return EntornoApi.ConexionAutenticada(_api);
+        return EntornoApi.ConexionValida(_api);
     }
 
     private async void Hoy_Click(
@@ -91,7 +91,7 @@ public partial class ReportesCajaWindow : Window
         if (!EntornoPermitido())
         {
             TxtEstado.Text =
-                "Inicia sesion como administrador para ver los reportes.";
+                "La URL de la API configurada no es valida.";
             return;
         }
 

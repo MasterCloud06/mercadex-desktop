@@ -17,12 +17,7 @@ namespace Mercadex.Desktop.App.Views;
 
 public partial class AnularCobroView : UserControl
 {
-    private static readonly HttpClient Api = new()
-    {
-BaseAddress = ApiConfiguration.BaseUri,
-
-        Timeout = TimeSpan.FromSeconds(60)
-    };
+    private static readonly HttpClient Api = ApiConfiguration.CrearCliente(TimeSpan.FromSeconds(60));
 
     private List<ReciboDto> _recibos = new();
 
@@ -285,13 +280,6 @@ BaseAddress = ApiConfiguration.BaseUri,
         if (confirmar != MessageBoxResult.Yes)
             return;
 
-        if (!PedirCredenciales(
-                out var usuario,
-                out var contrasena))
-        {
-            return;
-        }
-
         _cargando = true;
         BtnAnular.IsEnabled = false;
         TxtMotivo.IsEnabled = false;
@@ -302,9 +290,7 @@ BaseAddress = ApiConfiguration.BaseUri,
             await new AnulacionAutorizadaService()
                 .AnularAsync(
                     recibo.Id,
-                    motivo,
-                    usuario,
-                    contrasena);
+                    motivo);
 
             TxtMotivo.Text = "";
 
@@ -341,85 +327,5 @@ BaseAddress = ApiConfiguration.BaseUri,
         TablaRecibos.SelectedItem =
             (TablaRecibos.ItemsSource as IEnumerable<ReciboDto>)?
                 .FirstOrDefault(r => r.Id == recibo.Id);
-    }
-
-    private bool PedirCredenciales(
-        out string usuario,
-        out string contrasena)
-    {
-        usuario = "";
-        contrasena = "";
-
-        var dialogo = new Window
-        {
-            Title = "Autorizacion de administrador",
-            Width = 360,
-            SizeToContent = SizeToContent.Height,
-            ResizeMode = ResizeMode.NoResize,
-            WindowStartupLocation =
-                WindowStartupLocation.CenterOwner,
-            Owner = Window.GetWindow(this)
-        };
-
-        var panel = new StackPanel
-        {
-            Margin = new Thickness(20)
-        };
-
-        panel.Children.Add(new TextBlock
-        {
-            Text = "Usuario administrador"
-        });
-
-        var txtUsuario = new TextBox
-        {
-            Margin = new Thickness(0, 5, 0, 12),
-            Height = 30
-        };
-
-        panel.Children.Add(txtUsuario);
-
-        panel.Children.Add(new TextBlock
-        {
-            Text = "Contrasena"
-        });
-
-        var txtClave = new PasswordBox
-        {
-            Margin = new Thickness(0, 5, 0, 15),
-            Height = 30
-        };
-
-        panel.Children.Add(txtClave);
-
-        var aceptar = new Button
-        {
-            Content = "Autorizar anulacion",
-            Height = 34,
-            IsDefault = true
-        };
-
-        aceptar.Click += (_, _) =>
-        {
-            if (string.IsNullOrWhiteSpace(txtUsuario.Text) ||
-                string.IsNullOrEmpty(txtClave.Password))
-            {
-                MessageBox.Show("Completa usuario y contrasena.");
-                return;
-            }
-
-            dialogo.DialogResult = true;
-        };
-
-        panel.Children.Add(aceptar);
-        dialogo.Content = panel;
-        dialogo.Loaded += (_, _) => txtUsuario.Focus();
-
-        if (dialogo.ShowDialog() != true)
-            return false;
-
-        usuario = txtUsuario.Text.Trim();
-        contrasena = txtClave.Password;
-        return true;
     }
 }

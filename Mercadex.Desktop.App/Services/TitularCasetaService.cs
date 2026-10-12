@@ -10,11 +10,7 @@ namespace Mercadex.Desktop.App.Services;
 
 public sealed class TitularCasetaService
 {
-    private static readonly HttpClient Api = new()
-    {
-        BaseAddress = ApiConfiguration.BaseUri,
-        Timeout = TimeSpan.FromSeconds(15)
-    };
+    private static readonly HttpClient Api = ApiConfiguration.CrearCliente(TimeSpan.FromSeconds(15));
 
     public async Task<string> ObtenerAsync(Guid unidadId)
     {

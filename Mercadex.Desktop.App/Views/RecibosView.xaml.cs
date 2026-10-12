@@ -13,12 +13,7 @@ namespace Mercadex.Desktop.App.Views;
 
 public partial class RecibosView : UserControl
 {
-    private static readonly HttpClient Api = new()
-    {
-BaseAddress = ApiConfiguration.BaseUri,
-
-        Timeout = TimeSpan.FromSeconds(45)
-    };
+    private static readonly HttpClient Api = ApiConfiguration.CrearCliente(TimeSpan.FromSeconds(45));
 
     private readonly ObservableCollection<FilaRecibo>
         _visibles = new();

@@ -10,11 +10,7 @@ namespace Mercadex.Desktop.App.Views;
 
 public partial class CajaView : UserControl
 {
-    private static readonly HttpClient Http = new()
-    {
-BaseAddress = ApiConfiguration.BaseUri,
-        Timeout = TimeSpan.FromSeconds(35)
-    };
+    private static readonly HttpClient Http = ApiConfiguration.CrearCliente(TimeSpan.FromSeconds(35));
 
     private readonly ObservableCollection<ReciboCajaFila> _visibles = new();
 

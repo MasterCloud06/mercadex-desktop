@@ -45,7 +45,7 @@ public partial class DeudoresConsolidadosWindow : Window
 
     private bool EntornoPermitido()
     {
-        return EntornoApi.ConexionAutenticada(_api);
+        return EntornoApi.ConexionValida(_api);
     }
 
     private static string Moneda(Guid id)
@@ -106,7 +106,7 @@ public partial class DeudoresConsolidadosWindow : Window
         if (!EntornoPermitido())
         {
             TxtEstado.Text =
-                "Inicia sesion como administrador para esta consulta.";
+                "La URL de la API configurada no es valida.";
             return;
         }
 

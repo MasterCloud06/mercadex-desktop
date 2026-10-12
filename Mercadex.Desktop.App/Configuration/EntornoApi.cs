@@ -25,10 +25,4 @@ public static class EntornoApi
     {
         return ConexionValida(api.BaseAddress);
     }
-
-    public static bool ConexionAutenticada(HttpClient api)
-    {
-        return ConexionValida(api) &&
-               api.DefaultRequestHeaders.Authorization is not null;
-    }
 }

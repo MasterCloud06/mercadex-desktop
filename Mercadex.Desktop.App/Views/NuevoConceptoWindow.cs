@@ -16,8 +16,6 @@ public sealed class NuevoConceptoWindow : Window
     private readonly TextBox _codigo = new();
     private readonly TextBox _nombre = new();
     private readonly TextBox _descripcion = new();
-    private readonly TextBox _usuario = new();
-    private readonly PasswordBox _clave = new();
 
     private readonly TextBlock _estado = new()
     {
@@ -40,7 +38,7 @@ public sealed class NuevoConceptoWindow : Window
     {
         Title = "Nuevo concepto de deuda";
         Width = 490;
-        Height = Math.Min(680, SystemParameters.WorkArea.Height);
+        Height = Math.Min(480, SystemParameters.WorkArea.Height);
         WindowStartupLocation = WindowStartupLocation.CenterOwner;
 
         var panel = new StackPanel
@@ -68,25 +66,6 @@ public sealed class NuevoConceptoWindow : Window
         AgregarCampo(panel, "Código — ejemplo: ACOMODACION", _codigo);
         AgregarCampo(panel, "Nombre — ejemplo: Acomodación", _nombre);
         AgregarCampo(panel, "Descripción opcional", _descripcion);
-
-        panel.Children.Add(new TextBlock
-        {
-            Text = "Autorización de administrador",
-            FontWeight = FontWeights.Bold,
-            Margin = new Thickness(0, 12, 0, 8)
-        });
-
-        AgregarCampo(panel, "Usuario", _usuario);
-
-        panel.Children.Add(new TextBlock
-        {
-            Text = "Contraseña",
-            Margin = new Thickness(0, 0, 0, 4)
-        });
-
-        _clave.Height = 34;
-        _clave.Padding = new Thickness(7, 4, 7, 4);
-        panel.Children.Add(_clave);
 
         panel.Children.Add(_estado);
 
@@ -125,8 +104,6 @@ public sealed class NuevoConceptoWindow : Window
                 _estado.Text = "Espera a que termine la operación.";
             }
         };
-
-        Closed += (_, _) => _clave.Clear();
     }
 
     private static void AgregarCampo(
@@ -157,20 +134,11 @@ public sealed class NuevoConceptoWindow : Window
         var codigo = _codigo.Text.Trim().ToUpperInvariant();
         var nombre = _nombre.Text.Trim();
         var descripcion = _descripcion.Text.Trim();
-        var usuario = _usuario.Text.Trim();
 
         if (string.IsNullOrWhiteSpace(codigo) ||
             string.IsNullOrWhiteSpace(nombre))
         {
             _estado.Text = "Introduce el código y el nombre del concepto.";
-            return;
-        }
-
-        if (string.IsNullOrWhiteSpace(usuario) ||
-            string.IsNullOrWhiteSpace(_clave.Password))
-        {
-            _estado.Text =
-                "Introduce el usuario y la contraseña de administrador.";
             return;
         }
 
@@ -181,33 +149,6 @@ public sealed class NuevoConceptoWindow : Window
         {
             _ocupado = true;
             _guardar.IsEnabled = false;
-            _estado.Text = "Verificando administrador...";
-
-            SesionConceptoRespuesta? sesion;
-
-            try
-            {
-                sesion = await _api.PostAsync<
-                    object,
-                    SesionConceptoRespuesta>(
-                    "/api/auth/login",
-                    new
-                    {
-                        usuario,
-                        password = _clave.Password
-                    });
-            }
-            finally
-            {
-                _clave.Clear();
-            }
-
-            if (string.IsNullOrWhiteSpace(sesion?.Token))
-            {
-                throw new InvalidOperationException(
-                    "No se recibió la autorización de acceso.");
-            }
-
             _estado.Text = "Guardando concepto...";
 
             envioCreacion = true;
@@ -223,8 +164,7 @@ public sealed class NuevoConceptoWindow : Window
                     Descripcion = string.IsNullOrWhiteSpace(descripcion)
                         ? null
                         : descripcion
-                },
-                sesion.Token);
+                });
 
             if (creado == null || creado.Id == Guid.Empty)
             {

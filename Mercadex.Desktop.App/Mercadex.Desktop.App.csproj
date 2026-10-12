@@ -6,7 +6,7 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
-    <Version>1.5.1</Version>
+    <Version>1.6.0</Version>
   </PropertyGroup>
 
   <ItemGroup>
@@ -21,6 +21,12 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
     </None>
+  </ItemGroup>
+
+  <!-- Clave interna: se toma de la variable de entorno MERCADEX_APP_KEY al compilar.
+       Nunca se guarda en el repositorio. -->
+  <ItemGroup Condition="'$(MERCADEX_APP_KEY)' != ''">
+    <AssemblyMetadata Include="MercadexAppKey" Value="$(MERCADEX_APP_KEY)" />
   </ItemGroup>
 
 </Project>

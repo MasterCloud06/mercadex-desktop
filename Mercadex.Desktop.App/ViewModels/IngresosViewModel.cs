@@ -80,10 +80,23 @@ public partial class IngresosViewModel : ObservableObject
 
             var unidades = await _ingresosService.ObtenerUnidadesAsync();
 
+            // El titular no impide cobrar: si falla, se muestra "sin registrar".
+            var titulares = new Dictionary<Guid, string>();
+            try
+            {
+                titulares = await _ingresosService.ObtenerTitularesAsync();
+            }
+            catch
+            {
+            }
+
             Unidades.Clear();
 
             foreach (var unidad in unidades.Where(u => u.Activa))
+            {
+                unidad.Titular = titulares.GetValueOrDefault(unidad.Id);
                 Unidades.Add(unidad);
+            }
 
             var monedas = await _ingresosService.ObtenerMonedasAsync();
 

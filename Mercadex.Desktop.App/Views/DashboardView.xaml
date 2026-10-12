@@ -1,7 +1,8 @@
-
 <UserControl x:Class="Mercadex.Desktop.App.Views.DashboardView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:local="clr-namespace:Mercadex.Desktop.App.Views"
+             FontFamily="Segoe UI">
 
     <UserControl.Resources>
 
@@ -10,272 +11,255 @@
             <Setter Property="BorderBrush" Value="#DFE6EE"/>
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="CornerRadius" Value="10"/>
-            <Setter Property="Padding" Value="17,15"/>
-            <Setter Property="Margin" Value="0,0,12,12"/>
+            <Setter Property="Padding" Value="18,16"/>
+            <Setter Property="Margin" Value="0,0,14,14"/>
         </Style>
 
-        <Style x:Key="Etiqueta" TargetType="TextBlock">
-            <Setter Property="Foreground" Value="#60748A"/>
-            <Setter Property="FontSize" Value="14"/>
-            <Setter Property="Margin" Value="0,0,0,6"/>
-        </Style>
-
-        <Style x:Key="Numero" TargetType="TextBlock">
+        <Style x:Key="TituloTarjeta" TargetType="TextBlock">
             <Setter Property="Foreground" Value="#173B5C"/>
-            <Setter Property="FontSize" Value="27"/>
+            <Setter Property="FontSize" Value="15"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+        </Style>
+
+        <Style x:Key="SubtituloTarjeta" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="#7A8A9C"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Margin" Value="0,2,0,12"/>
+        </Style>
+
+        <Style x:Key="KpiEtiqueta" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="#5A6B7D"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+        </Style>
+
+        <Style x:Key="KpiValor" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="#173B5C"/>
+            <Setter Property="FontSize" Value="28"/>
             <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="Margin" Value="0,6,0,2"/>
+            <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+        </Style>
+
+        <Style x:Key="KpiNota" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="#7A8A9C"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="TextWrapping" Value="Wrap"/>
+            <Setter Property="Margin" Value="0,2,0,0"/>
+        </Style>
+
+        <Style x:Key="Segmento" TargetType="RadioButton">
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="RadioButton">
+                        <Border x:Name="Fondo" Background="Transparent" CornerRadius="6" Padding="12,5">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="Fondo" Property="Background" Value="White"/>
+                                <Setter Property="Foreground" Value="#173B5C"/>
+                                <Setter Property="FontWeight" Value="SemiBold"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Setter Property="Foreground" Value="#5A6B7D"/>
+            <Setter Property="FontSize" Value="12"/>
         </Style>
 
     </UserControl.Resources>
 
     <Grid Background="#F3F6FA">
 
-        <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
 
-            <StackPanel Margin="22,20,22,20">
+            <StackPanel x:Name="Contenido" Margin="22,20,8,20">
 
                 <!-- ENCABEZADO -->
-
-                <Grid Margin="0,0,0,16">
-
+                <Grid Margin="0,0,14,18">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
 
                     <StackPanel>
-
-                        <TextBlock Text="Panel principal"
-                                   FontSize="28"
-                                   FontWeight="Bold"
-                                   Foreground="#173B5C"/>
-
-                        <TextBlock Text="Resumen general de Mercadex"
-                                   FontSize="15"
-                                   Foreground="#61758B"
-                                   Margin="0,6,0,0"/>
-
-                        <TextBlock x:Name="TxtFecha"
-                                   FontSize="13"
-                                   Foreground="#61758B"
-                                   Margin="0,8,0,0"/>
-
+                        <TextBlock Text="Panel principal" FontSize="28" FontWeight="Bold" Foreground="#173B5C"/>
+                        <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
+                            <TextBlock x:Name="TxtFecha" FontSize="13" Foreground="#5A6B7D"/>
+                            <TextBlock Text="  ·  " FontSize="13" Foreground="#A9B6C4"/>
+                            <TextBlock x:Name="TxtEstado" Text="Preparando el panel..." FontSize="13" Foreground="#5A6B7D"/>
+                        </StackPanel>
                     </StackPanel>
 
                     <Button Grid.Column="1" Style="{StaticResource Mx.PrimaryButton}"
+                            x:Name="BtnActualizar"
                             Content="Actualizar datos"
                             Click="Actualizar_Click"
-                            Width="145"
-                            Height="40"
-                            VerticalAlignment="Center"
-                            Background="#1F4E79"
-                            Foreground="White"
-                            BorderThickness="0"
-                            Cursor="Hand"/>
-
+                            Width="145" Height="40"
+                            VerticalAlignment="Center"/>
                 </Grid>
 
-                <!-- ESTADO DE CONEXIÓN -->
-
-                <Border Background="#E7F0F9"
-                        CornerRadius="6"
-                        Padding="12"
-                        Margin="0,0,0,16">
-
-                    <TextBlock x:Name="TxtEstado"
-                               Text="Preparando el panel..."
-                               Foreground="#1F4E79"
-                               TextWrapping="Wrap"/>
-
-                </Border>
-
-                <!-- RESUMEN DE LOCALES -->
-
-                <TextBlock Text="Unidades comerciales"
-                           FontSize="19"
-                           FontWeight="SemiBold"
-                           Foreground="#173B5C"
-                           Margin="0,0,0,11"/>
-
-                <UniformGrid Columns="2"
-                             Margin="0,0,0,8">
+                <!-- KPI -->
+                <UniformGrid x:Name="FilaKpi" Columns="4">
 
                     <Border Style="{StaticResource Tarjeta}">
-
                         <StackPanel>
-
-                            <TextBlock Text="Casetas registradas"
-                                       Style="{StaticResource Etiqueta}"/>
-
-                            <TextBlock x:Name="TxtCasetas"
-                                       Text="—"
-                                       Style="{StaticResource Numero}"/>
-
+                            <TextBlock Text="Recaudado hoy" Style="{StaticResource KpiEtiqueta}"/>
+                            <TextBlock x:Name="KpiHoy" Text="—" Style="{StaticResource KpiValor}"/>
+                            <TextBlock x:Name="KpiHoyNota" Text=" " Style="{StaticResource KpiNota}"/>
                         </StackPanel>
-
                     </Border>
 
                     <Border Style="{StaticResource Tarjeta}">
-
                         <StackPanel>
-
-                            <TextBlock Text="Comedores registrados"
-                                       Style="{StaticResource Etiqueta}"/>
-
-                            <TextBlock x:Name="TxtComedores"
-                                       Text="—"
-                                       Style="{StaticResource Numero}"/>
-
+                            <TextBlock Text="Recaudado este mes" Style="{StaticResource KpiEtiqueta}"/>
+                            <TextBlock x:Name="KpiMes" Text="—" Style="{StaticResource KpiValor}"/>
+                            <StackPanel Orientation="Horizontal" Margin="0,2,0,0">
+                                <Border x:Name="KpiMesDeltaFondo" CornerRadius="4" Padding="6,1" Margin="0,0,6,0" Visibility="Collapsed">
+                                    <TextBlock x:Name="KpiMesDelta" FontSize="12" FontWeight="SemiBold"/>
+                                </Border>
+                                <TextBlock x:Name="KpiMesNota" Text=" " Style="{StaticResource KpiNota}" Margin="0"/>
+                            </StackPanel>
                         </StackPanel>
-
                     </Border>
 
                     <Border Style="{StaticResource Tarjeta}">
-
                         <StackPanel>
-
-                            <TextBlock Text="Ambulantes registrados"
-                                       Style="{StaticResource Etiqueta}"/>
-
-                            <TextBlock x:Name="TxtAmbulantes"
-                                       Text="—"
-                                       Style="{StaticResource Numero}"/>
-
+                            <TextBlock Text="Deuda pendiente" Style="{StaticResource KpiEtiqueta}"/>
+                            <TextBlock x:Name="KpiDeuda" Text="—" Style="{StaticResource KpiValor}"/>
+                            <TextBlock x:Name="KpiDeudaNota" Text=" " Style="{StaticResource KpiNota}"/>
                         </StackPanel>
-
                     </Border>
 
                     <Border Style="{StaticResource Tarjeta}">
-
                         <StackPanel>
-
-                            <TextBlock Text="Total de unidades activas"
-                                       Style="{StaticResource Etiqueta}"/>
-
-                            <TextBlock x:Name="TxtTotalUnidades"
-                                       Text="—"
-                                       Style="{StaticResource Numero}"/>
-
+                            <TextBlock Text="Unidades al día" Style="{StaticResource KpiEtiqueta}"/>
+                            <TextBlock x:Name="KpiAlDia" Text="—" Style="{StaticResource KpiValor}"/>
+                            <Grid Height="6" Margin="0,4,0,6">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition x:Name="AlDiaLleno" Width="0*"/>
+                                    <ColumnDefinition x:Name="AlDiaVacio" Width="1*"/>
+                                </Grid.ColumnDefinitions>
+                                <Border Grid.ColumnSpan="2" Background="#EEF2F7" CornerRadius="3"/>
+                                <Border Background="#2A78D6" CornerRadius="3"/>
+                            </Grid>
+                            <TextBlock x:Name="KpiAlDiaNota" Text=" " Style="{StaticResource KpiNota}"/>
                         </StackPanel>
-
                     </Border>
 
                 </UniformGrid>
 
-                <!-- RESUMEN DE COBRANZA -->
+                <!-- RECAUDACIÓN + ANTIGÜEDAD -->
+                <Grid x:Name="Fila2">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="2*"/>
+                        <ColumnDefinition Width="1*"/>
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
 
-                <TextBlock Text="Cobranza"
-                           FontSize="19"
-                           FontWeight="SemiBold"
-                           Foreground="#173B5C"
-                           Margin="0,4,0,11"/>
-
-                <UniformGrid Columns="2"
-                             Margin="0,0,0,8">
-
-                    <Border Style="{StaticResource Tarjeta}">
-
+                    <Border x:Name="TarjetaRecaudacion" Style="{StaticResource Tarjeta}">
                         <StackPanel>
-
-                            <TextBlock Text="Obligaciones pendientes"
-                                       Style="{StaticResource Etiqueta}"/>
-
-                            <TextBlock x:Name="TxtPendientes"
-                                       Text="—"
-                                       Style="{StaticResource Numero}"/>
-
-                            <TextBlock Text="Deudas aún no pagadas"
-                                       Foreground="#75879A"
-                                       Margin="0,7,0,0"/>
-
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel>
+                                    <TextBlock Text="Recaudación en bolivianos" Style="{StaticResource TituloTarjeta}"/>
+                                    <TextBlock x:Name="TxtRecaudacionSub" Text="Cobros válidos (sin anulados)" Style="{StaticResource SubtituloTarjeta}"/>
+                                </StackPanel>
+                                <Border Grid.Column="1" Background="#EEF2F7" CornerRadius="8" Padding="3" VerticalAlignment="Top">
+                                    <StackPanel Orientation="Horizontal">
+                                        <RadioButton x:Name="Rb30" Content="Últimos 30 días" GroupName="Periodo" IsChecked="True" Style="{StaticResource Segmento}" Checked="Periodo_Checked"/>
+                                        <RadioButton x:Name="Rb12" Content="Últimos 12 meses" GroupName="Periodo" Style="{StaticResource Segmento}" Checked="Periodo_Checked"/>
+                                    </StackPanel>
+                                </Border>
+                            </Grid>
+                            <local:GraficoColumnas x:Name="GraficoRecaudacion" Height="250"/>
                         </StackPanel>
-
                     </Border>
 
-                    <Border Style="{StaticResource Tarjeta}">
-
+                    <Border x:Name="TarjetaAntiguedad" Grid.Column="1" Style="{StaticResource Tarjeta}">
                         <StackPanel>
-
-                            <TextBlock Text="Recibos registrados"
-                                       Style="{StaticResource Etiqueta}"/>
-
-                            <TextBlock x:Name="TxtRecibos"
-                                       Text="—"
-                                       Style="{StaticResource Numero}"/>
-
-                            <TextBlock Text="Incluye recibos anulados"
-                                       Foreground="#75879A"
-                                       Margin="0,7,0,0"/>
-
+                            <TextBlock Text="Antigüedad de la deuda" Style="{StaticResource TituloTarjeta}"/>
+                            <TextBlock Text="Pendiente en Bs, por días desde la emisión" Style="{StaticResource SubtituloTarjeta}"/>
+                            <StackPanel x:Name="PanelAntiguedad" Margin="0,6,0,0"/>
+                            <TextBlock x:Name="TxtAntiguedadNota" Style="{StaticResource KpiNota}" Margin="0,6,0,0"/>
                         </StackPanel>
+                    </Border>
+                </Grid>
 
+                <!-- DESGLOSES DEL MES -->
+                <Grid x:Name="Fila3">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <Border x:Name="TarjetaConceptos" Style="{StaticResource Tarjeta}">
+                        <StackPanel>
+                            <TextBlock Text="Ingresos por concepto" Style="{StaticResource TituloTarjeta}"/>
+                            <TextBlock Text="Este mes, en Bs" Style="{StaticResource SubtituloTarjeta}"/>
+                            <StackPanel x:Name="PanelConceptos"/>
+                        </StackPanel>
                     </Border>
 
-                </UniformGrid>
-
-                <!-- IMPORTES SEPARADOS POR MONEDA -->
-
-                <TextBlock Text="Importes pendientes"
-                           FontSize="19"
-                           FontWeight="SemiBold"
-                           Foreground="#173B5C"
-                           Margin="0,4,0,11"/>
-
-                <UniformGrid Columns="2">
-
-                    <Border Style="{StaticResource Tarjeta}">
-
+                    <Border x:Name="TarjetaFormas" Grid.Column="1" Style="{StaticResource Tarjeta}">
                         <StackPanel>
-
-                            <TextBlock Text="Deudas en bolivianos"
-                                       Style="{StaticResource Etiqueta}"/>
-
-                            <TextBlock x:Name="TxtPendienteBob"
-                                       Text="—"
-                                       Style="{StaticResource Numero}"/>
-
-                            <TextBlock Text="BOB"
-                                       Foreground="#75879A"
-                                       Margin="0,7,0,0"/>
-
+                            <TextBlock Text="Formas de pago" Style="{StaticResource TituloTarjeta}"/>
+                            <TextBlock Text="Este mes, en Bs" Style="{StaticResource SubtituloTarjeta}"/>
+                            <StackPanel x:Name="PanelFormas"/>
                         </StackPanel>
-
                     </Border>
 
-                    <Border Style="{StaticResource Tarjeta}">
-
+                    <Border x:Name="TarjetaDeudores" Grid.Column="2" Style="{StaticResource Tarjeta}">
                         <StackPanel>
-
-                            <TextBlock Text="Deudas en dólares"
-                                       Style="{StaticResource Etiqueta}"/>
-
-                            <TextBlock x:Name="TxtPendienteUsd"
-                                       Text="—"
-                                       Style="{StaticResource Numero}"/>
-
-                            <TextBlock Text="USD"
-                                       Foreground="#75879A"
-                                       Margin="0,7,0,0"/>
-
+                            <TextBlock Text="Unidades con mayor deuda" Style="{StaticResource TituloTarjeta}"/>
+                            <TextBlock Text="Pendiente en Bs" Style="{StaticResource SubtituloTarjeta}"/>
+                            <StackPanel x:Name="PanelDeudores"/>
                         </StackPanel>
+                    </Border>
+                </Grid>
 
+                <!-- ACTIVIDAD -->
+                <Grid x:Name="Fila4">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="2*"/>
+                        <ColumnDefinition Width="1*"/>
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <Border x:Name="TarjetaUltimos" Style="{StaticResource Tarjeta}">
+                        <StackPanel>
+                            <TextBlock Text="Últimos cobros" Style="{StaticResource TituloTarjeta}"/>
+                            <TextBlock Text="Recibos válidos más recientes" Style="{StaticResource SubtituloTarjeta}"/>
+                            <StackPanel x:Name="PanelUltimos"/>
+                        </StackPanel>
                     </Border>
 
-                </UniformGrid>
-
-                <!-- INFORMACIÓN -->
-
-                <Border Background="#FFF4D6"
-                        Padding="14"
-                        CornerRadius="7"
-                        Margin="0,4,12,8">
-
-                    <TextBlock
-                        Text="Este panel muestra información registrada en el sistema. Los importes pendientes no son dinero recaudado. Las deudas en BOB y USD se presentan por separado."
-                        TextWrapping="Wrap"
-                        Foreground="#73551A"/>
-
-                </Border>
+                    <Border x:Name="TarjetaResumen" Grid.Column="1" Style="{StaticResource Tarjeta}">
+                        <StackPanel>
+                            <TextBlock Text="Resumen del mes" Style="{StaticResource TituloTarjeta}"/>
+                            <TextBlock Text="Bolivianos" Style="{StaticResource SubtituloTarjeta}"/>
+                            <StackPanel x:Name="PanelResumen"/>
+                        </StackPanel>
+                    </Border>
+                </Grid>
 
             </StackPanel>
 

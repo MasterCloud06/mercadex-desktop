@@ -1,3 +1,4 @@
+using System.Net.Http;
 using Microsoft.Extensions.Configuration;
 
 namespace Mercadex.Desktop.App.Configuration;
@@ -14,6 +15,49 @@ public static class ApiConfiguration
             .Build();
 
     public static Uri BaseUri { get; } = CrearBaseUri();
+
+    /// <summary>
+    /// Clave interna de la aplicación. Se inyecta al compilar el instalador
+    /// (variable MERCADEX_APP_KEY) y nunca se guarda en el repositorio.
+    /// En desarrollo puede definirse con la variable de entorno MERCADEX_APP_KEY.
+    /// </summary>
+    public static string? ClaveApp { get; } = LeerClaveApp();
+
+    public const string EncabezadoClave = "X-Mercadex-Key";
+
+    /// <summary>
+    /// Crea un HttpClient hacia la API de Mercadex con la clave interna.
+    /// Todas las conexiones del escritorio deben usar este método.
+    /// </summary>
+    public static HttpClient CrearCliente(TimeSpan timeout)
+    {
+        var cliente = new HttpClient
+        {
+            BaseAddress = BaseUri,
+            Timeout = timeout
+        };
+
+        if (!string.IsNullOrWhiteSpace(ClaveApp))
+            cliente.DefaultRequestHeaders.Add(EncabezadoClave, ClaveApp);
+
+        return cliente;
+    }
+
+    private static string? LeerClaveApp()
+    {
+        var entorno = Environment.GetEnvironmentVariable("MERCADEX_APP_KEY");
+
+        if (!string.IsNullOrWhiteSpace(entorno))
+            return entorno.Trim();
+
+        return typeof(ApiConfiguration).Assembly
+            .GetCustomAttributes(typeof(System.Reflection.AssemblyMetadataAttribute), false)
+            .OfType<System.Reflection.AssemblyMetadataAttribute>()
+            .FirstOrDefault(a => a.Key == "MercadexAppKey")?
+            .Value is { Length: > 0 } valor
+                ? valor
+                : null;
+    }
 
     private static Uri CrearBaseUri()
     {

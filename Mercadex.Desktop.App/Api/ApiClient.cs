@@ -14,11 +14,7 @@ public class ApiClient
 
     public ApiClient()
     {
-        _httpClient = new HttpClient
-        {
-            BaseAddress = ApiConfiguration.BaseUri,
-            Timeout = TimeSpan.FromSeconds(45)
-        };
+        _httpClient = ApiConfiguration.CrearCliente(TimeSpan.FromSeconds(45));
     }
 
     public async Task<T?> GetAsync<T>(string url)

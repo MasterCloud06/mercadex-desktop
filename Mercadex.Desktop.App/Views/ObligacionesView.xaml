@@ -146,7 +146,17 @@
 
                     <WrapPanel>
 
-                        <StackPanel Margin="0,0,15,15">
+                        <StackPanel Margin="0,0,15,15" VerticalAlignment="Bottom">
+
+                            <CheckBox Content="Cargo eventual (sin período)"
+                                      IsChecked="{Binding CargoEventual}"
+                                      VerticalContentAlignment="Center"
+                                      Margin="0,0,0,10"
+                                      ToolTip="Para cobros que pueden repetirse en el mismo mes: ingreso para acomodar, excedente de luz, multas, etc. No usar para la mensualidad."/>
+
+                        </StackPanel>
+
+                        <StackPanel Margin="0,0,15,15" IsEnabled="{Binding PeriodoHabilitado}">
 
                             <TextBlock Text="Mes"
                                        FontWeight="SemiBold"
@@ -159,7 +169,7 @@
 
                         </StackPanel>
 
-                        <StackPanel Margin="0,0,15,15">
+                        <StackPanel Margin="0,0,15,15" IsEnabled="{Binding PeriodoHabilitado}">
 
                             <TextBlock Text="Año"
                                        FontWeight="SemiBold"

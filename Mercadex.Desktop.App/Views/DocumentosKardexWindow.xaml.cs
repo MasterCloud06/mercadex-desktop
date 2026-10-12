@@ -51,7 +51,7 @@ public partial class DocumentosKardexWindow : Window
 
     private bool EntornoLocal()
     {
-        return EntornoApi.ConexionAutenticada(_api);
+        return EntornoApi.ConexionValida(_api);
     }
 
     private async Task IniciarAsync()
@@ -59,7 +59,7 @@ public partial class DocumentosKardexWindow : Window
         if (!EntornoLocal())
         {
             TxtEstado.Text =
-                "Kardex bloqueado: inicia sesion como administrador.";
+                "La URL de la API configurada no es valida.";
             return;
         }
 
@@ -312,7 +312,7 @@ public partial class DocumentosKardexWindow : Window
 
         if (!EntornoLocal())
         {
-            TxtEstado.Text = "Inicia sesion como administrador.";
+            TxtEstado.Text = "La URL de la API configurada no es valida.";
             return;
         }
 

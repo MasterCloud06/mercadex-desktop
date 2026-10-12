@@ -17,11 +17,7 @@ namespace Mercadex.Desktop.App.Views;
 
 public partial class AvisoCorteView : UserControl
 {
-    private static readonly HttpClient Api = new()
-    {
-        BaseAddress = ApiConfiguration.BaseUri,
-        Timeout = TimeSpan.FromSeconds(60)
-    };
+    private static readonly HttpClient Api = ApiConfiguration.CrearCliente(TimeSpan.FromSeconds(60));
 
     private readonly CultureInfo _cultura =
         CultureInfo.GetCultureInfo("es-BO");

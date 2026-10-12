@@ -126,7 +126,8 @@ public static class ActualizadorObligatorio
     }
 
     public static async Task<string> DescargarAsync(
-        DatosVersion datos)
+        DatosVersion datos,
+        IProgress<(long Descargado, long? Total)>? progreso = null)
     {
         ValidarInstalador(datos);
 
@@ -164,7 +165,17 @@ public static class ActualizadorObligatorio
                 FileAccess.Write,
                 FileShare.None))
             {
-                await origen.CopyToAsync(destino);
+                var total = respuesta.Content.Headers.ContentLength;
+                var bufer = new byte[81920];
+                long descargado = 0;
+                int leidos;
+
+                while ((leidos = await origen.ReadAsync(bufer)) > 0)
+                {
+                    await destino.WriteAsync(bufer.AsMemory(0, leidos));
+                    descargado += leidos;
+                    progreso?.Report((descargado, total));
+                }
             }
 
             byte[] hash;
@@ -197,144 +208,279 @@ public static class ActualizadorObligatorio
     }
 }
 
+/// <summary>
+/// Aviso de actualización obligatoria: muestra la versión nueva,
+/// descarga el instalador con barra de progreso, verifica su
+/// integridad y lo ejecuta.
+/// </summary>
 public sealed class VentanaActualizacionObligatoria : Window
 {
+    private static readonly Brush Azul = Pincel("#12304D");
+    private static readonly Brush Gris = Pincel("#5A6B7D");
+    private static readonly Brush Rojo = Pincel("#B42318");
+
     private readonly DatosVersion _datos;
+    private readonly Button _btnInstalar;
+    private readonly Button _btnCerrar;
+    private readonly ProgressBar _barra;
+    private readonly TextBlock _estado;
+    private readonly StackPanel _panelProgreso;
 
-    private readonly Button _btnInstalar = new()
-    {
-        Content = "DESCARGAR E INSTALAR",
-        Height = 43,
-        Background = new SolidColorBrush(
-            Color.FromRgb(23, 59, 92)),
-        Foreground = Brushes.White,
-        FontWeight = FontWeights.Bold,
-        Margin = new Thickness(0, 12, 0, 8)
-    };
-
-    private readonly TextBlock _estado = new()
-    {
-        TextWrapping = TextWrapping.Wrap,
-        Foreground = Brushes.DarkSlateGray,
-        Margin = new Thickness(0, 8, 0, 0)
-    };
-
-    public VentanaActualizacionObligatoria(
-        DatosVersion datos)
+    public VentanaActualizacionObligatoria(DatosVersion datos)
     {
         _datos = datos;
 
-        Title = "Actualizacion obligatoria - Mercadex";
-        Width = 540;
-        Height = 385;
+        Title = "Actualización de Mercadex";
+        Width = 520;
+        SizeToContent = SizeToContent.Height;
         WindowStartupLocation = WindowStartupLocation.CenterScreen;
         ResizeMode = ResizeMode.NoResize;
+        Background = Brushes.White;
+        UseLayoutRounding = true;
 
-        var contenido = new StackPanel
+        if (Application.Current?.TryFindResource("Mx.Font") is FontFamily fuente)
+            FontFamily = fuente;
+
+        var raiz = new StackPanel();
+
+        // ---------- Franja superior con la marca ----------
+
+        var franja = new Border
         {
-            Margin = new Thickness(25)
+            Background = Pincel("#163A5B"),
+            Padding = new Thickness(28, 22, 28, 22)
         };
 
-        contenido.Children.Add(new TextBlock
+        var marca = new StackPanel { Orientation = Orientation.Horizontal };
+        marca.Children.Add(new Border
         {
-            Text = "Actualizacion obligatoria",
-            FontSize = 24,
-            FontWeight = FontWeights.Bold,
-            Foreground = new SolidColorBrush(
-                Color.FromRgb(23, 59, 92)),
-            Margin = new Thickness(0, 0, 0, 12)
+            Width = 40,
+            Height = 40,
+            CornerRadius = new CornerRadius(10),
+            Background = Pincel("#F2B705"),
+            Child = new TextBlock
+            {
+                Text = "M",
+                FontSize = 22,
+                FontWeight = FontWeights.Bold,
+                Foreground = Pincel("#163A5B"),
+                HorizontalAlignment = HorizontalAlignment.Center,
+                VerticalAlignment = VerticalAlignment.Center
+            }
         });
 
-        contenido.Children.Add(new TextBlock
+        var titulos = new StackPanel { Margin = new Thickness(14, 0, 0, 0), VerticalAlignment = VerticalAlignment.Center };
+        titulos.Children.Add(new TextBlock
         {
-            Text =
-                "Debes instalar la nueva version " +
-                "para continuar utilizando Mercadex.",
+            Text = "Hay una nueva versión de Mercadex",
+            FontSize = 19,
+            FontWeight = FontWeights.SemiBold,
+            Foreground = Brushes.White
+        });
+        titulos.Children.Add(new TextBlock
+        {
+            Text = "Instálala para seguir trabajando. Tarda un par de minutos.",
+            FontSize = 13,
+            Foreground = Pincel("#B9CCDD"),
+            Margin = new Thickness(0, 3, 0, 0)
+        });
+        marca.Children.Add(titulos);
+        franja.Child = marca;
+        raiz.Children.Add(franja);
+
+        // ---------- Cuerpo ----------
+
+        var cuerpo = new StackPanel { Margin = new Thickness(28, 22, 28, 24) };
+
+        var versiones = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 0, 0, 16) };
+        versiones.Children.Add(Etiqueta("Tienes la " + Corta(ActualizadorObligatorio.VersionActual), "#EEF1F5", "#5A6B7D"));
+        versiones.Children.Add(new TextBlock
+        {
+            Text = "→",
+            FontSize = 16,
+            Foreground = Gris,
+            Margin = new Thickness(10, 0, 10, 0),
+            VerticalAlignment = VerticalAlignment.Center
+        });
+        versiones.Children.Add(Etiqueta("Nueva " + datos.LatestVersion, "#E3F1E4", "#1D5C21"));
+        cuerpo.Children.Add(versiones);
+
+        if (!string.IsNullOrWhiteSpace(datos.ReleaseNotes))
+        {
+            cuerpo.Children.Add(new TextBlock
+            {
+                Text = "Qué trae",
+                FontSize = 12.5,
+                FontWeight = FontWeights.SemiBold,
+                Foreground = Gris,
+                Margin = new Thickness(0, 0, 0, 4)
+            });
+            cuerpo.Children.Add(new TextBlock
+            {
+                Text = QuitarPrefijo(datos.ReleaseNotes, datos.LatestVersion),
+                TextWrapping = TextWrapping.Wrap,
+                FontSize = 14,
+                LineHeight = 20,
+                Foreground = Pincel("#1E2A38")
+            });
+        }
+
+        // Progreso de la descarga (oculto hasta pulsar el botón).
+        _panelProgreso = new StackPanel { Margin = new Thickness(0, 18, 0, 0), Visibility = Visibility.Collapsed };
+        _barra = new ProgressBar
+        {
+            Height = 8,
+            Minimum = 0,
+            Maximum = 100,
+            Foreground = Pincel("#1F4E79"),
+            Background = Pincel("#E6ECF2"),
+            BorderThickness = new Thickness(0)
+        };
+        _panelProgreso.Children.Add(_barra);
+        cuerpo.Children.Add(_panelProgreso);
+
+        _estado = new TextBlock
+        {
             TextWrapping = TextWrapping.Wrap,
-            Margin = new Thickness(0, 0, 0, 15)
-        });
+            Foreground = Gris,
+            FontSize = 13,
+            Margin = new Thickness(0, 8, 0, 0),
+            Visibility = Visibility.Collapsed
+        };
+        cuerpo.Children.Add(_estado);
 
-        contenido.Children.Add(new TextBlock
-        {
-            Text =
-                "Version instalada: " +
-                ActualizadorObligatorio.VersionActual +
-                "\nNueva version: " +
-                datos.LatestVersion,
-            FontSize = 15,
-            Margin = new Thickness(0, 0, 0, 12)
-        });
+        // ---------- Botones ----------
 
-        contenido.Children.Add(new TextBlock
-        {
-            Text = datos.ReleaseNotes,
-            TextWrapping = TextWrapping.Wrap,
-            Margin = new Thickness(0, 0, 0, 8)
-        });
+        var botones = new Grid { Margin = new Thickness(0, 22, 0, 0) };
+        botones.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        botones.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
 
-        _btnInstalar.Click += Instalar_Click;
-        contenido.Children.Add(_btnInstalar);
-        contenido.Children.Add(_estado);
-
-        var salir = new Button
+        _btnCerrar = new Button
         {
             Content = "Cerrar Mercadex",
-            Height = 32,
-            Margin = new Thickness(0, 12, 0, 0)
+            Height = 42,
+            Padding = new Thickness(18, 0, 18, 0)
         };
+        AplicarEstilo(_btnCerrar, "Mx.SecondaryButton");
+        _btnCerrar.Click += (_, _) => Close();
+        botones.Children.Add(_btnCerrar);
 
-        salir.Click += (_, _) => Close();
-
-        contenido.Children.Add(salir);
-
-        Content = new ScrollViewer
+        _btnInstalar = new Button
         {
-            Content = contenido,
-            VerticalScrollBarVisibility =
-                ScrollBarVisibility.Auto
+            Content = "Descargar e instalar",
+            Height = 42,
+            Margin = new Thickness(10, 0, 0, 0),
+            IsDefault = true
         };
+        AplicarEstilo(_btnInstalar, "Mx.PrimaryButton");
+        _btnInstalar.Click += Instalar_Click;
+        Grid.SetColumn(_btnInstalar, 1);
+        botones.Children.Add(_btnInstalar);
+
+        cuerpo.Children.Add(botones);
+        raiz.Children.Add(cuerpo);
+
+        Content = raiz;
+
+        Loaded += (_, _) => _btnInstalar.Focus();
     }
 
-    private async void Instalar_Click(
-        object sender,
-        RoutedEventArgs e)
+    private async void Instalar_Click(object sender, RoutedEventArgs e)
     {
         _btnInstalar.IsEnabled = false;
+        _btnCerrar.IsEnabled = false;
+        _panelProgreso.Visibility = Visibility.Visible;
+        _estado.Visibility = Visibility.Visible;
+        _estado.Foreground = Gris;
+        _barra.IsIndeterminate = true;
+        _estado.Text = "Conectando...";
 
-        _estado.Text =
-            "Descargando y verificando el instalador...";
+        var progreso = new Progress<(long Descargado, long? Total)>(p =>
+        {
+            var mb = p.Descargado / 1024d / 1024d;
+
+            if (p.Total is > 0)
+            {
+                _barra.IsIndeterminate = false;
+                _barra.Value = p.Descargado * 100d / p.Total.Value;
+                _estado.Text = $"Descargando... {mb:0.0} de {p.Total.Value / 1024d / 1024d:0.0} MB ({_barra.Value:0} %)";
+            }
+            else
+            {
+                _estado.Text = $"Descargando... {mb:0.0} MB";
+            }
+        });
 
         try
         {
-            var archivo =
-                await ActualizadorObligatorio.DescargarAsync(_datos);
+            var archivo = await ActualizadorObligatorio.DescargarAsync(_datos, progreso);
 
-            _estado.Text = "Abriendo instalador oficial...";
+            _barra.IsIndeterminate = false;
+            _barra.Value = 100;
+            _estado.Text = "Descarga verificada. Abriendo el instalador; Mercadex se cerrará.";
 
-            var proceso = Process.Start(
-                new ProcessStartInfo
-                {
-                    FileName = archivo,
-                    UseShellExecute = true,
-                    Verb = "runas"
-                });
+            var proceso = Process.Start(new ProcessStartInfo
+            {
+                FileName = archivo,
+                UseShellExecute = true,
+                Verb = "runas"
+            });
 
             if (proceso == null)
-            {
-                throw new InvalidOperationException(
-                    "No fue posible iniciar el instalador.");
-            }
+                throw new InvalidOperationException("No fue posible iniciar el instalador.");
 
             Application.Current.Shutdown();
         }
         catch (Exception ex)
         {
-            _estado.Text =
-                "No se pudo instalar la actualizacion: " +
-                ex.Message +
-                "\nPuedes volver a intentarlo.";
+            _panelProgreso.Visibility = Visibility.Collapsed;
+            _estado.Foreground = Rojo;
+            _estado.Text = ex is System.ComponentModel.Win32Exception
+                ? "La instalación se canceló. Para continuar, pulsa de nuevo y acepta el permiso de Windows."
+                : "No se pudo descargar la actualización: " + ex.Message + " Revisa la conexión a Internet y vuelve a intentarlo.";
 
+            _btnInstalar.Content = "Reintentar";
             _btnInstalar.IsEnabled = true;
+            _btnCerrar.IsEnabled = true;
         }
+    }
+
+    private static Border Etiqueta(string texto, string fondo, string color) => new()
+    {
+        Background = Pincel(fondo),
+        CornerRadius = new CornerRadius(14),
+        Padding = new Thickness(12, 4, 12, 5),
+        Child = new TextBlock
+        {
+            Text = texto,
+            FontSize = 13.5,
+            FontWeight = FontWeights.SemiBold,
+            Foreground = Pincel(color)
+        }
+    };
+
+    private static string Corta(Version v) =>
+        v.Build >= 0 ? $"{v.Major}.{v.Minor}.{v.Build}" : $"{v.Major}.{v.Minor}";
+
+    // "Mercadex 1.6.1 - Nuevo diseño..." → "Nuevo diseño..."
+    private static string QuitarPrefijo(string notas, string version)
+    {
+        var prefijo = $"Mercadex {version} - ";
+        return notas.StartsWith(prefijo, StringComparison.OrdinalIgnoreCase)
+            ? notas[prefijo.Length..]
+            : notas;
+    }
+
+    private static void AplicarEstilo(Button boton, string clave)
+    {
+        if (Application.Current?.TryFindResource(clave) is Style estilo)
+            boton.Style = estilo;
+    }
+
+    private static SolidColorBrush Pincel(string hex)
+    {
+        var pincel = new SolidColorBrush((Color)ColorConverter.ConvertFromString(hex));
+        pincel.Freeze();
+        return pincel;
     }
 }

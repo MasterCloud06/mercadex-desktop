@@ -16,11 +16,7 @@ namespace Mercadex.Desktop.App.Views;
 
 public partial class KardexView : UserControl
 {
-private readonly HttpClient _api = new()
-{
-    BaseAddress = ApiConfiguration.BaseUri,
-    Timeout = TimeSpan.FromSeconds(45)
-};
+private readonly HttpClient _api = ApiConfiguration.CrearCliente(TimeSpan.FromSeconds(45));
 
     private bool _cargando;
     private bool _inicializado;

@@ -14,11 +14,7 @@ namespace Mercadex.Desktop.App.Views;
 
 public partial class ReportesView : UserControl
 {
-    private static readonly HttpClient Http = new()
-    {
-BaseAddress = ApiConfiguration.BaseUri,
-        Timeout = TimeSpan.FromSeconds(40)
-    };
+    private static readonly HttpClient Http = ApiConfiguration.CrearCliente(TimeSpan.FromSeconds(40));
 
     private readonly CultureInfo _cultura =
         CultureInfo.GetCultureInfo("es-BO");

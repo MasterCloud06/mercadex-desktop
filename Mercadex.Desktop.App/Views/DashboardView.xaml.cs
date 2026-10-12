@@ -11,11 +11,7 @@ namespace Mercadex.Desktop.App.Views;
 
 public partial class DashboardView : UserControl
 {
-    private static readonly HttpClient Http = new()
-    {
-        BaseAddress = ApiConfiguration.BaseUri,
-        Timeout = TimeSpan.FromSeconds(60)
-    };
+    private static readonly HttpClient Http = ApiConfiguration.CrearCliente(TimeSpan.FromSeconds(60));
 
     private static readonly CultureInfo Bo = CultureInfo.GetCultureInfo("es-BO");
 

@@ -18,11 +18,7 @@ namespace Mercadex.Desktop.App.Views;
 
 public partial class TarifasUnidadWindow : Window
 {
-    private readonly HttpClient _api = new()
-    {
-        BaseAddress = ApiConfiguration.BaseUri,
-        Timeout = TimeSpan.FromSeconds(45)
-    };
+    private readonly HttpClient _api = ApiConfiguration.CrearCliente(TimeSpan.FromSeconds(45));
 
     private List<MonedaIngresoModel> _monedas = new();
     private List<TarifaRespuesta> _casetas = new();

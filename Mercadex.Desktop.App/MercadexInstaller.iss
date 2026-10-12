@@ -1,5 +1,5 @@
 #define MyAppName "Mercadex"
-#define MyAppVersion "1.5.1"
+#define MyAppVersion "1.6.0"
 #define MyAppPublisher "Mercadex"
 #define MyAppExeName "Mercadex.Desktop.App.exe"
 
@@ -31,11 +31,11 @@ RestartApplications=no
 UninstallDisplayName=Mercadex
 UninstallDisplayIcon={app}\{#MyAppExeName}
 
-VersionInfoVersion=1.5.1.0
+VersionInfoVersion=1.6.0.0
 VersionInfoCompany=Mercadex
 VersionInfoDescription=Sistema de gestión y recaudación Mercadex
 VersionInfoProductName=Mercadex
-VersionInfoProductVersion=1.5.1
+VersionInfoProductVersion=1.6.0
 
 SetupLogging=yes
 

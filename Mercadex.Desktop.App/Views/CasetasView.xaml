@@ -207,6 +207,12 @@
                                 Height="40"
                                 Command="{Binding LimpiarUnidadCommand}"/>
 
+                        <Button Style="{StaticResource Mx.SecondaryButton}" Content="Importar desde Excel"
+                                Height="40"
+                                Margin="10,0,0,0"
+                                Click="ImportarExcel_Click"
+                                ToolTip="Registrar casetas, bloques, socios y titulares desde una planilla"/>
+
                     </StackPanel>
 
                 </StackPanel>

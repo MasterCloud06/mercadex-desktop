@@ -1,3 +1,4 @@
 <Solution>
   <Project Path="Mercadex.Desktop.App/Mercadex.Desktop.App.csproj" />
+  <Project Path="tests/Mercadex.Desktop.Tests/Mercadex.Desktop.Tests.csproj" />
 </Solution>

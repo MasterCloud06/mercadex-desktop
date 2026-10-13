@@ -1,0 +1,19 @@
+name: build
+
+on:
+  push:
+    branches: [ main, develop, 'fix/**', 'feature/**', 'release/**' ]
+  pull_request:
+
+jobs:
+  desktop:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-dotnet@v5
+        with:
+          global-json-file: global.json
+      - run: dotnet build Mercadex.Desktop.App/Mercadex.Desktop.App.csproj -c Release
+      - name: Abrir todas las pantallas (prueba de humo de la interfaz)
+        timeout-minutes: 10
+        run: dotnet test tests/Mercadex.Desktop.Tests/Mercadex.Desktop.Tests.csproj -c Release --logger "console;verbosity=normal"

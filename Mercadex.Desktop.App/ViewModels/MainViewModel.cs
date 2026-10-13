@@ -38,7 +38,7 @@ public partial class MainViewModel : ObservableObject
     [RelayCommand]
     private void MostrarObligaciones()
     {
-        CurrentView = new ObligacionesView();
+        CurrentView = new CobranzaView();
     }
 
     [RelayCommand]

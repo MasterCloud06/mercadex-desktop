@@ -26,7 +26,13 @@
                     <TextBlock Text="Listas de deudores para corte y contabilidad" FontSize="14" Foreground="#60748A" Margin="0,5,0,0" />
                 </StackPanel>
 
-                <Button Grid.Column="1" Content="Actualizar" Click="Actualizar_Click" Width="125" Height="40" Background="#1F4E79" Foreground="White" VerticalAlignment="Center" Style="{StaticResource Mx.PrimaryButton}" />
+                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                    <!-- Reportes que antes estaban dentro de "Tarifas por caseta" -->
+                    <Button Content="Caja por día" Click="ReportesCaja_Click" Height="40" Padding="14,0" Margin="0,0,8,0" Style="{StaticResource Mx.SecondaryButton}" ToolTip="Recaudación diaria, formas de pago, conceptos y anulaciones" />
+                    <Button Content="Deudas consolidadas" Click="DeudasConsolidadas_Click" Height="40" Padding="14,0" Margin="0,0,8,0" Style="{StaticResource Mx.SecondaryButton}" ToolTip="Todas las deudas pendientes agrupadas por caseta" />
+                    <Button Content="Comprobantes de anulación" Click="ComprobantesAnulacion_Click" Height="40" Padding="14,0" Margin="0,0,8,0" Style="{StaticResource Mx.SecondaryButton}" ToolTip="Recibos anulados: quién, cuándo y por qué" />
+                    <Button Content="Actualizar" Click="Actualizar_Click" Width="125" Height="40" Background="#1F4E79" Foreground="White" Style="{StaticResource Mx.PrimaryButton}" />
+                </StackPanel>
             </Grid>
         </Border>
 

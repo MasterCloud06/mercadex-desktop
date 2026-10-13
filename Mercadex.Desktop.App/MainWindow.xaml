@@ -181,9 +181,6 @@
                         <views:CajaView/>
                     </DataTemplate>
 
-                    <DataTemplate DataType="{x:Type views:ObligacionesView}">
-                        <views:ObligacionesView/>
-                    </DataTemplate>
 
                     <DataTemplate DataType="{x:Type views:IngresosView}">
                         <views:IngresosView/>

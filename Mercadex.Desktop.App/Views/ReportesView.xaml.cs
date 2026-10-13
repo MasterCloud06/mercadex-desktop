@@ -43,6 +43,20 @@ public partial class ReportesView : UserControl
         Loaded += ReportesView_Loaded;
     }
 
+    // ---------- Reportes en ventana propia ----------
+
+    private static readonly System.Net.Http.HttpClient ApiVentanas =
+        ApiConfiguration.CrearCliente(TimeSpan.FromSeconds(90));
+
+    private void ReportesCaja_Click(object sender, RoutedEventArgs e) =>
+        new ReportesCajaWindow(ApiVentanas) { Owner = Window.GetWindow(this) }.ShowDialog();
+
+    private void DeudasConsolidadas_Click(object sender, RoutedEventArgs e) =>
+        new DeudoresConsolidadosWindow(ApiVentanas) { Owner = Window.GetWindow(this) }.ShowDialog();
+
+    private void ComprobantesAnulacion_Click(object sender, RoutedEventArgs e) =>
+        new ComprobantesAnulacionWindow(ApiVentanas) { Owner = Window.GetWindow(this) }.ShowDialog();
+
     private async void ReportesView_Loaded(
         object sender,
         RoutedEventArgs e)

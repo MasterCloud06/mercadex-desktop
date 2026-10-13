@@ -70,6 +70,27 @@ public sealed class PantallasTests
     }
 
     [Fact]
+    public void Las_ventanas_de_sesion_se_construyen()
+    {
+        EjecutarEnSta(() =>
+        {
+            AsegurarAplicacion();
+
+            foreach (var ventana in new Window[]
+                     {
+                         new Mercadex.Desktop.App.Sesion.VentanaIngreso(),
+                         new Mercadex.Desktop.App.Sesion.VentanaIngreso("maria.lopez", "Se bloqueó por inactividad."),
+                         new Mercadex.Desktop.App.Sesion.VentanaCambiarContrasena(obligatorio: true),
+                         new Mercadex.Desktop.App.Sesion.VentanaCambiarContrasena()
+                     })
+            {
+                MedirYOrganizar((FrameworkElement)ventana.Content);
+                ventana.Close();
+            }
+        });
+    }
+
+    [Fact]
     public void Los_estilos_globales_cargan()
     {
         EjecutarEnSta(() =>
@@ -77,7 +98,7 @@ public sealed class PantallasTests
             AsegurarAplicacion();
             var recursos = Application.Current!.Resources;
             foreach (var clave in new[] { "Mx.PrimaryButton", "Mx.SecondaryButton", "Mx.DangerButton",
-                                          "Mx.TextBox", "Mx.DataGrid", "Mx.Card", "Mx.NavRadio" })
+                                          "Mx.TextBox", "Mx.DataGrid", "Mx.Card", "Mx.NavRadio", "Mx.NavLink" })
             {
                 Assert.NotNull(recursos[clave]);
             }

@@ -1,5 +1,4 @@
 
-using Mercadex.Desktop.App.Dtos;
 using Microsoft.Win32;
 using System;
 using System.Collections.Generic;
@@ -60,10 +59,63 @@ private async void Hoy_Click(
         await ConsultarAsync();
     }
 
+    // ---------------- Filtros: concepto y bloque ----------------
+
+    private const string TodosLosBloques = "Todos los bloques";
+
+    private bool _filtrosCargados;
+
+    private async Task CargarFiltrosAsync()
+    {
+        if (_filtrosCargados)
+            return;
+
+        var conceptos = new List<FiltroConcepto> { new() { Id = Guid.Empty, Nombre = "Todos los conceptos" } };
+        var bloques = new List<string> { TodosLosBloques };
+
+        try
+        {
+            var catalogos = await Api.GetFromJsonAsync<CatalogosFiltro>("/api/ingresos/catalogos");
+            conceptos.AddRange((catalogos?.Conceptos ?? new())
+                .Where(c => c.Id != Guid.Empty)
+                .OrderBy(c => c.Nombre));
+
+            var unidades = await Api.GetFromJsonAsync<List<UnidadReporte>>("/api/unidades-comerciales") ?? new();
+            bloques.AddRange(unidades
+                .Select(u => u.Bloque?.Trim())
+                .OfType<string>()
+                .Where(b => b.Length > 0)
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .OrderBy(b => b.Length)
+                .ThenBy(b => b));
+
+            _filtrosCargados = true;
+        }
+        catch
+        {
+            // Sin catálogos el reporte funciona igual, sin filtros.
+        }
+
+        CmbConcepto.ItemsSource = conceptos;
+        CmbConcepto.SelectedIndex = 0;
+        CmbBloque.ItemsSource = bloques;
+        CmbBloque.SelectedIndex = 0;
+    }
+
+    private Guid? ConceptoFiltro =>
+        CmbConcepto.SelectedItem is FiltroConcepto { Id: var id } && id != Guid.Empty ? id : null;
+
+    private string? BloqueFiltro =>
+        CmbBloque.SelectedItem is string b && b != TodosLosBloques ? b : null;
+
+    // ---------------- Consulta ----------------
+
     private async Task ConsultarAsync()
     {
         if (_consultando)
             return;
+
+        await CargarFiltrosAsync();
 
         if (FechaDesde.SelectedDate is not DateTime desde ||
             FechaHasta.SelectedDate is not DateTime hasta)
@@ -86,14 +138,42 @@ private async void Hoy_Click(
         _consultando = true;
         BtnConsultar.IsEnabled = false;
 
-        TxtEstado.Text = "Consultando ingresos en Render...";
+        TxtEstado.Text = "Consultando ingresos...";
 
         try
         {
-            var recibos =
-                await Api.GetFromJsonAsync<List<ReciboDto>>(
-                    "/api/Caja/recibos")
-                ?? new();
+            // Un solo reporte calculado en el servidor (fechas de Bolivia,
+            // solo recibos válidos). Con concepto, cada recibo cuenta solo
+            // el importe de ese concepto; con bloque, solo sus casetas.
+
+            var ruta =
+                "/api/reportes-caja" +
+                $"?desde={desde:yyyy-MM-dd}" +
+                $"&hasta={hasta:yyyy-MM-dd}" +
+                (ConceptoFiltro is { } conceptoId ? $"&conceptoId={conceptoId}" : "") +
+                (BloqueFiltro is { } bloqueElegido ? $"&bloque={Uri.EscapeDataString(bloqueElegido)}" : "");
+
+            using var respuesta = await Api.GetAsync(ruta);
+
+            if (!respuesta.IsSuccessStatusCode)
+            {
+                string? mensaje = null;
+
+                try
+                {
+                    mensaje = (await respuesta.Content.ReadFromJsonAsync<RespuestaError>())?.Mensaje;
+                }
+                catch
+                {
+                    // Respuesta sin JSON.
+                }
+
+                throw new InvalidOperationException(
+                    mensaje ?? $"El servidor respondió con el error {(int)respuesta.StatusCode}.");
+            }
+
+            var reporte = await respuesta.Content.ReadFromJsonAsync<ReporteServidor>()
+                ?? throw new InvalidOperationException("No se recibieron los datos del reporte.");
 
             var unidades =
                 await Api.GetFromJsonAsync<List<UnidadReporte>>(
@@ -117,146 +197,58 @@ private async void Hoy_Click(
                     x => x.Key,
                     x => x.First().Codigo);
 
-            // Solo recibos emitidos.
-            // Los anulados no cuentan como recaudación.
-
-            var emitidos = recibos
-                .Where(r => string.Equals(
-                    r.Estado,
-                    "Emitido",
-                    StringComparison.OrdinalIgnoreCase))
-                .Where(r =>
-                {
-                    var fecha =
-                        r.FechaEmision.LocalDateTime.Date;
-
-                    return fecha >= desde && fecha <= hasta;
-                })
-                .ToList();
+            string Moneda(Guid id) =>
+                monedasPorId.TryGetValue(id, out var codigo) ? codigo : "?";
 
             var filas = new List<FilaDetalleIngreso>();
 
-            foreach (var recibo in emitidos)
+            foreach (var cobro in reporte.Cobros)
             {
-                // Es una consulta GET.
-                // No registra ningún pago nuevo.
-
-                var pago =
-                    await Api.GetFromJsonAsync<PagoDto>(
-                        $"/api/Caja/pagos/{recibo.PagoId}");
-
-                if (pago is null)
-                {
-                    throw new InvalidOperationException(
-                        $"Faltan los datos del pago del " +
-                        $"recibo {recibo.Numero}.");
-                }
-
-                if (!monedasPorId.TryGetValue(
-                    pago.MonedaId,
-                    out var moneda))
-                {
-                    throw new InvalidOperationException(
-                        $"Moneda desconocida en el " +
-                        $"recibo {recibo.Numero}.");
-                }
-
                 unidadesPorId.TryGetValue(
-                    recibo.UnidadComercialId,
+                    cobro.UnidadComercialId,
                     out var unidad);
 
-                if (recibo.Detalles is null ||
-                    recibo.Detalles.Count == 0)
-                {
-                    throw new InvalidOperationException(
-                        $"El recibo {recibo.Numero} " +
-                        "no tiene conceptos registrados.");
-                }
-
-                foreach (var detalle in recibo.Detalles)
+                foreach (var detalle in cobro.Conceptos)
                 {
                     filas.Add(new FilaDetalleIngreso
                     {
-                        Fecha =
-                            recibo.FechaEmision.LocalDateTime
-                                .ToString("dd/MM/yyyy HH:mm"),
-
-                        FechaOrden =
-                            recibo.FechaEmision,
-
-                        NumeroRecibo = recibo.Numero,
-
-                        Caseta =
-                            unidad?.Codigo ?? "Sin identificar",
-
-                        Bloque =
-                            unidad?.Bloque ?? "",
-
-                        Pagador = pago.NombrePagador,
-
+                        Fecha = cobro.FechaBolivia,
+                        FechaOrden = cobro.FechaEmisionUtc,
+                        NumeroRecibo = cobro.NumeroRecibo,
+                        Caseta = unidad?.Codigo ?? "Sin identificar",
+                        Bloque = unidad?.Bloque ?? "",
+                        Pagador = cobro.Pagador,
                         Concepto = detalle.Concepto,
-
-                        FormaPago = pago.FormaPago,
-
-                        Moneda = moneda,
-
+                        FormaPago = cobro.FormaPago,
+                        Moneda = Moneda(cobro.MonedaId),
                         Monto = detalle.Monto,
-
-                        Referencia = pago.Referencia ?? ""
+                        Referencia = cobro.Referencia ?? "",
+                        CobradoPor = string.IsNullOrWhiteSpace(cobro.CobradoPor) ? "—" : cobro.CobradoPor!
                     });
-                }
-
-                // Evitar publicar totales contradictorios.
-
-                var sumaDetalles =
-                    recibo.Detalles.Sum(d => d.Monto);
-
-                if (sumaDetalles != recibo.Total)
-                {
-                    throw new InvalidOperationException(
-                        $"El total del recibo {recibo.Numero} " +
-                        "no coincide con sus conceptos.");
                 }
             }
 
             // A. TOTAL POR MONEDA
 
-            _totales = filas
-                .GroupBy(f => f.Moneda)
-                .Select(g => new FilaTotalIngreso
+            _totales = reporte.Resumen
+                .Select(r => new FilaTotalIngreso
                 {
-                    Moneda = g.Key,
-
-                    Recibos = g
-                        .Select(f => f.NumeroRecibo)
-                        .Distinct()
-                        .Count(),
-
-                    Total = g.Sum(f => f.Monto)
+                    Moneda = Moneda(r.MonedaId),
+                    Recibos = r.CantidadRecibos,
+                    Total = r.Total
                 })
                 .OrderBy(f => f.Moneda)
                 .ToList();
 
-            // B. AGRUPACIÃ“N POR CONCEPTO Y MONEDA
+            // B. AGRUPACIÓN POR CONCEPTO Y MONEDA
 
-            _conceptos = filas
-                .GroupBy(f => new
+            _conceptos = reporte.Conceptos
+                .Select(c => new FilaConceptoIngreso
                 {
-                    f.Concepto,
-                    f.Moneda
-                })
-                .Select(g => new FilaConceptoIngreso
-                {
-                    Concepto = g.Key.Concepto,
-
-                    Moneda = g.Key.Moneda,
-
-                    CantidadPagos = g
-                        .Select(f => f.NumeroRecibo)
-                        .Distinct()
-                        .Count(),
-
-                    Total = g.Sum(f => f.Monto)
+                    Concepto = c.Concepto,
+                    Moneda = Moneda(c.MonedaId),
+                    CantidadPagos = c.Cantidad,
+                    Total = c.Total
                 })
                 .OrderBy(f => f.Concepto)
                 .ThenBy(f => f.Moneda)
@@ -274,14 +266,18 @@ private async void Hoy_Click(
             TablaConceptos.ItemsSource = _conceptos;
             TablaDetalle.ItemsSource = _detalles;
 
-            var cantidadRecibos =
-                emitidos.Count;
+            var filtros = new List<string>();
+            if (ConceptoFiltro.HasValue && CmbConcepto.SelectedItem is FiltroConcepto c)
+                filtros.Add($"Concepto: {c.Nombre}");
+            if (BloqueFiltro is { } b)
+                filtros.Add($"Bloque: {b}");
 
             TxtResumen.Text =
                 $"Del {desde:dd/MM/yyyy} al " +
                 $"{hasta:dd/MM/yyyy} | " +
-                $"Recibos: {cantidadRecibos} | " +
-                $"Conceptos cobrados: {filas.Count}";
+                $"Recibos: {reporte.CantidadRecibosValidos} | " +
+                $"Conceptos cobrados: {filas.Count}" +
+                (filtros.Count > 0 ? " | " + string.Join(" · ", filtros) : "");
 
             TxtTotales.Text = _totales.Count == 0
                 ? "Sin recaudación en el período."
@@ -291,8 +287,9 @@ private async void Hoy_Click(
                         $"{t.Moneda}: " +
                         t.Total.ToString("N2", _cultura)));
 
-            TxtEstado.Text =
-                "Reportes generados correctamente.";
+            TxtEstado.Text = reporte.Advertencias.Count == 0
+                ? "Reportes generados correctamente."
+                : "Reportes generados con advertencias: " + string.Join(" ", reporte.Advertencias);
         }
         catch (Exception ex)
         {
@@ -382,7 +379,8 @@ private async void Hoy_Click(
                     "Forma de pago",
                     "Moneda",
                     "Importe",
-                    "Referencia"
+                    "Referencia",
+                    "Cobrado por"
                 };
 
                 registros = _detalles.Select(x => new[]
@@ -396,7 +394,8 @@ private async void Hoy_Click(
                     x.FormaPago,
                     x.Moneda,
                     NumeroCsv(x.Monto),
-                    x.Referencia
+                    x.Referencia,
+                    x.CobradoPor
                 });
 
                 break;
@@ -490,6 +489,86 @@ private async void Hoy_Click(
 
         public string Codigo { get; set; } = "";
     }
+
+    public sealed class FiltroConcepto
+    {
+        public Guid Id { get; set; }
+
+        public string Nombre { get; set; } = "";
+    }
+
+    private sealed class CatalogosFiltro
+    {
+        public List<FiltroConcepto> Conceptos { get; set; } = new();
+    }
+
+    private sealed class RespuestaError
+    {
+        public string? Mensaje { get; set; }
+    }
+
+    private sealed class ReporteServidor
+    {
+        public int CantidadRecibosValidos { get; set; }
+
+        public List<ResumenServidor> Resumen { get; set; } = new();
+
+        public List<ConceptoServidor> Conceptos { get; set; } = new();
+
+        public List<CobroServidor> Cobros { get; set; } = new();
+
+        public List<string> Advertencias { get; set; } = new();
+    }
+
+    private sealed class ResumenServidor
+    {
+        public Guid MonedaId { get; set; }
+
+        public int CantidadRecibos { get; set; }
+
+        public decimal Total { get; set; }
+    }
+
+    private sealed class ConceptoServidor
+    {
+        public Guid MonedaId { get; set; }
+
+        public string Concepto { get; set; } = "";
+
+        public int Cantidad { get; set; }
+
+        public decimal Total { get; set; }
+    }
+
+    private sealed class CobroServidor
+    {
+        public long NumeroRecibo { get; set; }
+
+        public Guid UnidadComercialId { get; set; }
+
+        public Guid MonedaId { get; set; }
+
+        public string FormaPago { get; set; } = "";
+
+        public string Pagador { get; set; } = "";
+
+        public string? Referencia { get; set; }
+
+        public string? CobradoPor { get; set; }
+
+        public DateTimeOffset FechaEmisionUtc { get; set; }
+
+        public string FechaBolivia { get; set; } = "";
+
+        public List<DetalleServidor> Conceptos { get; set; } = new();
+    }
+
+    private sealed class DetalleServidor
+    {
+        public string Concepto { get; set; } = "";
+
+        public decimal Monto { get; set; }
+    }
 }
 
 public sealed class FilaTotalIngreso
@@ -535,4 +614,6 @@ public sealed class FilaDetalleIngreso
     public decimal Monto { get; set; }
 
     public string Referencia { get; set; } = "";
+
+    public string CobradoPor { get; set; } = "";
 }

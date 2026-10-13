@@ -13,6 +13,10 @@ public partial class CasetasView : UserControl
     {
         InitializeComponent();
 
+        // Importar el padrón: solo administradores.
+        if (!Sesion.SesionActual.EsAdministrador)
+            BtnImportarExcel.Visibility = System.Windows.Visibility.Collapsed;
+
         _viewModel = new CasetasViewModel();
         DataContext = _viewModel;
 

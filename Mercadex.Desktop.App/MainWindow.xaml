@@ -48,7 +48,7 @@
                 <ScrollViewer Grid.Row="1" x:Name="MenuScroll" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
                     <StackPanel Margin="0,8,0,12">
                         <!-- Cobro rápido: ir directo a cobrar una caseta desde cualquier pantalla -->
-                        <Button Click="CobroRapido_Click" Margin="14,4,14,10" Height="40" Padding="12,0"
+                        <Button x:Name="BtnCobroRapido" Click="CobroRapido_Click" Margin="14,4,14,10" Height="40" Padding="12,0"
                                 HorizontalContentAlignment="Stretch" Background="#F2B705" BorderBrush="#F2B705"
                                 Foreground="#163A5B" Style="{StaticResource Mx.ButtonBase}"
                                 ToolTip="Escribe el número de caseta y cobra (Ctrl + K)">
@@ -128,12 +128,38 @@
                                 <TextBlock Text="Reportes" VerticalAlignment="Center"/>
                             </StackPanel>
                         </RadioButton>
+                        <TextBlock x:Name="GrupoAdministracion" Text="Administración" Style="{StaticResource Mx.NavGroup}"/>
+                        <RadioButton x:Name="NavUsuarios" GroupName="MenuMercadex" Style="{StaticResource Mx.NavRadio}" Command="{Binding MostrarUsuariosCommand}">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="&#xE716;" FontFamily="Segoe MDL2 Assets" FontSize="15" Width="28" VerticalAlignment="Center"/>
+                                <TextBlock Text="Usuarios" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </RadioButton>
                     </StackPanel>
                 </ScrollViewer>
 
                 <!-- PIE -->
-                <Border Grid.Row="2" BorderBrush="#24496C" BorderThickness="0,1,0,0" Padding="20,12,12,14">
-                    <TextBlock x:Name="VersionTexto" Text="Versión" Foreground="#7F9BB5" FontSize="11.5"/>
+                <Border Grid.Row="2" BorderBrush="#24496C" BorderThickness="0,1,0,0" Padding="20,12,14,14">
+                    <StackPanel>
+                        <!-- Usuario con sesión iniciada -->
+                        <DockPanel>
+                            <Border DockPanel.Dock="Left" Width="32" Height="32" CornerRadius="16" Background="#24496C" VerticalAlignment="Center">
+                                <TextBlock x:Name="UsuarioInicial" Text="?" Foreground="White" FontWeight="SemiBold" FontSize="14"
+                                           HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                            <StackPanel Margin="10,0,0,0" VerticalAlignment="Center">
+                                <TextBlock x:Name="UsuarioNombre" Text="" Foreground="White" FontSize="13" FontWeight="SemiBold"
+                                           TextTrimming="CharacterEllipsis"/>
+                                <TextBlock x:Name="UsuarioRol" Text="" Foreground="#8FA9C1" FontSize="11.5"/>
+                            </StackPanel>
+                        </DockPanel>
+                        <WrapPanel Margin="0,10,0,8">
+                            <Button x:Name="BtnCambiarContrasena" Content="Cambiar contraseña" Click="CambiarContrasena_Click"
+                                    Style="{StaticResource Mx.NavLink}" Margin="0,0,14,0"/>
+                            <Button Content="Cerrar sesión" Click="CerrarSesion_Click" Style="{StaticResource Mx.NavLink}"/>
+                        </WrapPanel>
+                        <TextBlock x:Name="VersionTexto" Text="Versión" Foreground="#7F9BB5" FontSize="11.5"/>
+                    </StackPanel>
                 </Border>
             </Grid>
         </Border>

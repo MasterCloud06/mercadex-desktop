@@ -1,4 +1,4 @@
-﻿using System.Text;
+using System.Text;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
@@ -26,6 +26,52 @@ public partial class MainWindow : Window
 
         Navegacion.CobroSolicitado += AbrirCobro;
         Closed += (_, _) => Navegacion.CobroSolicitado -= AbrirCobro;
+
+        MostrarUsuario();
+    }
+
+    // ---------------- Usuario y permisos ----------------
+
+    private void MostrarUsuario()
+    {
+        var nombre = Sesion.SesionActual.Nombre;
+
+        UsuarioNombre.Text = nombre;
+        UsuarioNombre.ToolTip = $"{nombre} ({Sesion.SesionActual.Usuario})";
+        UsuarioRol.Text = Sesion.SesionActual.RolTexto;
+        UsuarioInicial.Text = nombre.Length > 0 ? char.ToUpperInvariant(nombre[0]).ToString() : "?";
+
+        // El administrador principal cambia su contraseña en Render.
+        BtnCambiarContrasena.Visibility = Sesion.SesionActual.Principal ? Visibility.Collapsed : Visibility.Visible;
+
+        // Usuarios: solo administradores.
+        var admin = Sesion.SesionActual.EsAdministrador;
+        GrupoAdministracion.Visibility = admin ? Visibility.Visible : Visibility.Collapsed;
+        NavUsuarios.Visibility = admin ? Visibility.Visible : Visibility.Collapsed;
+
+        // Solo consulta: no cobra.
+        BtnCobroRapido.Visibility = Sesion.SesionActual.PuedeCobrar ? Visibility.Visible : Visibility.Collapsed;
+    }
+
+    private void CambiarContrasena_Click(object sender, RoutedEventArgs e)
+    {
+        var ventana = new Sesion.VentanaCambiarContrasena { Owner = this };
+
+        if (ventana.ShowDialog() == true)
+        {
+            MessageBox.Show(this, "Tu contraseña se cambió. Úsala la próxima vez que ingreses.",
+                "Mercadex", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+    }
+
+    private void CerrarSesion_Click(object sender, RoutedEventArgs e)
+    {
+        var respuesta = MessageBox.Show(this,
+            "¿Cerrar tu sesión? Lo que no hayas guardado se pierde.",
+            "Cerrar sesión", MessageBoxButton.YesNo, MessageBoxImage.Question);
+
+        if (respuesta == MessageBoxResult.Yes)
+            ((App)Application.Current).CerrarSesion();
     }
 
     // ---------------- Ir a cobrar una unidad ----------------
@@ -45,7 +91,7 @@ public partial class MainWindow : Window
 
     private void Window_PreviewKeyDown(object sender, KeyEventArgs e)
     {
-        if (e.Key == Key.K && Keyboard.Modifiers == ModifierKeys.Control)
+        if (e.Key == Key.K && Keyboard.Modifiers == ModifierKeys.Control && Sesion.SesionActual.PuedeCobrar)
         {
             e.Handled = true;
             MostrarCobroRapido();

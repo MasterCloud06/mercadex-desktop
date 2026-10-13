@@ -36,6 +36,10 @@ public partial class ReportesView : UserControl
     {
         InitializeComponent();
 
+        // Anular cobros: solo administradores.
+        if (!Sesion.SesionActual.EsAdministrador)
+            TabAnularCobro.Visibility = System.Windows.Visibility.Collapsed;
+
         Loaded += ReportesView_Loaded;
     }
 

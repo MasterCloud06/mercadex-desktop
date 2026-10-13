@@ -74,6 +74,24 @@
                         Click="Mes_Click"
                         Style="{StaticResource Mx.SecondaryButton}"/>
 
+                <!-- Pago por grupo de bloques: un concepto y/o un bloque -->
+                <StackPanel Margin="0,0,14,8">
+                    <TextBlock Text="Concepto"/>
+                    <ComboBox x:Name="CmbConcepto"
+                              Width="220"
+                              Height="34"
+                              DisplayMemberPath="Nombre"
+                              VerticalContentAlignment="Center"/>
+                </StackPanel>
+
+                <StackPanel Margin="0,0,14,8">
+                    <TextBlock Text="Bloque"/>
+                    <ComboBox x:Name="CmbBloque"
+                              Width="160"
+                              Height="34"
+                              VerticalContentAlignment="Center"/>
+                </StackPanel>
+
                 <Button x:Name="BtnConsultar"
                         Content="Consultar reporte"
                         Width="165"
@@ -272,6 +290,10 @@
                         <DataGridTextColumn Header="Importe"
                                             Binding="{Binding Monto, StringFormat=N2}"
                                             Width="110"/>
+
+                        <DataGridTextColumn Header="Cobrado por"
+                                            Binding="{Binding CobradoPorTexto}"
+                                            Width="150"/>
                     </DataGrid.Columns>
                 </DataGrid>
 

@@ -17,7 +17,8 @@ public static class ReciboPdfService
         string caseta,
         string bloque,
         string moneda,
-        string titular)
+        string titular,
+        bool reimpresion = false)
     {
         ArgumentNullException.ThrowIfNull(recibo);
         ArgumentNullException.ThrowIfNull(pago);
@@ -160,7 +161,17 @@ public static class ReciboPdfService
             "ASOCIACIÓN DE COMERCIANTES 13 DE JULIO",
             titulo, true, azul);
 
-        Linea("RECIBO DE CAJA", negrita, true);
+        Linea(
+            string.Equals(recibo.Estado, "Anulado", StringComparison.OrdinalIgnoreCase)
+                ? "RECIBO ANULADO"
+                : "RECIBO DE CAJA",
+            negrita, true);
+
+        if (reimpresion)
+            Linea(TextoRecibo.Reimpresion, pequeno, true);
+
+        if (TextoRecibo.Anulacion(recibo) is { } anulacion)
+            Linea(anulacion, negrita, false, rojo);
 
         Separador();
 
@@ -185,10 +196,16 @@ public static class ReciboPdfService
 
         Linea($"Forma de pago: {pago.FormaPago}", normal);
 
-        if (!string.IsNullOrWhiteSpace(pago.Referencia))
-            Linea($"Referencia: {pago.Referencia}", normal);
+        if (TextoRecibo.Referencia(pago) is { } referencia)
+            Linea(referencia, normal);
 
         Linea($"Moneda: {moneda}", normal);
+
+        if (TextoRecibo.TipoCambio(pago) is { } tipoCambio)
+            Linea(tipoCambio, normal);
+
+        Linea(TextoRecibo.TipoIngreso(recibo), normal);
+        Linea(TextoRecibo.Cantidad(recibo), normal);
 
         Separador();
 
@@ -196,11 +213,7 @@ public static class ReciboPdfService
 
         foreach (var detalle in recibo.Detalles)
         {
-            Linea(
-                $"{detalle.Concepto} | " +
-                $"{detalle.Periodo} | " +
-                $"{detalle.Monto:N2} {moneda}",
-                normal);
+            Linea(TextoRecibo.Concepto(detalle, moneda), normal);
         }
 
         Separador();
@@ -208,6 +221,9 @@ public static class ReciboPdfService
         Linea(
             $"TOTAL: {recibo.Total:N2} {moneda}",
             fuenteTotal, false, azul);
+
+        if (TextoRecibo.CobradoPor(recibo) is { } cobradoPor)
+            Linea(cobradoPor, normal);
 
         if (string.Equals(
             recibo.Estado,

@@ -25,6 +25,15 @@ public class ReciboDto
     public decimal Total { get; set; }
 
 
+    /// <summary>Usuario que registró el cobro (desde la 1.6.2).</summary>
+    public string? RegistradoPor { get; set; }
+
+    public string? MotivoAnulacion { get; set; }
+
+    public DateTimeOffset? FechaAnulacion { get; set; }
+
+    public string? AnuladoPor { get; set; }
+
     public List<DetalleReciboDto> Detalles { get; set; }
         = new();
 

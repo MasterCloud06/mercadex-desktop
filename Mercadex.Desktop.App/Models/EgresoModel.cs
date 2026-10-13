@@ -34,6 +34,19 @@ public sealed class EgresoModel
 
     public string? MotivoAnulacion { get; set; }
 
+    public string? RegistradoPor { get; set; }
+
+    public string? AnuladoPor { get; set; }
+
+    public string RegistradoPorTexto => string.IsNullOrWhiteSpace(RegistradoPor) ? "—" : RegistradoPor!;
+
+    /// <summary>Detalle de la anulación (quién, cuándo y por qué).</summary>
+    public string? DetalleAnulacion => Anulado
+        ? $"Anulado el {FechaAnulacion?.ToLocalTime():dd/MM/yyyy HH:mm}" +
+          (string.IsNullOrWhiteSpace(AnuladoPor) ? "" : $" por {AnuladoPor}") +
+          $". Motivo: {MotivoAnulacion}"
+        : null;
+
     // Solo para mostrar en Desktop.
     public string MonedaCodigo { get; set; } = string.Empty;
 

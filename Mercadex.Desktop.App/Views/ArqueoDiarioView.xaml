@@ -125,6 +125,11 @@
                         </Border>
                     </UniformGrid>
 
+                    <!-- Efectivo que debe haber: cobros en efectivo menos gastos pagados en efectivo -->
+                    <Border Background="#E7F0F9" CornerRadius="8" Padding="14,10" Margin="0,12,0,0">
+                        <TextBlock x:Name="TxtEsperado" Foreground="#1F4E79" TextWrapping="Wrap" FontSize="14"/>
+                    </Border>
+
                     <Border x:Name="AvisoCambios" Visibility="Collapsed" Background="#FDECEC" CornerRadius="6"
                             Padding="12,8" Margin="0,12,0,0">
                         <TextBlock x:Name="TxtAvisoCambios" Foreground="#B42318" TextWrapping="Wrap" FontWeight="SemiBold"/>

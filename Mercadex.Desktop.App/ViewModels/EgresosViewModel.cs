@@ -191,7 +191,7 @@ public partial class EgresosViewModel : ObservableObject
             Mensaje =
                 "No fue posible cargar Gastos / Egresos.";
 
-            MessageBox.Show(
+            Dialogo.Mostrar(
                 ex.Message,
                 "Gastos / Egresos",
                 MessageBoxButton.OK,
@@ -218,7 +218,7 @@ public partial class EgresosViewModel : ObservableObject
         if (string.IsNullOrWhiteSpace(
                 CategoriaSeleccionada))
         {
-            MessageBox.Show(
+            Dialogo.Mostrar(
                 "Seleccione una categoría.");
 
             return;
@@ -227,7 +227,7 @@ public partial class EgresosViewModel : ObservableObject
         if (string.IsNullOrWhiteSpace(
                 Concepto))
         {
-            MessageBox.Show(
+            Dialogo.Mostrar(
                 "Ingrese el concepto del egreso.");
 
             return;
@@ -236,7 +236,7 @@ public partial class EgresosViewModel : ObservableObject
         if (string.IsNullOrWhiteSpace(
                 Beneficiario))
         {
-            MessageBox.Show(
+            Dialogo.Mostrar(
                 "Ingrese el beneficiario o proveedor.");
 
             return;
@@ -254,7 +254,7 @@ public partial class EgresosViewModel : ObservableObject
                     CultureInfo.InvariantCulture,
                     out monto))
             {
-                MessageBox.Show(
+                Dialogo.Mostrar(
                     "Ingrese un monto válido.");
 
                 return;
@@ -263,7 +263,7 @@ public partial class EgresosViewModel : ObservableObject
 
         if (monto <= 0)
         {
-            MessageBox.Show(
+            Dialogo.Mostrar(
                 "El monto debe ser mayor a cero.");
 
             return;
@@ -271,7 +271,7 @@ public partial class EgresosViewModel : ObservableObject
 
         if (MonedaSeleccionada == null)
         {
-            MessageBox.Show(
+            Dialogo.Mostrar(
                 "Seleccione una moneda.");
 
             return;
@@ -280,14 +280,14 @@ public partial class EgresosViewModel : ObservableObject
         if (string.IsNullOrWhiteSpace(
                 FormaPagoSeleccionada))
         {
-            MessageBox.Show(
+            Dialogo.Mostrar(
                 "Seleccione una forma de pago.");
 
             return;
         }
 
         var confirmacion =
-            MessageBox.Show(
+            Dialogo.Mostrar(
                 $"¿Registrar este egreso?\n\n" +
                 $"Fecha: {Fecha:dd/MM/yyyy}\n" +
                 $"Categoría: {CategoriaSeleccionada}\n" +
@@ -363,7 +363,7 @@ public partial class EgresosViewModel : ObservableObject
             resultado.MonedaCodigo =
                 MonedaSeleccionada.Codigo;
 
-            var imprimir = MessageBox.Show(
+            var imprimir = Dialogo.Mostrar(
                 $"Egreso N.º {resultado.NumeroTexto} registrado correctamente.\n\n" +
                 "¿Deseas ver e imprimir el comprobante de egreso?",
                 "Gastos / Egresos",
@@ -384,7 +384,7 @@ public partial class EgresosViewModel : ObservableObject
             Mensaje =
                 "No se pudo registrar el egreso.";
 
-            MessageBox.Show(
+            Dialogo.Mostrar(
                 ex.Message,
                 "Error al registrar egreso",
                 MessageBoxButton.OK,
@@ -415,7 +415,7 @@ public partial class EgresosViewModel : ObservableObject
         if (FechaDesde.Date >
             FechaHasta.Date)
         {
-            MessageBox.Show(
+            Dialogo.Mostrar(
                 "La fecha inicial no puede ser posterior a la final.");
 
             return;
@@ -484,7 +484,7 @@ public partial class EgresosViewModel : ObservableObject
             Mensaje =
                 "No se pudieron cargar los egresos.";
 
-            MessageBox.Show(
+            Dialogo.Mostrar(
                 ex.Message,
                 "Gastos / Egresos",
                 MessageBoxButton.OK,
@@ -615,7 +615,7 @@ public partial class EgresosViewModel : ObservableObject
     {
         if (EgresoSeleccionado == null)
         {
-            MessageBox.Show(
+            Dialogo.Mostrar(
                 "Seleccione un egreso.");
 
             return;
@@ -623,17 +623,23 @@ public partial class EgresosViewModel : ObservableObject
 
         if (EgresoSeleccionado.Anulado)
         {
-            MessageBox.Show(
+            Dialogo.Mostrar(
                 "El egreso seleccionado ya está anulado.");
 
             return;
         }
 
         var motivo =
-            Microsoft.VisualBasic.Interaction.InputBox(
-                "Indique el motivo de la anulación:",
+            Dialogo.PedirTexto(
+                null,
                 "Anular egreso",
-                string.Empty);
+                $"Egreso N.º {EgresoSeleccionado.NumeroTexto} · {EgresoSeleccionado.Concepto} · " +
+                $"{EgresoSeleccionado.Monto:N2} {EgresoSeleccionado.MonedaCodigo}\n" +
+                "El egreso no se borra: queda como ANULADO con el motivo y tu nombre.",
+                "Motivo de la anulación",
+                "Continuar",
+                minimo: 5,
+                peligro: true) ?? "";
 
         if (string.IsNullOrWhiteSpace(
                 motivo))
@@ -642,7 +648,7 @@ public partial class EgresosViewModel : ObservableObject
         }
 
         var confirmar =
-            MessageBox.Show(
+            Dialogo.Mostrar(
                 $"¿Anular el egreso seleccionado?\n\n" +
                 $"Concepto: " +
                 $"{EgresoSeleccionado.Concepto}\n" +
@@ -671,7 +677,7 @@ public partial class EgresosViewModel : ObservableObject
                 EgresoSeleccionado.Id,
                 motivo.Trim());
 
-            MessageBox.Show(
+            Dialogo.Mostrar(
                 "Egreso anulado correctamente.",
                 "Gastos / Egresos",
                 MessageBoxButton.OK,
@@ -688,7 +694,7 @@ public partial class EgresosViewModel : ObservableObject
             Mensaje =
                 "No se pudo anular el egreso.";
 
-            MessageBox.Show(
+            Dialogo.Mostrar(
                 ex.Message,
                 "Error al anular",
                 MessageBoxButton.OK,
@@ -754,7 +760,7 @@ public partial class EgresosViewModel : ObservableObject
     {
         if (Egresos.Count == 0)
         {
-            MessageBox.Show(
+            Dialogo.Mostrar(
                 "No hay egresos para exportar.");
 
             return;
@@ -820,7 +826,7 @@ public partial class EgresosViewModel : ObservableObject
                 csv.ToString(),
                 new UTF8Encoding(true));
 
-            MessageBox.Show(
+            Dialogo.Mostrar(
                 "Reporte exportado correctamente.",
                 "Mercadex",
                 MessageBoxButton.OK,
@@ -828,7 +834,7 @@ public partial class EgresosViewModel : ObservableObject
         }
         catch (Exception ex)
         {
-            MessageBox.Show(
+            Dialogo.Mostrar(
                 ex.Message,
                 "Error al exportar",
                 MessageBoxButton.OK,
@@ -872,7 +878,7 @@ public partial class EgresosViewModel : ObservableObject
     {
         if (EgresoSeleccionado == null)
         {
-            MessageBox.Show(
+            Dialogo.Mostrar(
                 "Selecciona un egreso del historial.",
                 "Comprobante de egreso",
                 MessageBoxButton.OK,

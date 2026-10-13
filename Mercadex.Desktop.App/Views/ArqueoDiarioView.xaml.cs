@@ -141,6 +141,7 @@ public partial class ArqueoDiarioView : UserControl
         {
             TileEfectivo.Text = TileQr.Text = TileOtros.Text = TileTotal.Text = "—";
             TileEfectivoN.Text = TileQrN.Text = TileOtrosN.Text = TileTotalN.Text = " ";
+            TxtEsperado.Text = "Elige una fecha con movimientos para ver cuánto efectivo debe haber en caja.";
             AvisoCambios.Visibility = Visibility.Collapsed;
             PanelCerrado.Visibility = Visibility.Collapsed;
             Chip("Sin cobros", "#EEF2F7", "#5A6B7D");
@@ -159,6 +160,12 @@ public partial class ArqueoDiarioView : UserControl
         TileQrN.Text = Pagos(m.CantidadQr);
         TileOtrosN.Text = Pagos(m.CantidadOtros);
         TileTotalN.Text = Pagos(m.Cantidad);
+
+        TxtEsperado.Text = m.EgresosEfectivo > 0
+            ? $"Efectivo que debe haber en caja: {Monto(m.EfectivoEsperado, m.Moneda)}  " +
+              $"(cobros en efectivo {Monto(m.Efectivo, m.Moneda)} − gastos pagados en efectivo " +
+              $"{Monto(m.EgresosEfectivo, m.Moneda)}, {m.CantidadEgresos} {(m.CantidadEgresos == 1 ? "egreso" : "egresos")})"
+            : $"Efectivo que debe haber en caja: {Monto(m.EfectivoEsperado, m.Moneda)}  (no hubo gastos pagados en efectivo)";
 
         BtnActa.IsEnabled = true;
 
@@ -248,7 +255,7 @@ public partial class ArqueoDiarioView : UserControl
 
         if (string.IsNullOrWhiteSpace(TxtContado.Text))
         {
-            TxtDiferencia.Text = $"Esperado: {Monto(m.Efectivo, m.Moneda)}";
+            TxtDiferencia.Text = $"Esperado: {Monto(m.EfectivoEsperado, m.Moneda)}";
             TxtDiferencia.Foreground = ColoresPanel.TextoPrincipal;
             return;
         }
@@ -260,7 +267,7 @@ public partial class ArqueoDiarioView : UserControl
             return;
         }
 
-        var diferencia = contado - m.Efectivo;
+        var diferencia = contado - m.EfectivoEsperado;
 
         TxtDiferencia.Text = diferencia == 0
             ? "Sin diferencia"
@@ -284,7 +291,7 @@ public partial class ArqueoDiarioView : UserControl
 
         if (!LeerContado(out var contado))
         {
-            MessageBox.Show("Escribe el efectivo contado (por ejemplo 850,50).", "Cierre de caja",
+            Dialogo.Mostrar("Escribe el efectivo contado (por ejemplo 850,50).", "Cierre de caja",
                 MessageBoxButton.OK, MessageBoxImage.Warning);
             TxtContado.Focus();
             return;
@@ -294,29 +301,31 @@ public partial class ArqueoDiarioView : UserControl
 
         if (responsable.Length < 3)
         {
-            MessageBox.Show("Escribe el nombre del responsable del cierre.", "Cierre de caja",
+            Dialogo.Mostrar("Escribe el nombre del responsable del cierre.", "Cierre de caja",
                 MessageBoxButton.OK, MessageBoxImage.Warning);
             TxtResponsable.Focus();
             return;
         }
 
-        var diferencia = contado - m.Efectivo;
+        var diferencia = contado - m.EfectivoEsperado;
         var observacion = TxtObservacion.Text.Trim();
 
         if (diferencia != 0 && observacion.Length == 0)
         {
-            MessageBox.Show("Hay una diferencia de efectivo. Escribe una observación que la explique.",
+            Dialogo.Mostrar("Hay una diferencia de efectivo. Escribe una observación que la explique.",
                 "Cierre de caja", MessageBoxButton.OK, MessageBoxImage.Warning);
             TxtObservacion.Focus();
             return;
         }
 
-        var confirmar = MessageBox.Show(
+        var confirmar = Dialogo.Mostrar(
             $"¿Registrar el cierre de caja del {_fechaConsultada:dd/MM/yyyy} en {m.Moneda}?\n\n" +
             $"Efectivo: {Monto(m.Efectivo, m.Moneda)}\n" +
             $"QR: {Monto(m.Qr, m.Moneda)}\n" +
             $"Otros: {Monto(m.Otros, m.Moneda)}\n" +
             $"Total: {Monto(m.Total, m.Moneda)}\n\n" +
+            (m.EgresosEfectivo > 0 ? $"Gastos en efectivo: {Monto(m.EgresosEfectivo, m.Moneda)}\n" : "") +
+            $"Debe haber en caja: {Monto(m.EfectivoEsperado, m.Moneda)}\n" +
             $"Efectivo contado: {Monto(contado, m.Moneda)}\n" +
             $"Diferencia: {Monto(diferencia, m.Moneda)}\n\n" +
             "Un cierre registrado no se puede modificar.",
@@ -347,7 +356,7 @@ public partial class ArqueoDiarioView : UserControl
             await ConsultarAsync(m.MonedaId);
             await CargarHistorialAsync();
 
-            if (MessageBox.Show("Cierre registrado.\n\n¿Deseas imprimir o guardar el acta ahora?",
+            if (Dialogo.Mostrar("Cierre registrado.\n\n¿Deseas imprimir o guardar el acta ahora?",
                     "Cierre de caja", MessageBoxButton.YesNo, MessageBoxImage.Information) == MessageBoxResult.Yes)
             {
                 AbrirActa();
@@ -355,7 +364,7 @@ public partial class ArqueoDiarioView : UserControl
         }
         catch (Exception ex)
         {
-            MessageBox.Show(ex.Message, "No se pudo registrar el cierre",
+            Dialogo.Mostrar(ex.Message, "No se pudo registrar el cierre",
                 MessageBoxButton.OK, MessageBoxImage.Warning);
             BtnCerrar.IsEnabled = true;
         }
@@ -392,11 +401,13 @@ public partial class ArqueoDiarioView : UserControl
             m.Otros, m.CantidadOtros,
             m.Total, m.Cantidad,
             contado,
-            m.Cerrado && m.Cierre != null ? m.Cierre.Diferencia : contado - m.Efectivo,
+            m.Cerrado && m.Cierre != null ? m.Cierre.Diferencia : contado - m.EfectivoEsperado,
             m.Cerrado ? m.Cierre?.Responsable : NullSiVacio(TxtResponsable.Text),
             m.Cerrado ? m.Cierre?.Observacion : NullSiVacio(TxtObservacion.Text),
             m.Cerrado,
-            m.Cierre?.FechaRegistro);
+            m.Cierre?.FechaRegistro,
+            m.Cerrado && m.Cierre != null ? m.Cierre.EgresosEfectivo : m.EgresosEfectivo,
+            m.Cerrado && m.Cierre != null ? m.Cierre.CantidadEgresos : m.CantidadEgresos);
 
         new ActaArqueoWindow(acta) { Owner = Window.GetWindow(this) }.ShowDialog();
     }
@@ -450,7 +461,8 @@ public partial class ArqueoDiarioView : UserControl
             c.Total, c.CantidadPagos,
             c.EfectivoContado, c.Diferencia,
             c.Responsable, c.Observacion,
-            true, c.FechaRegistro);
+            true, c.FechaRegistro,
+            c.EgresosEfectivo, c.CantidadEgresos);
 
         new ActaArqueoWindow(acta) { Owner = Window.GetWindow(this) }.ShowDialog();
     }

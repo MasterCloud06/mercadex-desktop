@@ -259,7 +259,7 @@ public sealed class UsuariosView : UserControl
         if (_tabla.SelectedItem is not FilaUsuario u)
             return;
 
-        var respuesta = MessageBox.Show(Window.GetWindow(this),
+        var respuesta = Dialogo.Mostrar(Window.GetWindow(this),
             $"¿Restablecer la contraseña de {u.NombreCompleto}?\n\n" +
             "Su contraseña actual deja de funcionar y se cierran sus sesiones. " +
             "Recibirá una contraseña temporal y elegirá una nueva al ingresar.",
@@ -290,7 +290,7 @@ public sealed class UsuariosView : UserControl
 
         if (u.Activo)
         {
-            var respuesta = MessageBox.Show(Window.GetWindow(this),
+            var respuesta = Dialogo.Mostrar(Window.GetWindow(this),
                 $"¿Desactivar a {u.NombreCompleto}?\n\nYa no podrá ingresar y se cerrarán sus sesiones. " +
                 "Sus cobros y registros anteriores se conservan.",
                 "Desactivar usuario", MessageBoxButton.YesNo, MessageBoxImage.Warning);

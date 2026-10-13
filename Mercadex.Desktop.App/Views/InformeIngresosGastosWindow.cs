@@ -203,7 +203,7 @@ public sealed class InformeIngresosGastosWindow : Window
         {
             InformePdfService.Guardar(dialogo.FileName, _informe, _m);
 
-            if (MessageBox.Show(this, "El informe se guardó en PDF.\n\n¿Deseas abrirlo ahora?", "Mercadex",
+            if (Dialogo.Mostrar(this, "El informe se guardó en PDF.\n\n¿Deseas abrirlo ahora?", "Mercadex",
                     MessageBoxButton.YesNo, MessageBoxImage.Information) == MessageBoxResult.Yes)
             {
                 System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
@@ -215,7 +215,7 @@ public sealed class InformeIngresosGastosWindow : Window
         }
         catch (Exception ex)
         {
-            MessageBox.Show(this, "No se pudo guardar el PDF:\n\n" + ex.Message, "Mercadex",
+            Dialogo.Mostrar(this, "No se pudo guardar el PDF:\n\n" + ex.Message, "Mercadex",
                 MessageBoxButton.OK, MessageBoxImage.Warning);
         }
     }

@@ -12,5 +12,9 @@ public partial class EgresosView : UserControl
 
         DataContext =
             new EgresosViewModel();
+
+        // Anular egresos: solo administradores (igual que anular cobros).
+        if (Sesion.SesionActual.Iniciada && !Sesion.SesionActual.EsAdministrador)
+            BtnAnular.Visibility = System.Windows.Visibility.Collapsed;
     }
 }

@@ -52,6 +52,14 @@ public sealed class ArqueoMonedaResumen
     public int CantidadQr { get; set; }
 
     public int CantidadOtros { get; set; }
+
+    /// <summary>Gastos pagados en efectivo ese día (salen de la caja).</summary>
+    public decimal EgresosEfectivo { get; set; }
+
+    public int CantidadEgresos { get; set; }
+
+    /// <summary>Efectivo que debe haber en caja.</summary>
+    public decimal EfectivoEsperado => Efectivo - EgresosEfectivo;
 }
 
 public sealed class ArqueoIncidenciaResumen
@@ -88,6 +96,12 @@ public sealed class CierreCajaModel
     public int CantidadQr { get; set; }
 
     public int CantidadOtros { get; set; }
+
+    public decimal EgresosEfectivo { get; set; }
+
+    public int CantidadEgresos { get; set; }
+
+    public decimal EfectivoEsperado => Efectivo - EgresosEfectivo;
 
     public decimal EfectivoContado { get; set; }
 
@@ -132,4 +146,6 @@ public sealed record ActaArqueo(
     string? Responsable,
     string? Observacion,
     bool Cerrado,
-    DateTimeOffset? FechaCierre);
+    DateTimeOffset? FechaCierre,
+    decimal EgresosEfectivo = 0m,
+    int CantidadEgresos = 0);

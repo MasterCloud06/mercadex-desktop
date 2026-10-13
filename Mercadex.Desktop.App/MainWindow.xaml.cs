@@ -25,7 +25,18 @@ public partial class MainWindow : Window
             VersionTexto.Text = $"Versión {version.Major}.{version.Minor}.{version.Build}";
 
         Navegacion.CobroSolicitado += AbrirCobro;
-        Closed += (_, _) => Navegacion.CobroSolicitado -= AbrirCobro;
+        Navegacion.DeudasSolicitadas += AbrirDeudas;
+        Navegacion.KardexSolicitado += AbrirKardex;
+        Navegacion.SocioSolicitado += AbrirSocio;
+        Navegacion.CasetaSolicitada += AbrirCaseta;
+        Closed += (_, _) =>
+        {
+            Navegacion.CobroSolicitado -= AbrirCobro;
+            Navegacion.DeudasSolicitadas -= AbrirDeudas;
+            Navegacion.KardexSolicitado -= AbrirKardex;
+            Navegacion.SocioSolicitado -= AbrirSocio;
+            Navegacion.CasetaSolicitada -= AbrirCaseta;
+        };
 
         MostrarUsuario();
     }
@@ -59,14 +70,14 @@ public partial class MainWindow : Window
 
         if (ventana.ShowDialog() == true)
         {
-            MessageBox.Show(this, "Tu contraseña se cambió. Úsala la próxima vez que ingreses.",
+            Dialogo.Mostrar(this, "Tu contraseña se cambió. Úsala la próxima vez que ingreses.",
                 "Mercadex", MessageBoxButton.OK, MessageBoxImage.Information);
         }
     }
 
     private void CerrarSesion_Click(object sender, RoutedEventArgs e)
     {
-        var respuesta = MessageBox.Show(this,
+        var respuesta = Dialogo.Mostrar(this,
             "¿Cerrar tu sesión? Lo que no hayas guardado se pierde.",
             "Cerrar sesión", MessageBoxButton.YesNo, MessageBoxImage.Question);
 
@@ -85,6 +96,50 @@ public partial class MainWindow : Window
         NavIngresos.IsChecked = true;
         vm.CurrentView = vista;
         vista.PrecargarUnidad(unidadId, codigo);
+    }
+
+    private void AbrirDeudas(string codigo)
+    {
+        if (DataContext is not ViewModels.MainViewModel vm)
+            return;
+
+        var vista = new Views.CobranzaView();
+        vista.FiltrarCaseta(codigo);
+        NavObligaciones.IsChecked = true;
+        vm.CurrentView = vista;
+    }
+
+    private void AbrirKardex(Guid unidadId)
+    {
+        if (DataContext is not ViewModels.MainViewModel vm)
+            return;
+
+        var vista = new Views.KardexView();
+        vista.SeleccionarAlCargar(unidadId);
+        NavKardex.IsChecked = true;
+        vm.CurrentView = vista;
+    }
+
+    private void AbrirSocio(Guid socioId)
+    {
+        if (DataContext is not ViewModels.MainViewModel vm)
+            return;
+
+        var vista = new Views.SociosView();
+        vista.SeleccionarAlCargar(socioId);
+        NavSocios.IsChecked = true;
+        vm.CurrentView = vista;
+    }
+
+    private void AbrirCaseta(Guid unidadId)
+    {
+        if (DataContext is not ViewModels.MainViewModel vm)
+            return;
+
+        var vista = new Views.CasetasView();
+        vista.SeleccionarAlCargar(unidadId);
+        NavCasetas.IsChecked = true;
+        vm.CurrentView = vista;
     }
 
     // ---------------- Cobro rápido (Ctrl + K) ----------------

@@ -242,7 +242,7 @@ public sealed class ImportarPadronWindow : Window
         }
         catch (Exception ex)
         {
-            MessageBox.Show(this, "No se pudo guardar la plantilla: " + ex.Message, "Mercadex",
+            Dialogo.Mostrar(this, "No se pudo guardar la plantilla: " + ex.Message, "Mercadex",
                 MessageBoxButton.OK, MessageBoxImage.Warning);
         }
     }
@@ -284,7 +284,7 @@ public sealed class ImportarPadronWindow : Window
 
     private async Task ImportarAsync()
     {
-        var confirmar = MessageBox.Show(this,
+        var confirmar = Dialogo.Mostrar(this,
             "Se guardarán los cambios mostrados en la tabla.\n\n¿Deseas importar ahora?",
             "Importar padrón", MessageBoxButton.YesNo, MessageBoxImage.Question);
 

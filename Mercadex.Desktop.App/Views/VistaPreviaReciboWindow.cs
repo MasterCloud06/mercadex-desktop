@@ -18,13 +18,18 @@ public sealed class VistaPreviaReciboWindow : Window
     private readonly string _moneda;
     private string _titular = "Consultando titular...";
 
+    private readonly bool _reimpresion;
+
     public VistaPreviaReciboWindow(
         ReciboDto recibo,
         PagoDto pago,
         string caseta,
         string bloque,
-        string moneda)
+        string moneda,
+        bool reimpresion = false)
     {
+        _reimpresion = reimpresion;
+
         ArgumentNullException.ThrowIfNull(recibo);
         ArgumentNullException.ThrowIfNull(pago);
 
@@ -185,6 +190,20 @@ public sealed class VistaPreviaReciboWindow : Window
             tamano: 16,
             centrado: true);
 
+        if (_reimpresion)
+        {
+            AgregarLinea(
+                documento,
+                Services.TextoRecibo.Reimpresion,
+                negrita: true,
+                centrado: true);
+        }
+
+        if (Services.TextoRecibo.Anulacion(_recibo) is { } anulacion)
+        {
+            AgregarLinea(documento, anulacion, negrita: true);
+        }
+
         AgregarLinea(
             documento,
             $"Recibo N.º: {_recibo.Numero}");
@@ -212,14 +231,16 @@ public sealed class VistaPreviaReciboWindow : Window
             documento,
             $"Forma de pago: {_pago.FormaPago}");
 
-        if (!string.IsNullOrWhiteSpace(_pago.Referencia))
-        {
-            AgregarLinea(
-                documento,
-                $"Transacción/referencia: {_pago.Referencia}");
-        }
+        if (Services.TextoRecibo.Referencia(_pago) is { } referencia)
+            AgregarLinea(documento, referencia);
 
         AgregarLinea(documento, $"Moneda: {_moneda}");
+
+        if (Services.TextoRecibo.TipoCambio(_pago) is { } tipoCambio)
+            AgregarLinea(documento, tipoCambio);
+
+        AgregarLinea(documento, Services.TextoRecibo.TipoIngreso(_recibo));
+        AgregarLinea(documento, Services.TextoRecibo.Cantidad(_recibo));
 
         AgregarLinea(
             documento,
@@ -230,9 +251,7 @@ public sealed class VistaPreviaReciboWindow : Window
         {
             AgregarLinea(
                 documento,
-                $"{detalle.Concepto} | " +
-                $"{detalle.Periodo} | " +
-                $"{detalle.Monto:N2} {_moneda}");
+                Services.TextoRecibo.Concepto(detalle, _moneda));
         }
 
         AgregarLinea(
@@ -240,6 +259,9 @@ public sealed class VistaPreviaReciboWindow : Window
             $"TOTAL: {_recibo.Total:N2} {_moneda}",
             negrita: true,
             tamano: 18);
+
+        if (Services.TextoRecibo.CobradoPor(_recibo) is { } cobradoPor)
+            AgregarLinea(documento, cobradoPor);
 
         if (anulado)
         {
@@ -302,9 +324,10 @@ public sealed class VistaPreviaReciboWindow : Window
                 _caseta,
                 _bloque,
                 _moneda,
-                _titular);
+                _titular,
+                _reimpresion);
 
-            var respuesta = MessageBox.Show(
+            var respuesta = Dialogo.Mostrar(
                 this,
                 "El recibo PDF se guardó correctamente.\n\n" +
                 "¿Deseas abrirlo ahora?",
@@ -325,7 +348,7 @@ public sealed class VistaPreviaReciboWindow : Window
                 }
                 catch (Exception exAbrir)
                 {
-                    MessageBox.Show(
+                    Dialogo.Mostrar(
                         this,
                         "El PDF está guardado, pero no se pudo abrir.\n\n" +
                         exAbrir.Message,
@@ -337,7 +360,7 @@ public sealed class VistaPreviaReciboWindow : Window
         }
         catch (Exception ex)
         {
-            MessageBox.Show(
+            Dialogo.Mostrar(
                 this,
                 "No se pudo guardar el PDF.\n\n" +
                 "Si el cobro ya fue registrado, no lo repitas.\n\n" +
@@ -371,7 +394,7 @@ public sealed class VistaPreviaReciboWindow : Window
         }
         catch (Exception ex)
         {
-            MessageBox.Show(
+            Dialogo.Mostrar(
                 this,
                 "El cobro ya está registrado. No vuelva a cobrar.\n\n" +
                 "No se pudo imprimir el recibo. " +

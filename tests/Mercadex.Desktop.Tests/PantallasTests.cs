@@ -91,6 +91,35 @@ public sealed class PantallasTests
     }
 
     [Fact]
+    public void El_dialogo_de_mercadex_se_construye()
+    {
+        EjecutarEnSta(() =>
+        {
+            AsegurarAplicacion();
+            var tipo = Ensamblado.GetType("Mercadex.Desktop.App.VentanaDialogo")!;
+
+            var casos = new (string Mensaje, MessageBoxButton Botones, MessageBoxImage Icono)[]
+            {
+                ("Caseta: 115\nPeríodo: 09/2026\n\nImporte anterior: BOB 100,00\nImporte nuevo: BOB 80,00\n\n" +
+                 "Motivo:\nPrueba de descuento\n\nEsta corrección quedará registrada.\n\n¿Confirmas la modificación?",
+                    MessageBoxButton.YesNo, MessageBoxImage.Warning),
+                ("Kardex guardado correctamente.", MessageBoxButton.OK, MessageBoxImage.Information),
+                ("No se pudo guardar: HTTP 400.", MessageBoxButton.OK, MessageBoxImage.Error),
+                ("", MessageBoxButton.YesNoCancel, MessageBoxImage.Question),
+                ("Texto\n\n", MessageBoxButton.OKCancel, MessageBoxImage.None)
+            };
+
+            foreach (var (mensaje, botones, icono) in casos)
+            {
+                var ventana = (Window)Activator.CreateInstance(
+                    tipo, mensaje, "Prueba", botones, icono, MessageBoxResult.None)!;
+                MedirYOrganizar((FrameworkElement)ventana.Content);
+                ventana.Close();
+            }
+        });
+    }
+
+    [Fact]
     public void Los_estilos_globales_cargan()
     {
         EjecutarEnSta(() =>

@@ -72,26 +72,26 @@
                             </StackPanel>
                         </RadioButton>
                         <TextBlock Text="Socios y casetas" Style="{StaticResource Mx.NavGroup}"/>
-                        <RadioButton GroupName="MenuMercadex" Style="{StaticResource Mx.NavRadio}" Command="{Binding MostrarSociosCommand}">
+                        <RadioButton x:Name="NavSocios" GroupName="MenuMercadex" Style="{StaticResource Mx.NavRadio}" Command="{Binding MostrarSociosCommand}">
                             <StackPanel Orientation="Horizontal">
                                 <TextBlock Text="&#xE77B;" FontFamily="Segoe MDL2 Assets" FontSize="15" Width="28" VerticalAlignment="Center"/>
                                 <TextBlock Text="Socios" VerticalAlignment="Center"/>
                             </StackPanel>
                         </RadioButton>
-                        <RadioButton GroupName="MenuMercadex" Style="{StaticResource Mx.NavRadio}" Command="{Binding MostrarCasetasCommand}">
+                        <RadioButton x:Name="NavCasetas" GroupName="MenuMercadex" Style="{StaticResource Mx.NavRadio}" Command="{Binding MostrarCasetasCommand}">
                             <StackPanel Orientation="Horizontal">
                                 <TextBlock Text="&#xE80A;" FontFamily="Segoe MDL2 Assets" FontSize="15" Width="28" VerticalAlignment="Center"/>
                                 <TextBlock Text="Casetas" VerticalAlignment="Center"/>
                             </StackPanel>
                         </RadioButton>
-                        <RadioButton GroupName="MenuMercadex" Style="{StaticResource Mx.NavRadio}" Command="{Binding MostrarKardexCommand}">
+                        <RadioButton x:Name="NavKardex" GroupName="MenuMercadex" Style="{StaticResource Mx.NavRadio}" Command="{Binding MostrarKardexCommand}">
                             <StackPanel Orientation="Horizontal">
                                 <TextBlock Text="&#xE8B7;" FontFamily="Segoe MDL2 Assets" FontSize="15" Width="28" VerticalAlignment="Center"/>
                                 <TextBlock Text="Kardex" VerticalAlignment="Center"/>
                             </StackPanel>
                         </RadioButton>
                         <TextBlock Text="Cobranza" Style="{StaticResource Mx.NavGroup}"/>
-                        <RadioButton GroupName="MenuMercadex" Style="{StaticResource Mx.NavRadio}" Command="{Binding MostrarObligacionesCommand}">
+                        <RadioButton x:Name="NavObligaciones" GroupName="MenuMercadex" Style="{StaticResource Mx.NavRadio}" Command="{Binding MostrarObligacionesCommand}">
                             <StackPanel Orientation="Horizontal">
                                 <TextBlock Text="&#xE8A5;" FontFamily="Segoe MDL2 Assets" FontSize="15" Width="28" VerticalAlignment="Center"/>
                                 <TextBlock Text="Obligaciones" VerticalAlignment="Center"/>
@@ -100,7 +100,7 @@
                         <RadioButton x:Name="NavIngresos" GroupName="MenuMercadex" Style="{StaticResource Mx.NavRadio}" Command="{Binding MostrarIngresosCommand}">
                             <StackPanel Orientation="Horizontal">
                                 <TextBlock Text="&#xE8FB;" FontFamily="Segoe MDL2 Assets" FontSize="15" Width="28" VerticalAlignment="Center"/>
-                                <TextBlock Text="Ingresos" VerticalAlignment="Center"/>
+                                <TextBlock Text="Cobrar" VerticalAlignment="Center"/>
                             </StackPanel>
                         </RadioButton>
                         <RadioButton GroupName="MenuMercadex" Style="{StaticResource Mx.NavRadio}" Command="{Binding MostrarRecibosCommand}">
@@ -112,7 +112,7 @@
                         <RadioButton GroupName="MenuMercadex" Style="{StaticResource Mx.NavRadio}" Command="{Binding MostrarCajaCommand}">
                             <StackPanel Orientation="Horizontal">
                                 <TextBlock Text="&#xE8D4;" FontFamily="Segoe MDL2 Assets" FontSize="15" Width="28" VerticalAlignment="Center"/>
-                                <TextBlock Text="Caja" VerticalAlignment="Center"/>
+                                <TextBlock Text="Cierre de caja" VerticalAlignment="Center"/>
                             </StackPanel>
                         </RadioButton>
                         <TextBlock Text="Finanzas" Style="{StaticResource Mx.NavGroup}"/>
@@ -177,25 +177,10 @@
                         <views:DashboardView/>
                     </DataTemplate>
 
-                    <DataTemplate DataType="{x:Type views:CajaView}">
-                        <views:CajaView/>
-                    </DataTemplate>
 
-                    <DataTemplate DataType="{x:Type views:ObligacionesView}">
-                        <views:ObligacionesView/>
-                    </DataTemplate>
 
-                    <DataTemplate DataType="{x:Type views:IngresosView}">
-                        <views:IngresosView/>
-                    </DataTemplate>
 
-                    <DataTemplate DataType="{x:Type views:SociosView}">
-                        <views:SociosView/>
-                    </DataTemplate>
 
-                    <DataTemplate DataType="{x:Type views:CasetasView}">
-                        <views:CasetasView/>
-                    </DataTemplate>
 
                 </ContentControl.Resources>
 

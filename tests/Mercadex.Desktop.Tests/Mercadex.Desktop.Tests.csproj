@@ -15,7 +15,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\Desktop\Mercadex.Desktop.App\Mercadex.Desktop.App.csproj" />
+    <ProjectReference Include="..\..\Mercadex.Desktop.App\Mercadex.Desktop.App.csproj" />
   </ItemGroup>
 
 </Project>

@@ -46,6 +46,21 @@ public static class TextoRecibo
     public static string Concepto(DetalleReciboDto detalle, string moneda) =>
         $"1 x {detalle.Concepto} | {detalle.Periodo} | {detalle.Monto:N2} {moneda}";
 
+    /// <summary>Encabezado de una reimpresión: no es un nuevo cobro.</summary>
+    public const string Reimpresion = "REIMPRESIÓN DEL COMPROBANTE ORIGINAL — no es un nuevo cobro";
+
+    /// <summary>Cuándo, quién y por qué se anuló (solo recibos anulados).</summary>
+    public static string? Anulacion(ReciboDto recibo)
+    {
+        if (!string.Equals(recibo.Estado, "Anulado", StringComparison.OrdinalIgnoreCase))
+            return null;
+
+        return "ANULADO" +
+               (recibo.FechaAnulacion is { } f ? $" el {f.ToLocalTime():dd/MM/yyyy HH:mm}" : "") +
+               (string.IsNullOrWhiteSpace(recibo.AnuladoPor) ? "" : $" por {recibo.AnuladoPor}") +
+               (string.IsNullOrWhiteSpace(recibo.MotivoAnulacion) ? "" : $". Motivo: {recibo.MotivoAnulacion}");
+    }
+
     public static string? CobradoPor(ReciboDto recibo) =>
         string.IsNullOrWhiteSpace(recibo.RegistradoPor) ? null : $"Cobrado por: {recibo.RegistradoPor}";
 }

@@ -17,7 +17,8 @@ public static class ReciboPdfService
         string caseta,
         string bloque,
         string moneda,
-        string titular)
+        string titular,
+        bool reimpresion = false)
     {
         ArgumentNullException.ThrowIfNull(recibo);
         ArgumentNullException.ThrowIfNull(pago);
@@ -160,7 +161,17 @@ public static class ReciboPdfService
             "ASOCIACIÓN DE COMERCIANTES 13 DE JULIO",
             titulo, true, azul);
 
-        Linea("RECIBO DE CAJA", negrita, true);
+        Linea(
+            string.Equals(recibo.Estado, "Anulado", StringComparison.OrdinalIgnoreCase)
+                ? "RECIBO ANULADO"
+                : "RECIBO DE CAJA",
+            negrita, true);
+
+        if (reimpresion)
+            Linea(TextoRecibo.Reimpresion, pequeno, true);
+
+        if (TextoRecibo.Anulacion(recibo) is { } anulacion)
+            Linea(anulacion, negrita, false, rojo);
 
         Separador();
 

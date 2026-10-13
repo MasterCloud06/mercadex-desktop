@@ -18,13 +18,18 @@ public sealed class VistaPreviaReciboWindow : Window
     private readonly string _moneda;
     private string _titular = "Consultando titular...";
 
+    private readonly bool _reimpresion;
+
     public VistaPreviaReciboWindow(
         ReciboDto recibo,
         PagoDto pago,
         string caseta,
         string bloque,
-        string moneda)
+        string moneda,
+        bool reimpresion = false)
     {
+        _reimpresion = reimpresion;
+
         ArgumentNullException.ThrowIfNull(recibo);
         ArgumentNullException.ThrowIfNull(pago);
 
@@ -185,6 +190,20 @@ public sealed class VistaPreviaReciboWindow : Window
             tamano: 16,
             centrado: true);
 
+        if (_reimpresion)
+        {
+            AgregarLinea(
+                documento,
+                Services.TextoRecibo.Reimpresion,
+                negrita: true,
+                centrado: true);
+        }
+
+        if (Services.TextoRecibo.Anulacion(_recibo) is { } anulacion)
+        {
+            AgregarLinea(documento, anulacion, negrita: true);
+        }
+
         AgregarLinea(
             documento,
             $"Recibo N.º: {_recibo.Numero}");
@@ -305,7 +324,8 @@ public sealed class VistaPreviaReciboWindow : Window
                 _caseta,
                 _bloque,
                 _moneda,
-                _titular);
+                _titular,
+                _reimpresion);
 
             var respuesta = Dialogo.Mostrar(
                 this,

@@ -12,4 +12,16 @@ public static class Navegacion
     /// <summary>Abre Ingresos con la caseta indicada ya buscada.</summary>
     public static void AbrirCobro(Guid? unidadId, string codigo) =>
         CobroSolicitado?.Invoke(unidadId, codigo);
+
+    public static event Action<string>? DeudasSolicitadas;
+
+    /// <summary>Abre Obligaciones → Deudas registradas de esa caseta.</summary>
+    public static void AbrirDeudas(string codigo) =>
+        DeudasSolicitadas?.Invoke(codigo);
+
+    public static event Action<Guid>? KardexSolicitado;
+
+    /// <summary>Abre el Kardex con la caseta indicada.</summary>
+    public static void AbrirKardex(Guid unidadId) =>
+        KardexSolicitado?.Invoke(unidadId);
 }

@@ -25,7 +25,14 @@ public partial class MainWindow : Window
             VersionTexto.Text = $"Versión {version.Major}.{version.Minor}.{version.Build}";
 
         Navegacion.CobroSolicitado += AbrirCobro;
-        Closed += (_, _) => Navegacion.CobroSolicitado -= AbrirCobro;
+        Navegacion.DeudasSolicitadas += AbrirDeudas;
+        Navegacion.KardexSolicitado += AbrirKardex;
+        Closed += (_, _) =>
+        {
+            Navegacion.CobroSolicitado -= AbrirCobro;
+            Navegacion.DeudasSolicitadas -= AbrirDeudas;
+            Navegacion.KardexSolicitado -= AbrirKardex;
+        };
 
         MostrarUsuario();
     }
@@ -85,6 +92,28 @@ public partial class MainWindow : Window
         NavIngresos.IsChecked = true;
         vm.CurrentView = vista;
         vista.PrecargarUnidad(unidadId, codigo);
+    }
+
+    private void AbrirDeudas(string codigo)
+    {
+        if (DataContext is not ViewModels.MainViewModel vm)
+            return;
+
+        var vista = new Views.CobranzaView();
+        vista.FiltrarCaseta(codigo);
+        NavObligaciones.IsChecked = true;
+        vm.CurrentView = vista;
+    }
+
+    private void AbrirKardex(Guid unidadId)
+    {
+        if (DataContext is not ViewModels.MainViewModel vm)
+            return;
+
+        var vista = new Views.KardexView();
+        vista.SeleccionarAlCargar(unidadId);
+        NavKardex.IsChecked = true;
+        vm.CurrentView = vista;
     }
 
     // ---------------- Cobro rápido (Ctrl + K) ----------------

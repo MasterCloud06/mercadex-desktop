@@ -19,6 +19,10 @@ public partial class KardexView : UserControl
 private readonly HttpClient _api = ApiConfiguration.CrearCliente(TimeSpan.FromSeconds(45));
 
     private bool _cargando;
+    private Guid? _seleccionarAlCargar;
+
+    /// <summary>Abre el Kardex con esa caseta elegida (desde la pantalla Casetas).</summary>
+    public void SeleccionarAlCargar(Guid unidadId) => _seleccionarAlCargar = unidadId;
     private bool _inicializado;
     private Guid? _unidadAutorizadaId;
 
@@ -166,6 +170,14 @@ private readonly HttpClient _api = ApiConfiguration.CrearCliente(TimeSpan.FromSe
         finally
         {
             _cargando = false;
+        }
+
+        if (_seleccionarAlCargar is Guid elegida &&
+            Casetas.ItemsSource is IEnumerable<UnidadKardex> casetas &&
+            casetas.FirstOrDefault(c => c.Id == elegida) is { } caseta)
+        {
+            _seleccionarAlCargar = null;
+            Casetas.SelectedItem = caseta;
         }
     }
 

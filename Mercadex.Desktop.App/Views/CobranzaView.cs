@@ -73,6 +73,13 @@ public sealed class CobranzaView : UserControl
         };
     }
 
+    /// <summary>Abre «Deudas registradas» filtrada por esa caseta (todas sus deudas).</summary>
+    public void FiltrarCaseta(string codigo)
+    {
+        _fCaseta.Text = codigo;
+        _fEstado.SelectedIndex = 3;
+    }
+
     private static TabItem Pestana(string titulo, UIElement contenido) => new()
     {
         Header = titulo,

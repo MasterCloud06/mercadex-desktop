@@ -198,7 +198,7 @@ public static class PlanillaExcel
     // ------------------------------------------------------------------ Plantilla
 
     /// <summary>Crea un .xlsx con encabezados en negrita y filas de ejemplo.</summary>
-    public static void EscribirXlsx(string ruta, string nombreHoja, string[] encabezados, IEnumerable<string[]> filas, double[] anchos)
+    public static void EscribirXlsx(string ruta, string nombreHoja, string[] encabezados, IEnumerable<string[]> filas, double[] anchos, bool[]? numericas = null)
     {
         static string Celda(string referencia, string valor, int estilo) =>
             $"<c r=\"{referencia}\" t=\"inlineStr\" s=\"{estilo}\"><is><t xml:space=\"preserve\">{SecurityElement.Escape(valor)}</t></is></c>";
@@ -224,7 +224,14 @@ public static class PlanillaExcel
         {
             hoja.Append($"<row r=\"{numero}\">");
             for (var i = 0; i < fila.Length; i++)
-                hoja.Append(Celda($"{Letra(i)}{numero}", fila[i], 0));
+            {
+                // Columnas de importes: número real (se puede sumar en Excel).
+                if (numericas is not null && i < numericas.Length && numericas[i] &&
+                    decimal.TryParse(fila[i], NumberStyles.Number, CultureInfo.InvariantCulture, out var valor))
+                    hoja.Append($"<c r=\"{Letra(i)}{numero}\" s=\"2\"><v>{valor.ToString(CultureInfo.InvariantCulture)}</v></c>");
+                else
+                    hoja.Append(Celda($"{Letra(i)}{numero}", fila[i], 0));
+            }
             hoja.Append("</row>");
             numero++;
         }
@@ -266,8 +273,9 @@ public static class PlanillaExcel
                 "<fill><patternFill patternType=\"solid\"><fgColor rgb=\"FF1F4E79\"/><bgColor indexed=\"64\"/></patternFill></fill></fills>" +
                 "<borders count=\"1\"><border><left/><right/><top/><bottom/><diagonal/></border></borders>" +
                 "<cellStyleXfs count=\"1\"><xf numFmtId=\"0\" fontId=\"0\" fillId=\"0\" borderId=\"0\"/></cellStyleXfs>" +
-                "<cellXfs count=\"2\"><xf numFmtId=\"49\" fontId=\"0\" fillId=\"0\" borderId=\"0\" xfId=\"0\" applyNumberFormat=\"1\"/>" +
-                "<xf numFmtId=\"49\" fontId=\"1\" fillId=\"2\" borderId=\"0\" xfId=\"0\" applyFont=\"1\" applyFill=\"1\" applyNumberFormat=\"1\"/></cellXfs>" +
+                "<cellXfs count=\"3\"><xf numFmtId=\"49\" fontId=\"0\" fillId=\"0\" borderId=\"0\" xfId=\"0\" applyNumberFormat=\"1\"/>" +
+                "<xf numFmtId=\"49\" fontId=\"1\" fillId=\"2\" borderId=\"0\" xfId=\"0\" applyFont=\"1\" applyFill=\"1\" applyNumberFormat=\"1\"/>" +
+                "<xf numFmtId=\"4\" fontId=\"0\" fillId=\"0\" borderId=\"0\" xfId=\"0\" applyNumberFormat=\"1\"/></cellXfs>" +
                 "<cellStyles count=\"1\"><cellStyle name=\"Normal\" xfId=\"0\" builtinId=\"0\"/></cellStyles>" +
                 "</styleSheet>",
             ["xl/worksheets/sheet1.xml"] = hoja.ToString()

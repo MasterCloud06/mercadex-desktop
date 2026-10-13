@@ -58,7 +58,7 @@ public partial class ObligacionesViewModel
                 "No se pudo completar la actualización de la pantalla. " +
                 "Pulsa Actualizar para comprobar los conceptos disponibles.";
 
-            MessageBox.Show(
+            Dialogo.Mostrar(
                 ex.Message,
                 "Conceptos de deuda",
                 MessageBoxButton.OK,

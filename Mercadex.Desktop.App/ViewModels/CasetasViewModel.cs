@@ -855,7 +855,7 @@ public partial class CasetasViewModel : ObservableObject
 
         if (unidad.TitularId is not null)
         {
-            var confirmar = System.Windows.MessageBox.Show(
+            var confirmar = Dialogo.Mostrar(
                 $"La unidad {unidad.Codigo} tiene como titular a " +
                 $"{unidad.Titular}.\n\n" +
                 $"¿Cambiar el titular a {socio.NombreCompleto}?\n" +

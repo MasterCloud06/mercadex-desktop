@@ -257,7 +257,7 @@ public partial class AnularCobroView : UserControl
 
         if (motivo.Length < 5)
         {
-            MessageBox.Show(
+            Dialogo.Mostrar(
                 "Escribe el motivo de la anulacion " +
                 "(al menos 5 caracteres).",
                 "Anular cobro",
@@ -266,7 +266,7 @@ public partial class AnularCobroView : UserControl
             return;
         }
 
-        var confirmar = MessageBox.Show(
+        var confirmar = Dialogo.Mostrar(
             $"Se anulara el recibo N. {recibo.Numero} " +
             $"por {recibo.Total:N2}.\n\n" +
             "Las deudas cobradas volveran a quedar pendientes " +
@@ -294,7 +294,7 @@ public partial class AnularCobroView : UserControl
 
             TxtMotivo.Text = "";
 
-            MessageBox.Show(
+            Dialogo.Mostrar(
                 $"El recibo N. {recibo.Numero} fue anulado.\n" +
                 "Puedes imprimir el comprobante en " +
                 "Obligaciones > Tarifas por caseta > " +
@@ -308,7 +308,7 @@ public partial class AnularCobroView : UserControl
             TxtEstado.Text =
                 "No se pudo anular el recibo: " + ex.Message;
 
-            MessageBox.Show(
+            Dialogo.Mostrar(
                 ex.Message,
                 "No se pudo anular",
                 MessageBoxButton.OK,

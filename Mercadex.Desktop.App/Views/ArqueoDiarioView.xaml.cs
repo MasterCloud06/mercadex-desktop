@@ -284,7 +284,7 @@ public partial class ArqueoDiarioView : UserControl
 
         if (!LeerContado(out var contado))
         {
-            MessageBox.Show("Escribe el efectivo contado (por ejemplo 850,50).", "Cierre de caja",
+            Dialogo.Mostrar("Escribe el efectivo contado (por ejemplo 850,50).", "Cierre de caja",
                 MessageBoxButton.OK, MessageBoxImage.Warning);
             TxtContado.Focus();
             return;
@@ -294,7 +294,7 @@ public partial class ArqueoDiarioView : UserControl
 
         if (responsable.Length < 3)
         {
-            MessageBox.Show("Escribe el nombre del responsable del cierre.", "Cierre de caja",
+            Dialogo.Mostrar("Escribe el nombre del responsable del cierre.", "Cierre de caja",
                 MessageBoxButton.OK, MessageBoxImage.Warning);
             TxtResponsable.Focus();
             return;
@@ -305,13 +305,13 @@ public partial class ArqueoDiarioView : UserControl
 
         if (diferencia != 0 && observacion.Length == 0)
         {
-            MessageBox.Show("Hay una diferencia de efectivo. Escribe una observación que la explique.",
+            Dialogo.Mostrar("Hay una diferencia de efectivo. Escribe una observación que la explique.",
                 "Cierre de caja", MessageBoxButton.OK, MessageBoxImage.Warning);
             TxtObservacion.Focus();
             return;
         }
 
-        var confirmar = MessageBox.Show(
+        var confirmar = Dialogo.Mostrar(
             $"¿Registrar el cierre de caja del {_fechaConsultada:dd/MM/yyyy} en {m.Moneda}?\n\n" +
             $"Efectivo: {Monto(m.Efectivo, m.Moneda)}\n" +
             $"QR: {Monto(m.Qr, m.Moneda)}\n" +
@@ -347,7 +347,7 @@ public partial class ArqueoDiarioView : UserControl
             await ConsultarAsync(m.MonedaId);
             await CargarHistorialAsync();
 
-            if (MessageBox.Show("Cierre registrado.\n\n¿Deseas imprimir o guardar el acta ahora?",
+            if (Dialogo.Mostrar("Cierre registrado.\n\n¿Deseas imprimir o guardar el acta ahora?",
                     "Cierre de caja", MessageBoxButton.YesNo, MessageBoxImage.Information) == MessageBoxResult.Yes)
             {
                 AbrirActa();
@@ -355,7 +355,7 @@ public partial class ArqueoDiarioView : UserControl
         }
         catch (Exception ex)
         {
-            MessageBox.Show(ex.Message, "No se pudo registrar el cierre",
+            Dialogo.Mostrar(ex.Message, "No se pudo registrar el cierre",
                 MessageBoxButton.OK, MessageBoxImage.Warning);
             BtnCerrar.IsEnabled = true;
         }

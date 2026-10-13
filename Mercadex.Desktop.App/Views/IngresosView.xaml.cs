@@ -97,7 +97,7 @@ public partial class IngresosView : UserControl
 
             vm.UnidadSeleccionada = null;
 
-            MessageBox.Show(
+            Dialogo.Mostrar(
                 $"No se encontró el local {numero}. " +
                 "Comprueba que esté registrado y activo.",
                 "Mercadex",

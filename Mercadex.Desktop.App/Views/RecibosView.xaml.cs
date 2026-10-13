@@ -493,7 +493,7 @@ public partial class RecibosView : UserControl
         }
         catch (Exception ex)
         {
-            MessageBox.Show(
+            Dialogo.Mostrar(
                 "No se pudo abrir la vista previa.\n\n" +
                 ex.Message,
                 "Mercadex",
@@ -542,7 +542,7 @@ public partial class RecibosView : UserControl
         }
         catch (Exception ex)
         {
-            MessageBox.Show(
+            Dialogo.Mostrar(
                 ex.Message,
                 "Error al imprimir",
                 MessageBoxButton.OK,

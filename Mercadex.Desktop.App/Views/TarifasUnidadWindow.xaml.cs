@@ -366,7 +366,7 @@ public partial class TarifasUnidadWindow : Window
             return;
         }
 
-        var confirmacion = MessageBox.Show(
+        var confirmacion = Dialogo.Mostrar(
             this,
             $"Caseta: {caseta.Caseta}\n" +
             $"Moneda: {moneda.Codigo}\n" +
@@ -753,7 +753,7 @@ public partial class TarifasUnidadWindow : Window
                 previa.TotalesPorMoneda.Select(x =>
                     $"{NombreMoneda(x.MonedaId)} {x.Total:N2}"));
 
-            var confirmar = MessageBox.Show(
+            var confirmar = Dialogo.Mostrar(
                 this,
                 $"Periodo: {mes:00}/{anio}\n" +
                 $"Casetas: {previa.Listas}\n" +
@@ -843,7 +843,7 @@ public partial class TarifasUnidadWindow : Window
                 $"para {mes:00}/{anio}. " +
                 "Vista previa invalidada para evitar duplicados.";
 
-            MessageBox.Show(
+            Dialogo.Mostrar(
                 this,
                 $"Se generaron {cantidad} obligaciones " +
                 $"del periodo {mes:00}/{anio}.\n\n" +

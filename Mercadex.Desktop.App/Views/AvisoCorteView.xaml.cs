@@ -530,7 +530,7 @@ public partial class AvisoCorteView : UserControl
         }
         catch (Exception ex)
         {
-            MessageBox.Show(
+            Dialogo.Mostrar(
                 ex.Message,
                 "No se pudo abrir la vista previa",
                 MessageBoxButton.OK,
@@ -705,7 +705,7 @@ public partial class AvisoCorteView : UserControl
             }
             catch (Exception ex)
             {
-                MessageBox.Show(
+                Dialogo.Mostrar(
                     ventana,
                     "No se pudo imprimir.`n`n" +
                     ex.Message,
@@ -735,7 +735,7 @@ public partial class AvisoCorteView : UserControl
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show(
+                    Dialogo.Mostrar(
                         ventana,
                         ex.Message,
                         "Error al copiar",

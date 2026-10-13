@@ -368,7 +368,7 @@ public partial class DocumentosKardexWindow : Window
         var casetaId =
             (CmbCasetas.SelectedItem as CasetaItem)?.Id;
 
-        var confirmar = MessageBox.Show(
+        var confirmar = Dialogo.Mostrar(
             this,
             $"Socio: {socio.Etiqueta}\n" +
             $"Tipo: {tipo.Nombre}\n" +
@@ -464,7 +464,7 @@ public partial class DocumentosKardexWindow : Window
 
             await ConsultarDocumentosAsync(guardado?.Id);
 
-            MessageBox.Show(
+            Dialogo.Mostrar(
                 this,
                 "El documento se adjuntó correctamente " +
                 "al kardex.",

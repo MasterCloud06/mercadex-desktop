@@ -178,12 +178,12 @@ public partial class InformeIngresosGastosView : UserControl
 
             File.WriteAllText(dialogo.FileName, sb.ToString(), new UTF8Encoding(true));
 
-            MessageBox.Show("Archivo exportado. Ábrelo con Excel.\n\nPara entregar a socios o directiva usa el PDF.",
+            Dialogo.Mostrar("Archivo exportado. Ábrelo con Excel.\n\nPara entregar a socios o directiva usa el PDF.",
                 "Informe de ingresos y gastos", MessageBoxButton.OK, MessageBoxImage.Information);
         }
         catch (Exception ex)
         {
-            MessageBox.Show("No se pudo exportar:\n\n" + ex.Message, "Mercadex",
+            Dialogo.Mostrar("No se pudo exportar:\n\n" + ex.Message, "Mercadex",
                 MessageBoxButton.OK, MessageBoxImage.Warning);
         }
     }

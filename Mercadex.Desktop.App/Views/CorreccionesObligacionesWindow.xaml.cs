@@ -231,17 +231,17 @@ public partial class CorreccionesObligacionesWindow : Window
             return;
         }
 
-        var confirmar = MessageBox.Show(
+        var confirmar = Dialogo.Mostrar(
             this,
             $"Caseta: {deuda.Caseta}\n" +
-            $"Periodo: {_mes:00}/{_anio}\n\n" +
+            $"Período: {_mes:00}/{_anio}\n\n" +
             $"Importe anterior: {deuda.Moneda} {deuda.Monto:N2}\n" +
             $"Importe nuevo: {deuda.Moneda} {nuevoMonto:N2}\n\n" +
             $"Motivo:\n{motivo}\n\n" +
-            "Esta correccion quedara registrada " +
-            "en el historial de la obligacion.\n\n" +
-            "¿Confirmas la modificacion?",
-            "Confirmar modificacion de deuda",
+            "Esta corrección quedará registrada " +
+            "en el historial de la obligación.\n\n" +
+            "¿Confirmas la modificación?",
+            "Confirmar modificación de deuda",
             MessageBoxButton.YesNo,
             MessageBoxImage.Warning,
             MessageBoxResult.No);
@@ -256,7 +256,7 @@ public partial class CorreccionesObligacionesWindow : Window
         try
         {
             TxtEstado.Text =
-                "Guardando correccion e historial...";
+                "Guardando corrección e historial...";
 
             var solicitud = new
             {
@@ -286,11 +286,11 @@ public partial class CorreccionesObligacionesWindow : Window
 
             await CargarAsync(deuda.Id);
 
-            MessageBox.Show(
+            Dialogo.Mostrar(
                 this,
                 "Importe corregido y registrado en el historial. " +
                 "La tarifa general de la caseta no fue modificada.",
-                "Modificacion completada",
+                "Modificación completada",
                 MessageBoxButton.OK,
                 MessageBoxImage.Information);
         }

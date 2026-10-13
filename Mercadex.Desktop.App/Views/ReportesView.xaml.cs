@@ -548,7 +548,7 @@ public partial class ReportesView : UserControl
                 contenido.ToString(),
                 new UTF8Encoding(true));
 
-            MessageBox.Show(
+            Dialogo.Mostrar(
                 "Informe exportado correctamente.",
                 "Mercadex",
                 MessageBoxButton.OK,
@@ -556,7 +556,7 @@ public partial class ReportesView : UserControl
         }
         catch (Exception ex)
         {
-            MessageBox.Show(
+            Dialogo.Mostrar(
                 ex.Message,
                 "Error al exportar",
                 MessageBoxButton.OK,

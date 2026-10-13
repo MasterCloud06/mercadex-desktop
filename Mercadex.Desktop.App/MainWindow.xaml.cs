@@ -59,14 +59,14 @@ public partial class MainWindow : Window
 
         if (ventana.ShowDialog() == true)
         {
-            MessageBox.Show(this, "Tu contraseña se cambió. Úsala la próxima vez que ingreses.",
+            Dialogo.Mostrar(this, "Tu contraseña se cambió. Úsala la próxima vez que ingreses.",
                 "Mercadex", MessageBoxButton.OK, MessageBoxImage.Information);
         }
     }
 
     private void CerrarSesion_Click(object sender, RoutedEventArgs e)
     {
-        var respuesta = MessageBox.Show(this,
+        var respuesta = Dialogo.Mostrar(this,
             "¿Cerrar tu sesión? Lo que no hayas guardado se pierde.",
             "Cerrar sesión", MessageBoxButton.YesNo, MessageBoxImage.Question);
 

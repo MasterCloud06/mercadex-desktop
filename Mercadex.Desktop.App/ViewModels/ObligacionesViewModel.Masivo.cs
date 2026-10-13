@@ -257,7 +257,7 @@ catch (Exception ex)
                 : "Todas las casetas activas";
 
         var respuesta =
-            MessageBox.Show(
+            Dialogo.Mostrar(
                 $"Se generarán {candidatas.Count} obligaciones.\n\n" +
                 $"{alcanceTexto}\n" +
                 $"Concepto: {ConceptoMasivoSeleccionado.Nombre}\n" +
@@ -346,7 +346,7 @@ catch (Exception ex)
                 Mensaje =
                     $"Generación completada: {creadas} obligación(es).";
 
-                MessageBox.Show(
+                Dialogo.Mostrar(
                     $"Generación terminada correctamente.\n\n" +
                     $"Obligaciones creadas: {creadas}\n" +
                     $"Concepto: {ConceptoMasivoSeleccionado.Nombre}\n" +
@@ -366,7 +366,7 @@ catch (Exception ex)
                     $"Creadas: {creadas}. " +
                     $"Errores: {errores.Count}.";
 
-                MessageBox.Show(
+                Dialogo.Mostrar(
                     $"Obligaciones creadas: {creadas}\n" +
                     $"No creadas: {errores.Count}\n\n" +
                     detalle,

@@ -307,7 +307,7 @@ public sealed class VistaPreviaReciboWindow : Window
                 _moneda,
                 _titular);
 
-            var respuesta = MessageBox.Show(
+            var respuesta = Dialogo.Mostrar(
                 this,
                 "El recibo PDF se guardó correctamente.\n\n" +
                 "¿Deseas abrirlo ahora?",
@@ -328,7 +328,7 @@ public sealed class VistaPreviaReciboWindow : Window
                 }
                 catch (Exception exAbrir)
                 {
-                    MessageBox.Show(
+                    Dialogo.Mostrar(
                         this,
                         "El PDF está guardado, pero no se pudo abrir.\n\n" +
                         exAbrir.Message,
@@ -340,7 +340,7 @@ public sealed class VistaPreviaReciboWindow : Window
         }
         catch (Exception ex)
         {
-            MessageBox.Show(
+            Dialogo.Mostrar(
                 this,
                 "No se pudo guardar el PDF.\n\n" +
                 "Si el cobro ya fue registrado, no lo repitas.\n\n" +
@@ -374,7 +374,7 @@ public sealed class VistaPreviaReciboWindow : Window
         }
         catch (Exception ex)
         {
-            MessageBox.Show(
+            Dialogo.Mostrar(
                 this,
                 "El cobro ya está registrado. No vuelva a cobrar.\n\n" +
                 "No se pudo imprimir el recibo. " +

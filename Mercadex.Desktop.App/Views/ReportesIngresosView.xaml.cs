@@ -430,7 +430,7 @@ private async void Hoy_Click(
                 csv.ToString(),
                 new UTF8Encoding(true));
 
-            MessageBox.Show(
+            Dialogo.Mostrar(
                 "Reporte exportado correctamente.",
                 "Mercadex",
                 MessageBoxButton.OK,
@@ -438,7 +438,7 @@ private async void Hoy_Click(
         }
         catch (Exception ex)
         {
-            MessageBox.Show(
+            Dialogo.Mostrar(
                 ex.Message,
                 "Error de exportación",
                 MessageBoxButton.OK,

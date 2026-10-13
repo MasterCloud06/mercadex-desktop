@@ -283,7 +283,7 @@ private readonly HttpClient _api = ApiConfiguration.CrearCliente(TimeSpan.FromSe
             return;
         }
 
-        var confirmar = MessageBox.Show(
+        var confirmar = Dialogo.Mostrar(
             $"¿Guardar el Kardex de la caseta {unidad.Codigo}?",
             "Mercadex",
             MessageBoxButton.YesNo,
@@ -356,7 +356,7 @@ private readonly HttpClient _api = ApiConfiguration.CrearCliente(TimeSpan.FromSe
             // Lo que falta depende de lo guardado (óbito, propiedad, aporte).
             await RecargarExpedienteAsync(unidad);
 
-            MessageBox.Show(
+            Dialogo.Mostrar(
                 Estado.Text,
                 "Mercadex",
                 MessageBoxButton.OK,
@@ -598,7 +598,7 @@ private readonly HttpClient _api = ApiConfiguration.CrearCliente(TimeSpan.FromSe
 
         if (_expediente.SocioDocumentosId is not Guid socioId)
         {
-            MessageBox.Show(
+            Dialogo.Mostrar(
                 "Primero asigna un titular a la caseta o elige el socio del Kardex y guarda la ficha.",
                 "Documentos del Kardex", MessageBoxButton.OK, MessageBoxImage.Information);
             return;

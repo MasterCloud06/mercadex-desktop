@@ -129,7 +129,7 @@ public partial class IngresosViewModel : ObservableObject
         {
             Mensaje = "No fue posible cargar los datos.";
 
-            MessageBox.Show(
+            Dialogo.Mostrar(
                 ex.Message,
                 "Error de conexión",
                 MessageBoxButton.OK,
@@ -200,7 +200,7 @@ public partial class IngresosViewModel : ObservableObject
         {
             Mensaje = "Error al consultar las obligaciones.";
 
-            MessageBox.Show(
+            Dialogo.Mostrar(
                 ex.Message,
                 "Ingresos",
                 MessageBoxButton.OK,
@@ -249,7 +249,7 @@ public partial class IngresosViewModel : ObservableObject
 
         if (UnidadSeleccionada == null)
         {
-            MessageBox.Show("Seleccione una unidad comercial.");
+            Dialogo.Mostrar("Seleccione una unidad comercial.");
             return;
         }
 
@@ -259,13 +259,13 @@ public partial class IngresosViewModel : ObservableObject
 
         if (seleccionadas.Count == 0)
         {
-            MessageBox.Show("Seleccione al menos una obligación.");
+            Dialogo.Mostrar("Seleccione al menos una obligación.");
             return;
         }
 
         if (seleccionadas.Select(o => o.MonedaId).Distinct().Count() != 1)
         {
-            MessageBox.Show(
+            Dialogo.Mostrar(
                 "Las obligaciones de distintas monedas deben cobrarse por separado.");
 
             return;
@@ -274,13 +274,13 @@ public partial class IngresosViewModel : ObservableObject
         if (MonedaSeleccionada == null ||
             seleccionadas.Any(o => o.MonedaId != MonedaSeleccionada.Id))
         {
-            MessageBox.Show("La moneda seleccionada no corresponde al cobro.");
+            Dialogo.Mostrar("La moneda seleccionada no corresponde al cobro.");
             return;
         }
 
         if (FormaPagoSeleccionada == null)
         {
-            MessageBox.Show("Seleccione una forma de pago.");
+            Dialogo.Mostrar("Seleccione una forma de pago.");
             return;
         }
 
@@ -291,7 +291,7 @@ public partial class IngresosViewModel : ObservableObject
                 StringComparison.OrdinalIgnoreCase)
             && string.IsNullOrWhiteSpace(Referencia))
         {
-            MessageBox.Show(
+            Dialogo.Mostrar(
                 "Para registrar un pago mediante QR, " +
                 "introduce el número de transacción.",
                 "Número de transacción obligatorio",
@@ -307,11 +307,11 @@ public partial class IngresosViewModel : ObservableObject
 
         if (string.IsNullOrWhiteSpace(NombrePagador))
         {
-            MessageBox.Show("Introduzca el nombre del pagador.");
+            Dialogo.Mostrar("Introduzca el nombre del pagador.");
             return;
         }
 
-        var confirmacion = MessageBox.Show(
+        var confirmacion = Dialogo.Mostrar(
             $"¿Registrar el cobro de {TotalSeleccionado:N2} " +
             $"{MonedaSeleccionada.Codigo}?\n\n" +
             $"Unidad: {UnidadSeleccionada.Codigo}\n" +
@@ -436,7 +436,7 @@ public partial class IngresosViewModel : ObservableObject
             }
             catch (Exception exVistaPrevia)
             {
-                MessageBox.Show(
+                Dialogo.Mostrar(
                     $"El cobro ya está registrado.\n" +
                     $"Recibo N.º {numeroReciboConfirmado}.\n\n" +
                     "No vuelva a realizar el cobro.\n\n" +
@@ -459,7 +459,7 @@ public partial class IngresosViewModel : ObservableObject
                 Mensaje =
                     $"Cobro registrado. Recibo N.º {numeroReciboConfirmado}.";
 
-                MessageBox.Show(
+                Dialogo.Mostrar(
                     Mensaje + "\n\n" +
                     "No vuelva a realizar el cobro. " +
                     "Ocurrió un problema al actualizar la pantalla.\n\n" +
@@ -472,7 +472,7 @@ public partial class IngresosViewModel : ObservableObject
             {
                 Mensaje = "No se pudo confirmar el cobro.";
 
-                MessageBox.Show(
+                Dialogo.Mostrar(
                     "No intente cobrar nuevamente sin verificar " +
                     "si el recibo fue registrado.\n\n" +
                     ex.Message,
@@ -495,7 +495,7 @@ public partial class IngresosViewModel : ObservableObject
     {
         if (FechaInicio > FechaFin)
         {
-            MessageBox.Show(
+            Dialogo.Mostrar(
                 "La fecha inicial no puede ser posterior a la final.");
 
             return;
@@ -531,7 +531,7 @@ public partial class IngresosViewModel : ObservableObject
         }
         catch (Exception ex)
         {
-            MessageBox.Show(
+            Dialogo.Mostrar(
                 ex.Message,
                 "Error cargando ingresos",
                 MessageBoxButton.OK,

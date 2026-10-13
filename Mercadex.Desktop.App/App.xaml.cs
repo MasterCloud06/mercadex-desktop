@@ -33,7 +33,7 @@ public partial class App : Application
             }
             catch (Exception ex)
             {
-                var respuesta = MessageBox.Show(
+                var respuesta = Dialogo.Mostrar(
                     "No se pudo comprobar la version de Mercadex." +
                     "\n\n" + ex.Message +
                     "\n\nSe requiere conexion a Internet." +

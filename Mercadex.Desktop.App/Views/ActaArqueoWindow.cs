@@ -245,7 +245,7 @@ public sealed class ActaArqueoWindow : Window
         {
             ArqueoPdfService.Guardar(dialogo.FileName, _acta);
 
-            if (MessageBox.Show(this, "El acta se guardó en PDF.\n\n¿Deseas abrirla ahora?",
+            if (Dialogo.Mostrar(this, "El acta se guardó en PDF.\n\n¿Deseas abrirla ahora?",
                     "Mercadex", MessageBoxButton.YesNo, MessageBoxImage.Information) == MessageBoxResult.Yes)
             {
                 System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
@@ -257,7 +257,7 @@ public sealed class ActaArqueoWindow : Window
         }
         catch (Exception ex)
         {
-            MessageBox.Show(this, "No se pudo guardar el PDF:\n\n" + ex.Message,
+            Dialogo.Mostrar(this, "No se pudo guardar el PDF:\n\n" + ex.Message,
                 "Mercadex", MessageBoxButton.OK, MessageBoxImage.Warning);
         }
     }

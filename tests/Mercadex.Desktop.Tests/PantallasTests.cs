@@ -49,6 +49,27 @@ public sealed class PantallasTests
     }
 
     [Fact]
+    public void La_ventana_de_actualizacion_se_construye()
+    {
+        EjecutarEnSta(() =>
+        {
+            AsegurarAplicacion();
+            var datos = new Mercadex.Desktop.App.Updates.DatosVersion
+            {
+                SchemaVersion = 1,
+                LatestVersion = "9.9.9",
+                MinimumRequiredVersion = "9.9.9",
+                ReleaseNotes = "Mercadex 9.9.9 - Prueba de la ventana.",
+                InstallerUrl = "https://github.com/MasterCloud06/mercadex-updates/releases/download/v9.9.9/x.exe",
+                Sha256 = new string('a', 64)
+            };
+            var ventana = new Mercadex.Desktop.App.Updates.VentanaActualizacionObligatoria(datos);
+            MedirYOrganizar((FrameworkElement)ventana.Content);
+            ventana.Close();
+        });
+    }
+
+    [Fact]
     public void Los_estilos_globales_cargan()
     {
         EjecutarEnSta(() =>

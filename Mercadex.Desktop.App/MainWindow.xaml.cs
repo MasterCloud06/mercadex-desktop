@@ -27,11 +27,15 @@ public partial class MainWindow : Window
         Navegacion.CobroSolicitado += AbrirCobro;
         Navegacion.DeudasSolicitadas += AbrirDeudas;
         Navegacion.KardexSolicitado += AbrirKardex;
+        Navegacion.SocioSolicitado += AbrirSocio;
+        Navegacion.CasetaSolicitada += AbrirCaseta;
         Closed += (_, _) =>
         {
             Navegacion.CobroSolicitado -= AbrirCobro;
             Navegacion.DeudasSolicitadas -= AbrirDeudas;
             Navegacion.KardexSolicitado -= AbrirKardex;
+            Navegacion.SocioSolicitado -= AbrirSocio;
+            Navegacion.CasetaSolicitada -= AbrirCaseta;
         };
 
         MostrarUsuario();
@@ -113,6 +117,28 @@ public partial class MainWindow : Window
         var vista = new Views.KardexView();
         vista.SeleccionarAlCargar(unidadId);
         NavKardex.IsChecked = true;
+        vm.CurrentView = vista;
+    }
+
+    private void AbrirSocio(Guid socioId)
+    {
+        if (DataContext is not ViewModels.MainViewModel vm)
+            return;
+
+        var vista = new Views.SociosView();
+        vista.SeleccionarAlCargar(socioId);
+        NavSocios.IsChecked = true;
+        vm.CurrentView = vista;
+    }
+
+    private void AbrirCaseta(Guid unidadId)
+    {
+        if (DataContext is not ViewModels.MainViewModel vm)
+            return;
+
+        var vista = new Views.CasetasView();
+        vista.SeleccionarAlCargar(unidadId);
+        NavCasetas.IsChecked = true;
         vm.CurrentView = vista;
     }
 

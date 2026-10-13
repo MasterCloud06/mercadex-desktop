@@ -24,4 +24,16 @@ public static class Navegacion
     /// <summary>Abre el Kardex con la caseta indicada.</summary>
     public static void AbrirKardex(Guid unidadId) =>
         KardexSolicitado?.Invoke(unidadId);
+
+    public static event Action<Guid>? SocioSolicitado;
+
+    /// <summary>Abre Socios con la ficha de ese socio.</summary>
+    public static void AbrirSocio(Guid socioId) =>
+        SocioSolicitado?.Invoke(socioId);
+
+    public static event Action<Guid>? CasetaSolicitada;
+
+    /// <summary>Abre Casetas con la ficha de esa unidad.</summary>
+    public static void AbrirCaseta(Guid unidadId) =>
+        CasetaSolicitada?.Invoke(unidadId);
 }

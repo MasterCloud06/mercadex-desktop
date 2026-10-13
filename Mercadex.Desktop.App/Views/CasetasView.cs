@@ -363,6 +363,16 @@ public sealed class CasetasView : UserControl
             _ficha.Children.Add(new TextBlock { Text = t.Nombre, FontSize = 16, FontWeight = FontWeights.SemiBold, Foreground = UiKit.Tinta, TextWrapping = TextWrapping.Wrap });
             _ficha.Children.Add(UiKit.Ayuda(
                 $"CI {Texto(t.Documento)}  ·  Cel. {Texto(t.Telefono)}\nDesde el {t.Desde.ToOffset(TimeSpan.FromHours(-4)).ToString("dd/MM/yyyy", Bo)}", 8));
+
+            var verSocio = new Button
+            {
+                Content = "Ver ficha del socio",
+                Style = UiKit.Estilo("Mx.NavLink"),
+                HorizontalAlignment = HorizontalAlignment.Left,
+                Margin = new Thickness(0, -4, 0, 8)
+            };
+            verSocio.Click += (_, _) => Navegacion.AbrirSocio(t.SocioId);
+            _ficha.Children.Add(verSocio);
         }
         else
         {
@@ -664,6 +674,7 @@ public sealed class CasetasView : UserControl
 
     private sealed class TitularDto
     {
+        public Guid SocioId { get; set; }
         public string Nombre { get; set; } = "";
         public string? Documento { get; set; }
         public string? Telefono { get; set; }

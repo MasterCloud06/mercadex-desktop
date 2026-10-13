@@ -20,6 +20,23 @@ public partial class App : Application
     {
         base.OnStartup(e);
 
+        // Ícono de Mercadex en la barra de título de todas las ventanas.
+        try
+        {
+            var icono = System.Windows.Media.Imaging.BitmapFrame.Create(
+                new Uri("pack://application:,,,/Assets/mercadex.ico", UriKind.Absolute));
+            EventManager.RegisterClassHandler(typeof(Window), FrameworkElement.LoadedEvent,
+                new RoutedEventHandler((origen, _) =>
+                {
+                    if (origen is Window ventanaConIcono && ventanaConIcono.Icon is null)
+                        ventanaConIcono.Icon = icono;
+                }));
+        }
+        catch
+        {
+            // Sin ícono la aplicación funciona igual.
+        }
+
         ShutdownMode = ShutdownMode.OnExplicitShutdown;
 
 

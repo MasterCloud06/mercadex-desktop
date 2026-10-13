@@ -7,6 +7,8 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
     <Version>1.6.2</Version>
+    <!-- Ícono del programa: barra de tareas, accesos directos y el .exe -->
+    <ApplicationIcon>Assets\mercadex.ico</ApplicationIcon>
   </PropertyGroup>
 
   <ItemGroup>
@@ -14,6 +16,11 @@
     <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="10.0.12" />
     <PackageReference Include="Microsoft.Extensions.Http" Version="10.0.12" />
     <PackageReference Include="PDFsharp-WPF" Version="6.2.4" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- El mismo ícono para la barra de título de cada ventana -->
+    <Resource Include="Assets\mercadex.ico" />
   </ItemGroup>
 
   <ItemGroup>

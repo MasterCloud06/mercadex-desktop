@@ -4,6 +4,7 @@
 #define MyAppExeName "Mercadex.Desktop.App.exe"
 
 [Setup]
+SetupIconFile=Assets\mercadex.ico
 AppId={{F751D3B7-63C9-45D2-B0CB-7A994BBE8A10}
 AppName={#MyAppName}
 AppVersion={#MyAppVersion}

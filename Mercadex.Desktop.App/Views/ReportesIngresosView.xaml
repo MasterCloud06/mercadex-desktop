@@ -76,6 +76,32 @@
 
                         </StackPanel>
 
+                        <!-- Pago por grupo de bloques: un concepto y/o un bloque -->
+                        <StackPanel Width="230"
+                                    Margin="0,0,15,12">
+
+                            <TextBlock Text="Concepto"
+                                       Margin="0,0,0,5"/>
+
+                            <ComboBox x:Name="CmbConcepto"
+                                      Height="35"
+                                      DisplayMemberPath="Nombre"
+                                      VerticalContentAlignment="Center"/>
+
+                        </StackPanel>
+
+                        <StackPanel Width="165"
+                                    Margin="0,0,15,12">
+
+                            <TextBlock Text="Bloque"
+                                       Margin="0,0,0,5"/>
+
+                            <ComboBox x:Name="CmbBloque"
+                                      Height="35"
+                                      VerticalContentAlignment="Center"/>
+
+                        </StackPanel>
+
 <Button Content="Diario de hoy"
         Click="Hoy_Click"
         Height="38"
@@ -344,6 +370,11 @@
                                     Binding="{Binding Monto,
                                         StringFormat=N2}"
                                     Width="110"/>
+
+                                <DataGridTextColumn
+                                    Header="Cobrado por"
+                                    Binding="{Binding CobradoPor}"
+                                    Width="150"/>
 
                             </DataGrid.Columns>
 

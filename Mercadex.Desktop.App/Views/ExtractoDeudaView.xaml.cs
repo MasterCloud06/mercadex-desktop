@@ -165,7 +165,7 @@ public partial class ExtractoDeudaView : UserControl
         var obligaciones =
             await Api.GetFromJsonAsync<
                 List<ObligacionExtracto>>(
-                    "/api/Obligaciones")
+                    $"/api/Obligaciones/unidad/{unidad.Id}/pendientes")
             ?? new();
 
         var monedas =
@@ -223,7 +223,11 @@ public partial class ExtractoDeudaView : UserControl
                     ? moneda
                     : "Sin identificar",
 
-                Monto = o.Monto
+                Monto = o.Monto,
+
+                Nota = o.Modificaciones > 0 ? "✎ Modificada" : "",
+
+                NotaDetalle = o.UltimaModificacion
             })
             .OrderBy(d => d.Concepto)
             .ThenBy(d => d.Periodo)
@@ -407,6 +411,10 @@ public partial class ExtractoDeudaView : UserControl
         public int? PeriodoAnio { get; set; }
 
         public string Estado { get; set; } = "";
+
+        public int Modificaciones { get; set; }
+
+        public string? UltimaModificacion { get; set; }
     }
 
     private sealed class MonedaExtracto
@@ -432,6 +440,11 @@ public partial class ExtractoDeudaView : UserControl
 
 public sealed class FilaExtracto
 {
+    /// <summary>"✎ Modificada" si el monto se corrigió después de registrarse.</summary>
+    public string Nota { get; set; } = "";
+
+    public string? NotaDetalle { get; set; }
+
     public string Concepto { get; set; } = "";
 
     public string Periodo { get; set; } = "";

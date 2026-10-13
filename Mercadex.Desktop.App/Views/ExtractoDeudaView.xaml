@@ -168,6 +168,20 @@
                                 Binding="{Binding Monto, StringFormat=N2}"
                                 Width="110"/>
 
+                            <DataGridTextColumn
+                                Header="Nota"
+                                Binding="{Binding Nota}"
+                                Width="120">
+                                <DataGridTextColumn.ElementStyle>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="Foreground" Value="#7A5200"/>
+                                        <Setter Property="FontWeight" Value="SemiBold"/>
+                                        <Setter Property="ToolTip" Value="{Binding NotaDetalle}"/>
+                                        <Setter Property="ToolTipService.ShowDuration" Value="30000"/>
+                                    </Style>
+                                </DataGridTextColumn.ElementStyle>
+                            </DataGridTextColumn>
+
                         </DataGrid.Columns>
 
                     </DataGrid>

@@ -37,7 +37,82 @@ public partial class ReportesCajaWindow : Window
         FechaDesde.SelectedDate = DateTime.Today;
         FechaHasta.SelectedDate = DateTime.Today;
 
-        Loaded += async (_, _) => await ConsultarAsync();
+        Loaded += async (_, _) =>
+        {
+            await CargarFiltrosAsync();
+            await ConsultarAsync();
+        };
+    }
+
+    // ---------------- Filtros por concepto y bloque ----------------
+
+    private const string TodosLosBloques = "Todos los bloques";
+
+    private async Task CargarFiltrosAsync()
+    {
+        var conceptos = new List<FiltroConcepto> { new() { Id = Guid.Empty, Nombre = "Todos los conceptos" } };
+        var bloques = new List<string> { TodosLosBloques };
+
+        try
+        {
+            var catalogos = await _api.GetFromJsonAsync<CatalogosFiltro>("/api/ingresos/catalogos");
+            conceptos.AddRange((catalogos?.Conceptos ?? new())
+                .Where(c => c.Id != Guid.Empty)
+                .OrderBy(c => c.Nombre));
+
+            var unidades = await _api.GetFromJsonAsync<List<UnidadFiltro>>("/api/unidades-comerciales") ?? new();
+            bloques.AddRange(unidades
+                .Select(u => u.Bloque?.Trim())
+                .OfType<string>()
+                .Where(b => b.Length > 0)
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .OrderBy(b => b.Length)
+                .ThenBy(b => b));
+        }
+        catch
+        {
+            // Sin catálogos el reporte funciona igual, sin filtros.
+        }
+
+        CmbConcepto.ItemsSource = conceptos;
+        CmbConcepto.SelectedIndex = 0;
+        CmbBloque.ItemsSource = bloques;
+        CmbBloque.SelectedIndex = 0;
+    }
+
+    private Guid? ConceptoFiltro =>
+        CmbConcepto.SelectedItem is FiltroConcepto { Id: var id } && id != Guid.Empty ? id : null;
+
+    private string? BloqueFiltro =>
+        CmbBloque.SelectedItem is string b && b != TodosLosBloques ? b : null;
+
+    private string TextoFiltros()
+    {
+        var partes = new List<string>();
+
+        if (ConceptoFiltro.HasValue && CmbConcepto.SelectedItem is FiltroConcepto c)
+            partes.Add($"Concepto: {c.Nombre}");
+
+        if (BloqueFiltro is { } b)
+            partes.Add($"Bloque: {b}");
+
+        return string.Join(" · ", partes);
+    }
+
+    public sealed class FiltroConcepto
+    {
+        public Guid Id { get; set; }
+        public string Nombre { get; set; } = "";
+    }
+
+    private sealed class CatalogosFiltro
+    {
+        public List<FiltroConcepto> Conceptos { get; set; } = new();
+    }
+
+    private sealed class UnidadFiltro
+    {
+        public string? Bloque { get; set; }
     }
 
     private static string EtiquetaMoneda(Guid monedaId)
@@ -134,7 +209,9 @@ public partial class ReportesCajaWindow : Window
             var ruta =
                 "/api/reportes-caja" +
                 $"?desde={desde:yyyy-MM-dd}" +
-                $"&hasta={hasta:yyyy-MM-dd}";
+                $"&hasta={hasta:yyyy-MM-dd}" +
+                (ConceptoFiltro is { } conceptoId ? $"&conceptoId={conceptoId}" : "") +
+                (BloqueFiltro is { } bloque ? $"&bloque={Uri.EscapeDataString(bloque)}" : "");
 
             var reporte = await _api
                 .GetFromJsonAsync<ReporteRespuesta>(ruta);
@@ -284,6 +361,13 @@ public partial class ReportesCajaWindow : Window
             TextAlignment = TextAlignment.Center,
             Margin = new Thickness(0, 0, 0, 18)
         });
+
+        if (TextoFiltros() is { Length: > 0 } filtros)
+        {
+            AgregarLinea(
+                documento,
+                $"Filtro: {filtros}");
+        }
 
         AgregarLinea(
             documento,
@@ -524,6 +608,10 @@ public partial class ReportesCajaWindow : Window
         public string? Referencia { get; set; }
         public string FechaBolivia { get; set; } = "";
         public string Caseta { get; set; } = "";
+        public string? CobradoPor { get; set; }
+
+        public string CobradoPorTexto =>
+            string.IsNullOrWhiteSpace(CobradoPor) ? "—" : CobradoPor;
 
         public string Moneda =>
             EtiquetaMoneda(MonedaId);

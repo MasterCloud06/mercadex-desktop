@@ -23,6 +23,14 @@ public partial class ArqueoDiarioView : UserControl
     {
         InitializeComponent();
 
+        // El responsable del cierre es el usuario con sesión iniciada.
+        if (Sesion.SesionActual.Iniciada)
+        {
+            TxtResponsable.Text = Sesion.SesionActual.Nombre;
+            TxtResponsable.IsReadOnly = true;
+            TxtResponsable.ToolTip = "Se registra a nombre del usuario que inició sesión.";
+        }
+
         FechaArqueo.SelectedDate = DateTime.Today;
         HistHasta.SelectedDate = DateTime.Today;
         HistDesde.SelectedDate = DateTime.Today.AddDays(-30);
@@ -188,6 +196,9 @@ public partial class ArqueoDiarioView : UserControl
         {
             Chip($"Caja abierta · {m.Moneda}", "#FFF4D6", "#8A5A00");
             PanelEntradas.IsEnabled = true;
+
+            if (Sesion.SesionActual.Iniciada)
+                TxtResponsable.Text = Sesion.SesionActual.Nombre;
             BtnCerrar.IsEnabled = _datos?.CantidadIncidencias == 0 ||
                                   !(_datos?.PagosPorRevisar ?? new()).Any(x => x.Moneda == m.Moneda);
             PanelCerrado.Visibility = Visibility.Collapsed;

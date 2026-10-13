@@ -118,7 +118,9 @@ public class ApiClient
         // Leer mensajes de validación sin mostrar páginas HTML
         // ni detalles internos de errores del servidor.
         if (response.StatusCode == HttpStatusCode.BadRequest ||
-            response.StatusCode == HttpStatusCode.Conflict)
+            response.StatusCode == HttpStatusCode.Conflict ||
+            response.StatusCode == HttpStatusCode.Forbidden ||
+            response.StatusCode == HttpStatusCode.Unauthorized)
         {
             var contenido =
                 await response.Content.ReadAsStringAsync();

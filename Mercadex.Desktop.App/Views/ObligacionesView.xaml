@@ -50,7 +50,8 @@
             Height="38"
             Command="{Binding CargarCommand}"/>
 
-    <Button Style="{StaticResource Mx.SecondaryButton}"
+    <Button x:Name="BtnTarifas"
+            Style="{StaticResource Mx.SecondaryButton}"
             Content="Tarifas por caseta"
             Width="175"
             Height="38"
@@ -407,7 +408,7 @@
 
                     </Border>
 
-                    <Button Style="{StaticResource Mx.PrimaryButton}" Content="Generar obligaciones"
+                    <Button x:Name="BtnGenerarObligaciones" Style="{StaticResource Mx.PrimaryButton}" Content="Generar obligaciones"
                             Width="230"
                             Height="42"
                             HorizontalAlignment="Left"

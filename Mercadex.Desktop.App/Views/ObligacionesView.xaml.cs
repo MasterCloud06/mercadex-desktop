@@ -14,6 +14,13 @@ public partial class ObligacionesView : UserControl
     {
         InitializeComponent();
 
+        // Tarifas, generación y modificación de deudas: solo administradores.
+        if (!Sesion.SesionActual.EsAdministrador)
+        {
+            BtnTarifas.Visibility = System.Windows.Visibility.Collapsed;
+            BtnGenerarObligaciones.Visibility = System.Windows.Visibility.Collapsed;
+        }
+
         _viewModel =
             new ObligacionesViewModel();
 

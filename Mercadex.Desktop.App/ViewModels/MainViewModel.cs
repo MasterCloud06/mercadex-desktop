@@ -1,4 +1,4 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
 using Mercadex.Desktop.App.Views;
@@ -81,5 +81,12 @@ public partial class MainViewModel : ObservableObject
     private void MostrarKardex()
     {
         CurrentView = new KardexView();
+    }
+
+    [RelayCommand]
+    private void MostrarUsuarios()
+    {
+        if (Sesion.SesionActual.EsAdministrador)
+            CurrentView = new UsuariosView();
     }
 }

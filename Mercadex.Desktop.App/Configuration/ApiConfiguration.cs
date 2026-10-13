@@ -31,7 +31,8 @@ public static class ApiConfiguration
     /// </summary>
     public static HttpClient CrearCliente(TimeSpan timeout)
     {
-        var cliente = new HttpClient
+        // El manejador agrega el token de la sesión iniciada a cada petición.
+        var cliente = new HttpClient(new Mercadex.Desktop.App.Sesion.SesionHandler())
         {
             BaseAddress = BaseUri,
             Timeout = timeout

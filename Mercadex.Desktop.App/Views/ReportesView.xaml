@@ -203,7 +203,7 @@
                 <views:InformeIngresosGastosView />
             </TabItem>
 
-            <TabItem Header="Anular cobro" FontSize="13" FontWeight="SemiBold" Foreground="#173B5C" Padding="11,8">
+            <TabItem x:Name="TabAnularCobro" Header="Anular cobro" FontSize="13" FontWeight="SemiBold" Foreground="#173B5C" Padding="11,8">
                 <views:AnularCobroView />
             </TabItem>
 </TabControl>

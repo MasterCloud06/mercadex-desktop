@@ -53,6 +53,12 @@ public sealed class ObligacionIngresoModel
     public int? PeriodoAnio { get; set; }
     public int? PeriodoMes { get; set; }
     public string Estado { get; set; } = string.Empty;
+
+    /// <summary>Veces que se modificó el monto (0 si nunca).</summary>
+    public int Modificaciones { get; set; }
+
+    /// <summary>Cuándo, quién y por qué se modificó por última vez.</summary>
+    public string? UltimaModificacion { get; set; }
 }
 
 public sealed class ItemCobroIngresoModel

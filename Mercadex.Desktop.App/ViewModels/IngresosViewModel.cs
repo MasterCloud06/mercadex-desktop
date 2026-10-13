@@ -558,6 +558,11 @@ public partial class ObligacionSeleccionable : ObservableObject
 
     public string NombreConcepto { get; }
 
+    /// <summary>La deuda fue modificada después de registrarse.</summary>
+    public bool Modificada { get; }
+
+    public string? NotaModificacion { get; }
+
     [ObservableProperty]
     private bool seleccionada;
 
@@ -570,6 +575,8 @@ public partial class ObligacionSeleccionable : ObservableObject
         Monto = obligacion.Monto;
         Estado = obligacion.Estado;
         NombreConcepto = nombreConcepto;
+        Modificada = obligacion.Modificaciones > 0;
+        NotaModificacion = obligacion.UltimaModificacion;
 
         Periodo = obligacion.PeriodoAnio.HasValue
             ? $"{obligacion.PeriodoMes:00}/{obligacion.PeriodoAnio}"

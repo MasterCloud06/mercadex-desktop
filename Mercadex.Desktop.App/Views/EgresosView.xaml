@@ -107,7 +107,7 @@
 
                         <Button Content="Imprimir comprobante" Command="{Binding ImprimirComprobanteCommand}" Width="190" Height="40" Margin="0,17,10,10" Style="{StaticResource Mx.SecondaryButton}" />
 
-                        <Button Content="Anular egreso" Command="{Binding AnularCommand}" Width="140" Height="40" Margin="0,17,0,10" Background="#A23B3B" Foreground="White" Style="{StaticResource Mx.DangerButton}" BorderBrush="#A23B3B" />
+                        <Button x:Name="BtnAnular" Content="Anular egreso" Command="{Binding AnularCommand}" Width="140" Height="40" Margin="0,17,0,10" Background="#A23B3B" Foreground="White" Style="{StaticResource Mx.DangerButton}" BorderBrush="#A23B3B" />
 
                     </WrapPanel>
 
@@ -149,7 +149,15 @@
 
                                     <DataGridTextColumn Header="Comprobante" Binding="{Binding NumeroComprobante}" Width="120" />
 
-                                    <DataGridTextColumn Header="Estado" Binding="{Binding Estado}" Width="100" />
+                                    <DataGridTextColumn Header="Estado" Binding="{Binding Estado}" Width="100">
+                                        <DataGridTextColumn.ElementStyle>
+                                            <Style TargetType="TextBlock">
+                                                <Setter Property="ToolTip" Value="{Binding DetalleAnulacion}"/>
+                                            </Style>
+                                        </DataGridTextColumn.ElementStyle>
+                                    </DataGridTextColumn>
+
+                                    <DataGridTextColumn Header="Registrado por" Binding="{Binding RegistradoPorTexto}" Width="150" />
 
                                 </DataGrid.Columns>
 

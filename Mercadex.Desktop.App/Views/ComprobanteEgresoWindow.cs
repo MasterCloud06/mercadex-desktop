@@ -115,6 +115,9 @@ public sealed class ComprobanteEgresoWindow : Window
         Par("Factura / respaldo", e.NumeroComprobante);
         if (!string.IsNullOrWhiteSpace(e.Observacion))
             Par("Observación", e.Observacion);
+
+        if (!string.IsNullOrWhiteSpace(e.RegistradoPor))
+            Par("Registrado por", e.RegistradoPor!);
         datos.RowGroups.Add(gd);
         doc.Blocks.Add(datos);
 
@@ -131,7 +134,9 @@ public sealed class ComprobanteEgresoWindow : Window
         if (e.Anulado)
         {
             doc.Blocks.Add(new Paragraph(new Bold(new Run(
-                $"ANULADO el {e.FechaAnulacion?.ToLocalTime():dd/MM/yyyy HH:mm}. Motivo: {e.MotivoAnulacion}")))
+                $"ANULADO el {e.FechaAnulacion?.ToLocalTime():dd/MM/yyyy HH:mm}" +
+                (string.IsNullOrWhiteSpace(e.AnuladoPor) ? "" : $" por {e.AnuladoPor}") +
+                $". Motivo: {e.MotivoAnulacion}")))
             { Foreground = Rojo });
         }
 

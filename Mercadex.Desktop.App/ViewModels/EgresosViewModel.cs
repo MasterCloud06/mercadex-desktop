@@ -630,10 +630,16 @@ public partial class EgresosViewModel : ObservableObject
         }
 
         var motivo =
-            Microsoft.VisualBasic.Interaction.InputBox(
-                "Indique el motivo de la anulación:",
+            Dialogo.PedirTexto(
+                null,
                 "Anular egreso",
-                string.Empty);
+                $"Egreso N.º {EgresoSeleccionado.NumeroTexto} · {EgresoSeleccionado.Concepto} · " +
+                $"{EgresoSeleccionado.Monto:N2} {EgresoSeleccionado.MonedaCodigo}\n" +
+                "El egreso no se borra: queda como ANULADO con el motivo y tu nombre.",
+                "Motivo de la anulación",
+                "Continuar",
+                minimo: 5,
+                peligro: true) ?? "";
 
         if (string.IsNullOrWhiteSpace(
                 motivo))

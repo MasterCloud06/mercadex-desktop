@@ -147,7 +147,10 @@ public sealed class ActaArqueoWindow : Window
 
         var filas = new List<(string, string, Brush?)>
         {
-            ("Efectivo registrado", Monto(a.Efectivo), null),
+            ("Cobrado en efectivo", Monto(a.Efectivo), null),
+            ("Gastos pagados en efectivo (−)",
+                a.EgresosEfectivo > 0 ? $"{Monto(a.EgresosEfectivo)} ({a.CantidadEgresos})" : Monto(0), null),
+            ("Efectivo que debe haber", Monto(a.Efectivo - a.EgresosEfectivo), null),
             ("Efectivo contado", a.EfectivoContado.HasValue ? Monto(a.EfectivoContado.Value) : "—", null)
         };
 

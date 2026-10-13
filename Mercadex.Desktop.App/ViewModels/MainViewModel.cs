@@ -32,7 +32,8 @@ public partial class MainViewModel : ObservableObject
     [RelayCommand]
     private void MostrarCaja()
     {
-        CurrentView = new CajaView();
+        // Cierre de caja del día (arqueo).
+        CurrentView = new ArqueoDiarioView { Margin = new System.Windows.Thickness(8, 4, 8, 4) };
     }
 
     [RelayCommand]

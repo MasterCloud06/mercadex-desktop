@@ -100,7 +100,7 @@
                         <RadioButton x:Name="NavIngresos" GroupName="MenuMercadex" Style="{StaticResource Mx.NavRadio}" Command="{Binding MostrarIngresosCommand}">
                             <StackPanel Orientation="Horizontal">
                                 <TextBlock Text="&#xE8FB;" FontFamily="Segoe MDL2 Assets" FontSize="15" Width="28" VerticalAlignment="Center"/>
-                                <TextBlock Text="Ingresos" VerticalAlignment="Center"/>
+                                <TextBlock Text="Cobrar" VerticalAlignment="Center"/>
                             </StackPanel>
                         </RadioButton>
                         <RadioButton GroupName="MenuMercadex" Style="{StaticResource Mx.NavRadio}" Command="{Binding MostrarRecibosCommand}">
@@ -112,7 +112,7 @@
                         <RadioButton GroupName="MenuMercadex" Style="{StaticResource Mx.NavRadio}" Command="{Binding MostrarCajaCommand}">
                             <StackPanel Orientation="Horizontal">
                                 <TextBlock Text="&#xE8D4;" FontFamily="Segoe MDL2 Assets" FontSize="15" Width="28" VerticalAlignment="Center"/>
-                                <TextBlock Text="Caja" VerticalAlignment="Center"/>
+                                <TextBlock Text="Cierre de caja" VerticalAlignment="Center"/>
                             </StackPanel>
                         </RadioButton>
                         <TextBlock Text="Finanzas" Style="{StaticResource Mx.NavGroup}"/>
@@ -177,14 +177,8 @@
                         <views:DashboardView/>
                     </DataTemplate>
 
-                    <DataTemplate DataType="{x:Type views:CajaView}">
-                        <views:CajaView/>
-                    </DataTemplate>
 
 
-                    <DataTemplate DataType="{x:Type views:IngresosView}">
-                        <views:IngresosView/>
-                    </DataTemplate>
 
                     <DataTemplate DataType="{x:Type views:SociosView}">
                         <views:SociosView/>

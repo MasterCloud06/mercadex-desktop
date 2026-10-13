@@ -36,7 +36,8 @@ public static class TextoRecibo
     }
 
     public static string? TipoCambio(PagoDto pago) =>
-        pago.TipoCambio > 0 ? $"Tipo de cambio: {pago.TipoCambio:N2}" : null;
+        // Solo tiene sentido cuando se cobra en otra moneda (tipo de cambio distinto de 1).
+        pago.TipoCambio > 0 && pago.TipoCambio != 1 ? $"Tipo de cambio: {pago.TipoCambio:N2}" : null;
 
     public static string Cantidad(ReciboDto recibo) =>
         $"Cantidad de conceptos: {(recibo.Detalles ?? new()).Count}";

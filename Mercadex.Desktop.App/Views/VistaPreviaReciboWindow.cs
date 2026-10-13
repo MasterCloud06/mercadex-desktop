@@ -212,14 +212,16 @@ public sealed class VistaPreviaReciboWindow : Window
             documento,
             $"Forma de pago: {_pago.FormaPago}");
 
-        if (!string.IsNullOrWhiteSpace(_pago.Referencia))
-        {
-            AgregarLinea(
-                documento,
-                $"Transacción/referencia: {_pago.Referencia}");
-        }
+        if (Services.TextoRecibo.Referencia(_pago) is { } referencia)
+            AgregarLinea(documento, referencia);
 
         AgregarLinea(documento, $"Moneda: {_moneda}");
+
+        if (Services.TextoRecibo.TipoCambio(_pago) is { } tipoCambio)
+            AgregarLinea(documento, tipoCambio);
+
+        AgregarLinea(documento, Services.TextoRecibo.TipoIngreso(_recibo));
+        AgregarLinea(documento, Services.TextoRecibo.Cantidad(_recibo));
 
         AgregarLinea(
             documento,
@@ -230,9 +232,7 @@ public sealed class VistaPreviaReciboWindow : Window
         {
             AgregarLinea(
                 documento,
-                $"{detalle.Concepto} | " +
-                $"{detalle.Periodo} | " +
-                $"{detalle.Monto:N2} {_moneda}");
+                Services.TextoRecibo.Concepto(detalle, _moneda));
         }
 
         AgregarLinea(
@@ -240,6 +240,9 @@ public sealed class VistaPreviaReciboWindow : Window
             $"TOTAL: {_recibo.Total:N2} {_moneda}",
             negrita: true,
             tamano: 18);
+
+        if (Services.TextoRecibo.CobradoPor(_recibo) is { } cobradoPor)
+            AgregarLinea(documento, cobradoPor);
 
         if (anulado)
         {

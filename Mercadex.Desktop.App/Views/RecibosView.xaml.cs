@@ -129,7 +129,7 @@ public partial class RecibosView : UserControl
         await CargarRecibosAsync();
     }
 
-    // BUSCAR POR NÃšMERO Y FECHA
+    // BUSCAR POR NÚMERO Y FECHA
 
     private void Filtros_Changed(
         object sender,
@@ -180,7 +180,7 @@ public partial class RecibosView : UserControl
             var fecha =
                 fila.Recibo.FechaEmision.LocalDateTime.Date;
 
-            // NÃºmero exacto para evitar confundir
+            // Número exacto para evitar confundir
             // el recibo 1 con el 10, 11 o 100.
 
             if (!string.IsNullOrWhiteSpace(numero) &&
@@ -243,7 +243,7 @@ public partial class RecibosView : UserControl
         try
         {
             // Consultar el recibo por su identificador,
-            // sin crear ningÃºn pago.
+            // sin crear ningún pago.
 
             var recibo =
                 await Api.GetFromJsonAsync<ReciboDto>(
@@ -310,7 +310,7 @@ public partial class RecibosView : UserControl
                 $"completo: {ex.Message}";
 
             TxtEstado.Text =
-                "No se habilitÃ³ la impresiÃ³n porque " +
+                "No se habilitó la impresión porque " +
                 "faltan datos del comprobante.";
 
             BtnVistaPrevia.IsEnabled = false;
@@ -339,7 +339,7 @@ public partial class RecibosView : UserControl
 
         AgregarTitulo(
             documento,
-            "ASOCIACIÃ“N DE COMERCIANTES 13 DE JULIO",
+            "ASOCIACIÓN DE COMERCIANTES 13 DE JULIO",
             18);
 
         bool anulado = string.Equals(
@@ -378,21 +378,18 @@ public partial class RecibosView : UserControl
             documento,
             $"Forma de pago: {pago.FormaPago}");
 
-        if (!string.IsNullOrWhiteSpace(pago.Referencia))
-        {
-            AgregarLinea(
-                documento,
-                $"N.º de transacciÃ³n/referencia: " +
-                pago.Referencia);
-        }
+        if (Services.TextoRecibo.Referencia(pago) is { } referencia)
+            AgregarLinea(documento, referencia);
 
         AgregarLinea(
             documento,
             $"Moneda: {fila.Moneda}");
 
-        AgregarLinea(
-            documento,
-            $"Tipo de cambio: {pago.TipoCambio:N2}");
+        if (Services.TextoRecibo.TipoCambio(pago) is { } tipoCambio)
+            AgregarLinea(documento, tipoCambio);
+
+        AgregarLinea(documento, Services.TextoRecibo.TipoIngreso(recibo));
+        AgregarLinea(documento, Services.TextoRecibo.Cantidad(recibo));
 
         documento.Blocks.Add(
             new Paragraph(new Run("CONCEPTOS COBRADOS"))
@@ -405,9 +402,7 @@ public partial class RecibosView : UserControl
         {
             AgregarLinea(
                 documento,
-                $"{detalle.Concepto} | " +
-                $"{detalle.Periodo} | " +
-                $"{detalle.Monto:N2} {fila.Moneda}");
+                Services.TextoRecibo.Concepto(detalle, fila.Moneda));
         }
 
         documento.Blocks.Add(
@@ -420,12 +415,15 @@ public partial class RecibosView : UserControl
                 Margin = new Thickness(0, 20, 0, 15)
             });
 
+        if (Services.TextoRecibo.CobradoPor(recibo) is { } cobradoPor)
+            AgregarLinea(documento, cobradoPor);
+
         if (anulado)
         {
             documento.Blocks.Add(
                 new Paragraph(
                     new Run(
-                        "ANULADO â€” SIN VALIDEZ COMO " +
+                        "ANULADO — SIN VALIDEZ COMO " +
                         "COMPROBANTE DE PAGO"))
                 {
                     Foreground = Brushes.DarkRed,
@@ -437,7 +435,7 @@ public partial class RecibosView : UserControl
         {
             AgregarLinea(
                 documento,
-                "REIMPRESIÃ“N DEL COMPROBANTE ORIGINAL");
+                "REIMPRESIÓN DEL COMPROBANTE ORIGINAL");
         }
 
         return documento;
@@ -535,12 +533,12 @@ public partial class RecibosView : UserControl
                 ((IDocumentPaginatorSource)documento)
                     .DocumentPaginator,
 
-                $"ReimpresiÃ³n recibo {fila.Numero}");
+                $"Reimpresión recibo {fila.Numero}");
 
             TxtEstado.Text =
-                $"Se enviÃ³ a imprimir el recibo " +
+                $"Se envió a imprimir el recibo " +
                 $"N.º {fila.Numero}. " +
-                "No se registrÃ³ ningÃºn cobro nuevo.";
+                "No se registró ningún cobro nuevo.";
         }
         catch (Exception ex)
         {

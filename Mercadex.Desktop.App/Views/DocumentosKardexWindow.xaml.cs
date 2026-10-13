@@ -29,6 +29,13 @@ public partial class DocumentosKardexWindow : Window
     private bool _ocupado;
     private int _versionSeleccion;
 
+    /// <summary>Socio, caseta y tipo de documento a mostrar al abrir (desde la ficha del Kardex).</summary>
+    public Guid? SocioInicial { get; init; }
+
+    public Guid? UnidadInicial { get; init; }
+
+    public int? TipoInicial { get; init; }
+
     public DocumentosKardexWindow(HttpClient api)
     {
         InitializeComponent();
@@ -94,7 +101,7 @@ public partial class DocumentosKardexWindow : Window
 
             CmbSocios.ItemsSource = sociosOrdenados;
 
-            Guid? socioPrueba = LeerSocioPrueba();
+            Guid? socioPrueba = SocioInicial ?? LeerSocioPrueba();
 
             var seleccionado = sociosOrdenados.FirstOrDefault(
                 x => socioPrueba.HasValue &&
@@ -111,6 +118,22 @@ public partial class DocumentosKardexWindow : Window
             }
 
             ActualizarCasetas();
+
+            if (UnidadInicial is Guid unidadInicial &&
+                CmbCasetas.ItemsSource is List<CasetaItem> casetasIniciales)
+            {
+                CmbCasetas.SelectedItem =
+                    casetasIniciales.FirstOrDefault(c => c.Id == unidadInicial)
+                    ?? CmbCasetas.SelectedItem;
+            }
+
+            if (TipoInicial is int tipoInicial &&
+                CmbTipos.ItemsSource is List<TipoItem> tiposIniciales)
+            {
+                CmbTipos.SelectedItem =
+                    tiposIniciales.FirstOrDefault(t => t.Id == tipoInicial)
+                    ?? CmbTipos.SelectedItem;
+            }
 
             await ConsultarDocumentosAsync();
         }
@@ -376,6 +399,19 @@ public partial class DocumentosKardexWindow : Window
                     "El tamaño del archivo no es válido.");
             }
 
+            // Las fotos y escaneos se reducen antes de subir: ocupan mucho
+            // menos espacio en el servidor y se ven igual de claros.
+            var nombreArchivo = Path.GetFileName(ruta);
+
+            if (contenido is "image/jpeg" or "image/png" &&
+                ComprimirImagen(bytes) is { } comprimida &&
+                comprimida.Length < bytes.Length)
+            {
+                bytes = comprimida;
+                contenido = "image/jpeg";
+                nombreArchivo = Path.ChangeExtension(nombreArchivo, ".jpg");
+            }
+
             using var formulario =
                 new MultipartFormDataContent();
 
@@ -403,7 +439,7 @@ public partial class DocumentosKardexWindow : Window
             formulario.Add(
                 archivoContenido,
                 "Archivo",
-                Path.GetFileName(ruta));
+                nombreArchivo);
 
             using var respuesta = await _api.PostAsync(
                 "/api/kardex-documentos",
@@ -584,6 +620,74 @@ public partial class DocumentosKardexWindow : Window
         finally
         {
             BtnDescargar.IsEnabled = true;
+        }
+    }
+
+    /// <summary>
+    /// JPEG de hasta 1800 px por lado, respetando la orientación de la foto
+    /// del celular. Devuelve null si la imagen no se puede leer.
+    /// </summary>
+    private static byte[]? ComprimirImagen(byte[] original)
+    {
+        try
+        {
+            using var entrada = new MemoryStream(original);
+
+            var decodificador = System.Windows.Media.Imaging.BitmapDecoder.Create(
+                entrada,
+                System.Windows.Media.Imaging.BitmapCreateOptions.PreservePixelFormat,
+                System.Windows.Media.Imaging.BitmapCacheOption.OnLoad);
+
+            System.Windows.Media.Imaging.BitmapSource marco = decodificador.Frames[0];
+
+            var orientacion = 1;
+            try
+            {
+                if (decodificador.Frames[0].Metadata is System.Windows.Media.Imaging.BitmapMetadata datos &&
+                    datos.ContainsQuery("/app1/ifd/{ushort=274}") &&
+                    datos.GetQuery("/app1/ifd/{ushort=274}") is ushort valor)
+                {
+                    orientacion = valor;
+                }
+            }
+            catch
+            {
+                // Sin metadatos de orientación.
+            }
+
+            const double ladoMaximo = 1800;
+            var escala = Math.Min(1.0, ladoMaximo / Math.Max(marco.PixelWidth, marco.PixelHeight));
+
+            if (escala < 1.0)
+            {
+                marco = new System.Windows.Media.Imaging.TransformedBitmap(
+                    marco, new System.Windows.Media.ScaleTransform(escala, escala));
+            }
+
+            var giro = orientacion switch { 3 => 180, 6 => 90, 8 => 270, _ => 0 };
+
+            if (giro != 0)
+            {
+                marco = new System.Windows.Media.Imaging.TransformedBitmap(
+                    marco, new System.Windows.Media.RotateTransform(giro));
+            }
+
+            if (marco.Format != System.Windows.Media.PixelFormats.Bgr24)
+            {
+                marco = new System.Windows.Media.Imaging.FormatConvertedBitmap(
+                    marco, System.Windows.Media.PixelFormats.Bgr24, null, 0);
+            }
+
+            var codificador = new System.Windows.Media.Imaging.JpegBitmapEncoder { QualityLevel = 82 };
+            codificador.Frames.Add(System.Windows.Media.Imaging.BitmapFrame.Create(marco));
+
+            using var salida = new MemoryStream();
+            codificador.Save(salida);
+            return salida.ToArray();
+        }
+        catch
+        {
+            return null;
         }
     }
 

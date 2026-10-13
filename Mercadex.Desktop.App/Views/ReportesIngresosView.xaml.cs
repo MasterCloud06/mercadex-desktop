@@ -458,7 +458,7 @@ private async void Hoy_Click(
         var texto = valor ?? "";
 
         // Evitar que Excel interprete textos del CSV
-        // como fÃ³rmulas al abrir el documento.
+        // como fórmulas al abrir el documento.
 
         if (texto.Length > 0 &&
             "=+-@".Contains(texto[0]) &&

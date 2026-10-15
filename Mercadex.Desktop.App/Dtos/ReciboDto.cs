@@ -28,6 +28,9 @@ public class ReciboDto
     /// <summary>Usuario que registró el cobro (desde la 1.6.2).</summary>
     public string? RegistradoPor { get; set; }
 
+    /// <summary>Cargo de quien emitió el recibo (desde la 1.6.3).</summary>
+    public string? CargoEmisor { get; set; }
+
     public string? MotivoAnulacion { get; set; }
 
     public DateTimeOffset? FechaAnulacion { get; set; }

@@ -147,18 +147,21 @@ public sealed class CobranzaView : UserControl
         Llenar(_fBloque, new[] { new UiKit.Item<string?>(null, "Todos los bloques") }
             .Concat(_bloques.Select(b => new UiKit.Item<string?>(b, b))));
 
+        // Cargos y tarifas: solo conceptos activos.
+        var activos = _conceptos.Where(c => c.Activo).ToList();
+
         // Cargo masivo
-        Llenar(_mConcepto, _conceptos.Select(c => new UiKit.Item<Guid?>(c.Id, c.Nombre)));
+        Llenar(_mConcepto, activos.Select(c => new UiKit.Item<Guid?>(c.Id, c.Nombre)));
         Llenar(_mBloque, _bloques.Select(b => new UiKit.Item<string?>(b, b)));
         Llenar(_mPasillo, _pasillos.Select(p => new UiKit.Item<Guid?>(p.Id, $"{p.Codigo} · {p.Nombre}")));
         Llenar(_mMoneda, _monedas.Select(m => new UiKit.Item<Guid?>(m.Id, m.Codigo)));
 
         // Cargo individual
-        Llenar(_iConcepto, _conceptos.Select(c => new UiKit.Item<Guid?>(c.Id, c.Nombre)));
+        Llenar(_iConcepto, activos.Select(c => new UiKit.Item<Guid?>(c.Id, c.Nombre)));
         Llenar(_iMoneda, _monedas.Select(m => new UiKit.Item<Guid?>(m.Id, m.Codigo)));
 
         // Tarifas
-        Llenar(_tConcepto, _conceptos.Select(c => new UiKit.Item<Guid?>(c.Id, c.Nombre)), seleccionarPrimero: false);
+        Llenar(_tConcepto, activos.Select(c => new UiKit.Item<Guid?>(c.Id, c.Nombre)), seleccionarPrimero: false);
         Llenar(_tMoneda, _monedas.Select(m => new UiKit.Item<Guid?>(m.Id, m.Codigo)));
         Llenar(_tBloque, _bloques.Select(b => new UiKit.Item<string?>(b, b)));
         Llenar(_tPasillo, _pasillos.Select(p => new UiKit.Item<Guid?>(p.Id, $"{p.Codigo} · {p.Nombre}")));

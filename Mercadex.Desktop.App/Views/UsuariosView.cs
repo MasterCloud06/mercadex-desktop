@@ -31,6 +31,7 @@ public sealed class UsuariosView : UserControl
     private readonly TextBox _nombre;
     private readonly TextBox _usuario;
     private readonly ComboBox _rol;
+    private readonly TextBox _cargo;
     private readonly Button _crear;
     private readonly DataGrid _tabla;
     private readonly TextBlock _estado;
@@ -94,6 +95,9 @@ public sealed class UsuariosView : UserControl
             _rol.Items.Add(new ComboBoxItem { Content = texto, Tag = valor });
         _rol.SelectedIndex = 0;
         fila.Children.Add(Campo("Rol", _rol));
+        fila.Children.Add(Campo("Cargo (sale en los recibos)", _cargo = Texto(200)));
+        _cargo.MaxLength = 80;
+        _cargo.ToolTip = "Por ejemplo: Cajera, Tesorero, Presidente. Si queda vacío, el recibo muestra el rol.";
 
         _crear = new Button
         {
@@ -129,7 +133,7 @@ public sealed class UsuariosView : UserControl
         var botones = new StackPanel { Orientation = Orientation.Horizontal };
         DockPanel.SetDock(botones, Dock.Right);
 
-        _cambiarRol = Secundario("Cambiar rol o nombre");
+        _cambiarRol = Secundario("Cambiar nombre, rol o cargo");
         _cambiarRol.Click += async (_, _) => await CambiarRolAsync();
         _restablecer = Secundario("Restablecer contraseña");
         _restablecer.Click += async (_, _) => await RestablecerAsync();
@@ -163,6 +167,7 @@ public sealed class UsuariosView : UserControl
         _tabla.Columns.Add(Columna("Nombre", nameof(FilaUsuario.NombreCompleto), 2));
         _tabla.Columns.Add(Columna("Usuario", nameof(FilaUsuario.NombreUsuario), 1.2));
         _tabla.Columns.Add(Columna("Rol", nameof(FilaUsuario.RolTexto), 1.1));
+        _tabla.Columns.Add(Columna("Cargo en recibos", nameof(FilaUsuario.CargoTexto), 1.3));
         _tabla.Columns.Add(Columna("Estado", nameof(FilaUsuario.EstadoTexto), 1.4));
         _tabla.Columns.Add(Columna("Último ingreso", nameof(FilaUsuario.UltimoAccesoTexto), 1.2));
         _tabla.SelectionChanged += (_, _) => ActualizarAcciones();
@@ -200,6 +205,7 @@ public sealed class UsuariosView : UserControl
         var nombre = _nombre.Text.Trim();
         var usuario = _usuario.Text.Trim().ToLowerInvariant();
         var rol = (string)((ComboBoxItem)_rol.SelectedItem).Tag;
+        var cargo = _cargo.Text.Trim();
 
         if (nombre.Length < 3 || usuario.Length < 3)
         {
@@ -212,9 +218,10 @@ public sealed class UsuariosView : UserControl
         try
         {
             var r = await EnviarAsync<ContrasenaEntregada>(HttpMethod.Post, "api/usuarios",
-                new { nombreUsuario = usuario, nombreCompleto = nombre, rol });
+                new { nombreUsuario = usuario, nombreCompleto = nombre, rol, cargo });
 
             _nombre.Clear();
+            _cargo.Clear();
             _usuario.Clear();
             await CargarAsync(r?.Id);
 
@@ -237,14 +244,14 @@ public sealed class UsuariosView : UserControl
         if (_tabla.SelectedItem is not FilaUsuario u)
             return;
 
-        var ventana = new VentanaEditarUsuario(u.NombreCompleto, u.Rol, Roles) { Owner = Window.GetWindow(this) };
+        var ventana = new VentanaEditarUsuario(u.NombreCompleto, u.Rol, u.Cargo, Roles) { Owner = Window.GetWindow(this) };
         if (ventana.ShowDialog() != true)
             return;
 
         try
         {
             await EnviarAsync<object>(HttpMethod.Put, $"api/usuarios/{u.Id}",
-                new { nombreCompleto = ventana.NombreCompleto, rol = ventana.Rol });
+                new { nombreCompleto = ventana.NombreCompleto, rol = ventana.Rol, cargo = ventana.Cargo });
             await CargarAsync(u.Id);
             _estado.Text = $"Se actualizó a {ventana.NombreCompleto}. Si estaba trabajando, debe volver a ingresar.";
         }
@@ -426,7 +433,9 @@ public sealed class UsuariosView : UserControl
         public bool DebeCambiarContrasena { get; set; }
         public DateTimeOffset? UltimoAcceso { get; set; }
 
+        public string? Cargo { get; set; }
         public string RolTexto => Rol == "Consulta" ? "Solo consulta" : Rol;
+        public string CargoTexto => string.IsNullOrWhiteSpace(Cargo) ? Rol + " (rol)" : Cargo!;
 
         public string EstadoTexto =>
             !Activo ? "Desactivado" :
@@ -570,14 +579,17 @@ internal sealed class VentanaEditarUsuario : Window
 {
     private readonly TextBox _nombre;
     private readonly ComboBox _rol;
+    private readonly TextBox _cargo;
 
     public string NombreCompleto => _nombre.Text.Trim();
 
+    public string Cargo => _cargo.Text.Trim();
+
     public string Rol => (string)((ComboBoxItem)_rol.SelectedItem).Tag;
 
-    public VentanaEditarUsuario(string nombre, string rol, IEnumerable<(string Valor, string Texto)> roles)
+    public VentanaEditarUsuario(string nombre, string rol, string? cargo, IEnumerable<(string Valor, string Texto)> roles)
     {
-        Title = "Cambiar rol o nombre";
+        Title = "Cambiar nombre, rol o cargo";
         Width = 460;
         SizeToContent = SizeToContent.Height;
         ResizeMode = ResizeMode.NoResize;
@@ -605,6 +617,19 @@ internal sealed class VentanaEditarUsuario : Window
         if (_rol.SelectedItem is null)
             _rol.SelectedIndex = 0;
         pila.Children.Add(_rol);
+
+        pila.Children.Add(new TextBlock { Text = "Cargo (sale en los recibos)", FontWeight = FontWeights.SemiBold, Margin = new Thickness(0, 8, 0, 5) });
+        _cargo = new TextBox { Text = cargo ?? "", MaxLength = 80, Margin = new Thickness(0, 0, 0, 4) };
+        _cargo.Style = (Style)Application.Current.FindResource("Mx.TextBox");
+        pila.Children.Add(_cargo);
+        pila.Children.Add(new TextBlock
+        {
+            Text = "Por ejemplo: Cajera, Tesorero, Presidente. Si queda vacío, el recibo muestra el rol.",
+            FontSize = 12.5,
+            TextWrapping = TextWrapping.Wrap,
+            Foreground = ColoresPanel.TextoTenue,
+            Margin = new Thickness(0, 0, 0, 10)
+        });
 
         pila.Children.Add(new TextBlock
         {

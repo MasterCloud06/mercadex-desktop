@@ -63,4 +63,15 @@ public static class TextoRecibo
 
     public static string? CobradoPor(ReciboDto recibo) =>
         string.IsNullOrWhiteSpace(recibo.RegistradoPor) ? null : $"Cobrado por: {recibo.RegistradoPor}";
+
+    /// <summary>
+    /// Bloque de firma del recibo: nombre completo y cargo de quien lo emitió
+    /// (observación de la directiva). Null en recibos anteriores al inicio de sesión.
+    /// </summary>
+    public static (string Nombre, string? Cargo)? Emisor(ReciboDto recibo) =>
+        string.IsNullOrWhiteSpace(recibo.RegistradoPor)
+            ? null
+            : (recibo.RegistradoPor!.Trim(), string.IsNullOrWhiteSpace(recibo.CargoEmisor) ? null : recibo.CargoEmisor!.Trim());
+
+    public const string LineaFirma = "______________________________";
 }

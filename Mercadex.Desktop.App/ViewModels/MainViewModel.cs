@@ -85,6 +85,18 @@ public partial class MainViewModel : ObservableObject
     }
 
     [RelayCommand]
+    private void MostrarPagosQr()
+    {
+        CurrentView = new PagosQrView();
+    }
+
+    [RelayCommand]
+    private void MostrarConceptos()
+    {
+        CurrentView = new ConceptosView();
+    }
+
+    [RelayCommand]
     private void MostrarUsuarios()
     {
         if (Sesion.SesionActual.EsAdministrador)

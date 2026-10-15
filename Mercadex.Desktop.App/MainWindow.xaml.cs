@@ -62,6 +62,145 @@ public partial class MainWindow : Window
 
         // Solo consulta: no cobra.
         BtnCobroRapido.Visibility = Sesion.SesionActual.PuedeCobrar ? Visibility.Visible : Visibility.Collapsed;
+
+        // Conceptos de cobro: administrador. Pagos QR: administrador y cajero.
+        NavConceptos.Visibility = admin ? Visibility.Visible : Visibility.Collapsed;
+        NavPagosQr.Visibility = Sesion.SesionActual.PuedeCobrar ? Visibility.Visible : Visibility.Collapsed;
+        IniciarAvisoPagosQr();
+    }
+
+    // ---------------- Aviso de pagos QR de la app ----------------
+    // Observación de la directiva: cuando un socio paga con QR desde la app,
+    // el escritorio avisa a la cajera para que lo verifique y lo confirme.
+
+    private System.Windows.Threading.DispatcherTimer? _relojPagosQr;
+    private readonly HashSet<Guid> _pagosQrVistos = new();
+    private bool _primeraConsultaQr = true;
+
+    private void IniciarAvisoPagosQr()
+    {
+        _pagosQrVistos.Clear();
+        _primeraConsultaQr = true;
+        AvisoPagoQr.Visibility = Visibility.Collapsed;
+        BadgePagosQr.Visibility = Visibility.Collapsed;
+
+        if (!Sesion.SesionActual.PuedeCobrar)
+        {
+            _relojPagosQr?.Stop();
+            return;
+        }
+
+        if (_relojPagosQr is null)
+        {
+            _relojPagosQr = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromSeconds(60) };
+            _relojPagosQr.Tick += async (_, _) => await ConsultarPagosQrAsync();
+            Views.PagosQrView.PagosRevisados += () => _ = ConsultarPagosQrAsync();
+            Closed += (_, _) => _relojPagosQr.Stop();
+        }
+
+        _relojPagosQr.Start();
+        _ = ConsultarPagosQrAsync();
+    }
+
+    private async Task ConsultarPagosQrAsync()
+    {
+        if (!Sesion.SesionActual.PuedeCobrar)
+            return;
+
+        PendientesQr? r;
+        try
+        {
+            r = await Services.ApiJson.GetAsync<PendientesQr>("/api/panel/pagos/pendientes");
+        }
+        catch
+        {
+            return; // sin conexión: se vuelve a intentar en un minuto
+        }
+
+        if (r is null)
+            return;
+
+        BadgePagosQr.Visibility = r.Cantidad > 0 ? Visibility.Visible : Visibility.Collapsed;
+        TxtPagosQr.Text = r.Cantidad > 99 ? "99+" : r.Cantidad.ToString();
+        Title = r.Cantidad > 0 ? $"({r.Cantidad}) Mercadex" : "Mercadex";
+
+        var nuevos = r.Ids.Where(id => !_pagosQrVistos.Contains(id)).ToList();
+        foreach (var id in r.Ids)
+            _pagosQrVistos.Add(id);
+
+        if (r.Cantidad == 0)
+        {
+            AvisoPagoQr.Visibility = Visibility.Collapsed;
+            return;
+        }
+
+        if (nuevos.Count == 0 || DataContext is ViewModels.MainViewModel { CurrentView: Views.PagosQrView })
+            return;
+
+        TituloAvisoPagoQr.Text = _primeraConsultaQr
+            ? "Pagos QR por revisar"
+            : nuevos.Count == 1 ? "Nuevo pago QR" : $"{nuevos.Count} pagos QR nuevos";
+        TxtAvisoPagoQr.Text = (r.Cantidad == 1
+                ? "Un socio pagó con QR desde la app."
+                : $"Hay {r.Cantidad} pagos con QR desde la app esperando revisión.") +
+            " Verifica en la banca que el dinero llegó y confírmalo para emitir el recibo.";
+        AvisoPagoQr.Visibility = Visibility.Visible;
+        _primeraConsultaQr = false;
+
+        System.Media.SystemSounds.Asterisk.Play();
+        if (WindowState == WindowState.Minimized || !IsActive)
+            FlashWindow();
+    }
+
+    private void FlashWindow()
+    {
+        try
+        {
+            var info = new FLASHWINFO
+            {
+                cbSize = (uint)System.Runtime.InteropServices.Marshal.SizeOf<FLASHWINFO>(),
+                hwnd = new System.Windows.Interop.WindowInteropHelper(this).Handle,
+                dwFlags = 3 | 12, // bandeja y título, hasta que se active la ventana
+                uCount = 5
+            };
+            FlashWindowEx(ref info);
+        }
+        catch
+        {
+            // Solo es un aviso visual adicional.
+        }
+    }
+
+    [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential)]
+    private struct FLASHWINFO
+    {
+        public uint cbSize;
+        public IntPtr hwnd;
+        public uint dwFlags;
+        public uint uCount;
+        public uint dwTimeout;
+    }
+
+    [System.Runtime.InteropServices.DllImport("user32.dll")]
+    private static extern bool FlashWindowEx(ref FLASHWINFO pwfi);
+
+    private void AvisoPagoQr_Cerrar(object sender, RoutedEventArgs e) =>
+        AvisoPagoQr.Visibility = Visibility.Collapsed;
+
+    private void AvisoPagoQr_Revisar(object sender, RoutedEventArgs e)
+    {
+        AvisoPagoQr.Visibility = Visibility.Collapsed;
+        if (DataContext is not ViewModels.MainViewModel vm)
+            return;
+
+        NavPagosQr.IsChecked = true;
+        vm.CurrentView = new Views.PagosQrView();
+    }
+
+    private sealed class PendientesQr
+    {
+        public int Cantidad { get; set; }
+        public List<Guid> Ids { get; set; } = new();
     }
 
     private void CambiarContrasena_Click(object sender, RoutedEventArgs e)

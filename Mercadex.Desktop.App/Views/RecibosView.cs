@@ -399,11 +399,14 @@ public sealed class RecibosView : UserControl
         public decimal Total { get; set; }
         public string Estado { get; set; } = "";
         public string? RegistradoPor { get; set; }
+        public string? CargoEmisor { get; set; }
 
         public bool Anulado => string.Equals(Estado, "Anulado", StringComparison.OrdinalIgnoreCase);
         public string EstadoTexto => Anulado ? "ANULADO" : "Válido";
         public string FechaTexto => FechaEmision.ToOffset(TimeSpan.FromHours(-4)).ToString("dd/MM/yyyy HH:mm", Bo);
         public string TotalTexto => $"{Moneda} {Total.ToString("N2", Bo)}";
-        public string CobradoPor => string.IsNullOrWhiteSpace(RegistradoPor) ? "—" : RegistradoPor!;
+        public string CobradoPor => string.IsNullOrWhiteSpace(RegistradoPor)
+            ? "—"
+            : RegistradoPor! + (string.IsNullOrWhiteSpace(CargoEmisor) ? "" : " — " + CargoEmisor);
     }
 }

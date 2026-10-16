@@ -83,6 +83,39 @@ public static class ApiJson
         }
     }
 
+    /// <summary>Descarga un archivo (CSV, PDF…) de la API con la sesión iniciada.</summary>
+    public static async Task<byte[]> BytesAsync(string ruta)
+    {
+        HttpResponseMessage respuesta;
+
+        try
+        {
+            respuesta = await Http.GetAsync(ruta);
+        }
+        catch (TaskCanceledException)
+        {
+            throw new InvalidOperationException("El servidor tardó demasiado en responder. Vuelve a intentar.");
+        }
+        catch (HttpRequestException)
+        {
+            throw new InvalidOperationException("No hay conexión con el servidor. Revisa el internet y vuelve a intentar.");
+        }
+
+        using (respuesta)
+        {
+            if (respuesta.IsSuccessStatusCode)
+                return await respuesta.Content.ReadAsByteArrayAsync();
+
+            throw new InvalidOperationException((int)respuesta.StatusCode switch
+            {
+                401 => "Tu sesión terminó. Vuelve a ingresar.",
+                403 => "Tu usuario no tiene permiso para esta acción.",
+                404 => "La API todavía no tiene esta función publicada.",
+                _ => $"No se pudo descargar (error {(int)respuesta.StatusCode})."
+            });
+        }
+    }
+
     /// <summary>Lee un monto escrito con coma o punto. Null si no es válido.</summary>
     public static decimal? LeerMonto(string? texto)
     {

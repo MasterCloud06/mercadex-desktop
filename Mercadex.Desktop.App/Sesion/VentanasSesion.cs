@@ -35,19 +35,103 @@ internal static class UiSesion
         return caja;
     }
 
-    /// <summary>Campo de contraseña con el mismo aspecto que los campos de texto.</summary>
+    /// <summary>
+    /// Campo de contraseña con el mismo aspecto que los campos de texto y un
+    /// botón con un ojo para mostrar u ocultar lo escrito (observación de la
+    /// directiva: verificar la contraseña antes de ingresar).
+    /// El PasswordBox sigue siendo la fuente del valor.
+    /// </summary>
     public static Border Clave(out PasswordBox clave)
     {
-        clave = new PasswordBox
+        var caja = new PasswordBox
         {
             Height = 38,
             FontSize = 15,
             BorderThickness = new Thickness(0),
             Background = Brushes.Transparent,
-            Padding = new Thickness(10, 0, 10, 0),
+            Padding = new Thickness(10, 0, 4, 0),
             VerticalContentAlignment = VerticalAlignment.Center,
             FocusVisualStyle = null
         };
+        clave = caja;
+
+        // Copia visible del texto, solo mientras se elige "mostrar".
+        var visible = new TextBox
+        {
+            Height = 38,
+            FontSize = 15,
+            BorderThickness = new Thickness(0),
+            Background = Brushes.Transparent,
+            Padding = new Thickness(7, 0, 4, 0),
+            VerticalContentAlignment = VerticalAlignment.Center,
+            FocusVisualStyle = null,
+            Visibility = Visibility.Collapsed,
+            // Sin el estilo general: el recuadro ya lo dibuja el campo de afuera.
+            Style = new Style(typeof(TextBox))
+        };
+
+        // El ojo se dibuja (no depende de que Windows tenga el ícono en su fuente).
+        var ver = new Button
+        {
+            Content = IconoOjo(tachado: false),
+            Width = 40,
+            Background = Brushes.Transparent,
+            BorderThickness = new Thickness(0),
+            Foreground = Suave,
+            Cursor = System.Windows.Input.Cursors.Hand,
+            Focusable = false,
+            ToolTip = "Mostrar contraseña",
+            VerticalAlignment = VerticalAlignment.Stretch
+        };
+        System.Windows.Automation.AutomationProperties.SetName(ver, "Mostrar u ocultar la contraseña");
+
+        var sincronizando = false;
+        visible.TextChanged += (_, _) =>
+        {
+            if (sincronizando) return;
+            sincronizando = true;
+            caja.Password = visible.Text;
+            sincronizando = false;
+        };
+
+        ver.Click += (_, _) =>
+        {
+            var mostrar = visible.Visibility != Visibility.Visible;
+            sincronizando = true;
+            if (mostrar)
+            {
+                visible.Text = caja.Password;
+                visible.Visibility = Visibility.Visible;
+                caja.Visibility = Visibility.Hidden;
+                visible.Focus();
+                visible.CaretIndex = visible.Text.Length;
+            }
+            else
+            {
+                caja.Password = visible.Text;
+                caja.Visibility = Visibility.Visible;
+                visible.Visibility = Visibility.Collapsed;
+                caja.Focus();
+            }
+            sincronizando = false;
+            ver.Content = IconoOjo(tachado: mostrar);
+            ver.ToolTip = mostrar ? "Ocultar contraseña" : "Mostrar contraseña";
+        };
+
+        // Si otro código limpia la contraseña, se vuelve a ocultar.
+        caja.PasswordChanged += (_, _) =>
+        {
+            if (!sincronizando && caja.Password.Length == 0 && visible.Visibility == Visibility.Visible)
+                visible.Text = "";
+        };
+
+        var grilla = new Grid();
+        grilla.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        grilla.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        grilla.Children.Add(caja);
+        grilla.Children.Add(visible);
+        Grid.SetColumn(ver, 1);
+        grilla.Children.Add(ver);
 
         var marco = new Border
         {
@@ -56,11 +140,18 @@ internal static class UiSesion
             CornerRadius = new CornerRadius(8),
             Background = Brushes.White,
             Margin = new Thickness(0, 0, 0, 14),
-            Child = clave
+            Child = grilla
         };
 
-        clave.GotKeyboardFocus += (_, _) => { marco.BorderBrush = BordeFoco; marco.BorderThickness = new Thickness(2); };
-        clave.LostKeyboardFocus += (_, _) => { marco.BorderBrush = Borde; marco.BorderThickness = new Thickness(1); };
+        void Foco(bool dentro)
+        {
+            marco.BorderBrush = dentro ? BordeFoco : Borde;
+            marco.BorderThickness = new Thickness(dentro ? 2 : 1);
+        }
+        caja.GotKeyboardFocus += (_, _) => Foco(true);
+        caja.LostKeyboardFocus += (_, _) => Foco(visible.IsKeyboardFocused);
+        visible.GotKeyboardFocus += (_, _) => Foco(true);
+        visible.LostKeyboardFocus += (_, _) => Foco(caja.IsKeyboardFocused);
         return marco;
     }
 
@@ -161,6 +252,40 @@ internal static class UiSesion
     {
         texto.Text = mensaje ?? "";
         aviso.Visibility = string.IsNullOrEmpty(mensaje) ? Visibility.Collapsed : Visibility.Visible;
+    }
+
+    /// <summary>Ojo dibujado con líneas; tachado = la contraseña está a la vista.</summary>
+    private static UIElement IconoOjo(bool tachado)
+    {
+        var lienzo = new Canvas { Width = 20, Height = 20 };
+        var trazo = new SolidColorBrush(Color.FromRgb(0x5A, 0x6B, 0x7D));
+
+        lienzo.Children.Add(new System.Windows.Shapes.Path
+        {
+            Data = Geometry.Parse("M1.5,10 C4.5,4.5 15.5,4.5 18.5,10 C15.5,15.5 4.5,15.5 1.5,10 Z"),
+            Stroke = trazo,
+            StrokeThickness = 1.6,
+            StrokeLineJoin = PenLineJoin.Round
+        });
+
+        var pupila = new System.Windows.Shapes.Ellipse { Width = 6, Height = 6, Stroke = trazo, StrokeThickness = 1.6 };
+        Canvas.SetLeft(pupila, 7);
+        Canvas.SetTop(pupila, 7);
+        lienzo.Children.Add(pupila);
+
+        if (tachado)
+        {
+            lienzo.Children.Add(new System.Windows.Shapes.Line
+            {
+                X1 = 3, Y1 = 17, X2 = 17, Y2 = 3,
+                Stroke = trazo,
+                StrokeThickness = 1.6,
+                StrokeStartLineCap = PenLineCap.Round,
+                StrokeEndLineCap = PenLineCap.Round
+            });
+        }
+
+        return lienzo;
     }
 }
 

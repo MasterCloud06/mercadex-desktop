@@ -59,6 +59,12 @@
                             <TextBlock Text="Fecha" Style="{StaticResource Etiqueta}"/>
                             <DatePicker x:Name="FechaArqueo" Width="170" Height="36" VerticalContentAlignment="Center"/>
                         </StackPanel>
+                        <StackPanel x:Name="PanelCaja" Margin="12,0,0,0" Visibility="Collapsed">
+                            <TextBlock Text="Caja" Style="{StaticResource Etiqueta}"/>
+                            <ComboBox x:Name="SelectorCaja" Width="230" Height="36" VerticalContentAlignment="Center"
+                                      SelectionChanged="Caja_Changed"
+                                      ToolTip="Cada cajera arquea y cierra su propia caja. El administrador puede ver la de cada una o la caja general del día."/>
+                        </StackPanel>
                         <Button x:Name="BtnConsultar" Content="Consultar" Click="Consultar_Click"
                                 Style="{StaticResource Mx.PrimaryButton}" Width="140" Height="36"
                                 VerticalAlignment="Bottom" Margin="12,0,0,0"/>
@@ -72,6 +78,16 @@
                         <TextBlock x:Name="TxtChipEstado" Text="Sin consultar" FontWeight="SemiBold" Foreground="#5A6B7D"/>
                     </Border>
                 </Grid>
+            </Border>
+
+            <!-- CAJAS DEL DÍA (administrador) -->
+            <Border x:Name="TarjetaCajas" Style="{StaticResource Tarjeta}" Visibility="Collapsed">
+                <StackPanel>
+                    <TextBlock Text="Cajas del día" Style="{StaticResource Titulo}"/>
+                    <TextBlock x:Name="TxtAyudaCajas" Style="{StaticResource Ayuda}" Margin="0,3,0,10"
+                               Text="Cada cajera cierra su propia caja. Haz clic en una para ver su arqueo."/>
+                    <WrapPanel x:Name="ListaCajas"/>
+                </StackPanel>
             </Border>
 
             <!-- RECAUDACIÓN DEL DÍA -->
@@ -224,6 +240,7 @@
                               SelectionChanged="Historial_SelectionChanged">
                         <DataGrid.Columns>
                             <DataGridTextColumn Header="Fecha" Binding="{Binding FechaTexto}" Width="100"/>
+                            <DataGridTextColumn Header="Caja" Binding="{Binding CajaTexto}" Width="130"/>
                             <DataGridTextColumn Header="Moneda" Binding="{Binding Moneda}" Width="70"/>
                             <DataGridTextColumn Header="Efectivo" Binding="{Binding Efectivo, StringFormat=N2}" Width="105"/>
                             <DataGridTextColumn Header="QR" Binding="{Binding Qr, StringFormat=N2}" Width="105"/>

@@ -103,6 +103,7 @@ public sealed class ActaArqueoWindow : Window
         {
             ("Fecha del arqueo", a.Fecha.ToString("dddd, dd 'de' MMMM 'de' yyyy", Bo), (Brush?)null),
             ("Moneda", a.Moneda, null),
+            ("Caja", string.IsNullOrWhiteSpace(a.Caja) ? "General (todo el día)" : a.Caja!, null),
             ("Estado", estado, a.Cerrado ? Verde : Rojo)
         }));
 

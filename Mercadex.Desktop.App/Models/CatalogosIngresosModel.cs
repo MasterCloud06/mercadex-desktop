@@ -20,4 +20,7 @@ public sealed class ConceptoIngresoModel
     public Guid Id { get; set; }
 
     public string Nombre { get; set; } = string.Empty;
+
+    /// <summary>Los desactivados no se ofrecen para cargos nuevos (siguen en búsquedas y reportes).</summary>
+    public bool Activo { get; set; } = true;
 }

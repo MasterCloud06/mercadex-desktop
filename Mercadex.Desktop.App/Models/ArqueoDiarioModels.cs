@@ -19,6 +19,51 @@ public sealed class ArqueoPreliminarResponse
     public List<ArqueoMonedaResumen> Resumen { get; set; } = new();
 
     public List<ArqueoIncidenciaResumen> PagosPorRevisar { get; set; } = new();
+
+    /// <summary>De quién es la caja consultada: id de la cajera o "general".</summary>
+    public string? Caja { get; set; }
+
+    public string? CajaNombre { get; set; }
+
+    public bool EsCajaGeneral { get; set; } = true;
+
+    /// <summary>Cajas de cada cajera en ese día (servidor 1.6.3 o posterior).</summary>
+    public List<CajaDiaModel> Cajas { get; set; } = new();
+
+    /// <summary>Cobros sin cajera identificada (sin sesión o anteriores a la 1.6.3).</summary>
+    public int SinCajera { get; set; }
+}
+
+public sealed class CajaDiaModel
+{
+    public string CajeroId { get; set; } = "";
+
+    public string Nombre { get; set; } = "";
+
+    public int CantidadCobros { get; set; }
+
+    public int CantidadEgresos { get; set; }
+
+    public List<CajaTotalModel>? Totales { get; set; }
+
+    public bool Cerrada { get; set; }
+
+    public bool EsMia { get; set; }
+}
+
+public sealed class CajaTotalModel
+{
+    public string Moneda { get; set; } = "";
+
+    public decimal Total { get; set; }
+
+    public decimal Efectivo { get; set; }
+}
+
+/// <summary>Opción del selector de caja.</summary>
+public sealed record OpcionCaja(string Valor, string Texto)
+{
+    public override string ToString() => Texto;
 }
 
 public sealed class ArqueoMonedaResumen
@@ -120,6 +165,14 @@ public sealed class CierreCajaModel
 
     public string RegistradoTexto =>
         FechaRegistro.ToLocalTime().ToString("dd/MM/yyyy HH:mm");
+
+    public string? Caja { get; set; }
+
+    public string? CajaNombre { get; set; }
+
+    public bool EsCajaGeneral { get; set; } = true;
+
+    public string CajaTexto => EsCajaGeneral ? "General" : CajaNombre ?? Responsable;
 }
 
 public sealed record RegistrarCierreRequest(
@@ -127,7 +180,8 @@ public sealed record RegistrarCierreRequest(
     Guid MonedaId,
     decimal EfectivoContado,
     string Responsable,
-    string? Observacion);
+    string? Observacion,
+    string? Caja = null);
 
 /// <summary>Datos que se imprimen en el acta de arqueo.</summary>
 public sealed record ActaArqueo(
@@ -148,4 +202,5 @@ public sealed record ActaArqueo(
     bool Cerrado,
     DateTimeOffset? FechaCierre,
     decimal EgresosEfectivo = 0m,
-    int CantidadEgresos = 0);
+    int CantidadEgresos = 0,
+    string? Caja = null);

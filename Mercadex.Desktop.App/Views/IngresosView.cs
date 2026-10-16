@@ -51,6 +51,10 @@ public sealed class IngresosView : UserControl
     private readonly Button _marcarTodas = new() { Content = "Marcar todas" };
     private List<FilaCobro> _filas = new();
 
+    // Aviso: la caseta tiene un pago QR de la app en revisión (evita cobrar dos veces).
+    private readonly Border _avisoQr;
+    private readonly TextBlock _avisoQrTexto;
+
     // Resumen
     private readonly TextBlock _total = new() { FontSize = 34, FontWeight = FontWeights.Bold, Foreground = UiKit.Tinta };
     private readonly TextBlock _detalleTotal = new() { Foreground = UiKit.Suave, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 0, 0, 12) };
@@ -117,6 +121,19 @@ public sealed class IngresosView : UserControl
         var paso2 = new DockPanel();
         DockPanel.SetDock(cabeceraDeudas, Dock.Top);
         paso2.Children.Add(cabeceraDeudas);
+
+        _avisoQr = UiKit.Aviso(out _avisoQrTexto, "aviso");
+        var irQr = new Button { Content = "Ir a Pagos QR", Style = UiKit.Estilo("Mx.NavLink"), HorizontalAlignment = HorizontalAlignment.Left, Margin = new Thickness(0, 6, 0, 0) };
+        irQr.Click += (_, _) => Navegacion.AbrirPagosQr();
+        var contenidoQr = new StackPanel();
+        contenidoQr.Children.Add(new TextBlock { Text = "Esta caseta tiene un pago QR de la app en revisión", FontWeight = FontWeights.SemiBold, Foreground = ColoresPanel.Hex("#7A5200") });
+        _avisoQr.Child = null;
+        contenidoQr.Children.Add(_avisoQrTexto);
+        contenidoQr.Children.Add(irQr);
+        _avisoQr.Child = contenidoQr;
+        _avisoQr.Visibility = Visibility.Collapsed;
+        DockPanel.SetDock(_avisoQr, Dock.Top);
+        paso2.Children.Add(_avisoQr);
         DockPanel.SetDock(_sinDeudas, Dock.Bottom);
         paso2.Children.Add(_sinDeudas);
 
@@ -310,6 +327,7 @@ public sealed class IngresosView : UserControl
         _unidad = unidad;
         _filas = new();
         _tabla.ItemsSource = null;
+        _avisoQr.Visibility = Visibility.Collapsed;
 
         if (unidad is null)
         {
@@ -359,9 +377,12 @@ public sealed class IngresosView : UserControl
             foreach (var f in _filas)
                 f.PropertyChanged += (_, _) => ActualizarResumen();
 
+            await MarcarPagosQrEnRevisionAsync(unidad);
+
             // Si todo es de una sola moneda se marca todo: el socio suele pagar lo que debe.
+            // Las deudas con un pago QR en revisión no se marcan solas.
             if (_filas.Select(f => f.MonedaId).Distinct().Count() == 1)
-                foreach (var f in _filas)
+                foreach (var f in _filas.Where(f => !f.EnRevisionQr))
                     f.Seleccionada = true;
 
             _tabla.ItemsSource = _filas;
@@ -546,6 +567,51 @@ public sealed class IngresosView : UserControl
     // COBRO
     // =====================================================================
 
+    private async Task MarcarPagosQrEnRevisionAsync(UnidadIngresoModel unidad)
+    {
+        _avisoQr.Visibility = Visibility.Collapsed;
+        if (!(Sesion.SesionActual.PuedeCobrar || !Sesion.SesionActual.Iniciada))
+            return;
+
+        List<PagoQrEnRevision>? pagos;
+        try
+        {
+            pagos = await ApiJson.GetAsync<List<PagoQrEnRevision>>($"/api/panel/pagos/en-revision?unidadId={unidad.Id}");
+        }
+        catch
+        {
+            return; // Si no se puede consultar, se cobra como siempre.
+        }
+
+        if (pagos is null || pagos.Count == 0 || _unidad?.Id != unidad.Id)
+            return;
+
+        foreach (var p in pagos)
+        {
+            var detalle = $"Enviado desde la app el {p.Fecha.ToOffset(TimeSpan.FromHours(-4)).ToString("dd/MM/yyyy HH:mm", Bo)} · " +
+                          $"{p.Moneda} {p.Monto.ToString("N2", Bo)} · transacción {p.Referencia}";
+            foreach (var f in _filas.Where(f => p.ObligacionIds.Contains(f.Id)))
+                f.MarcarQrEnRevision(detalle);
+        }
+
+        var primero = pagos[0];
+        _avisoQrTexto.Text = (pagos.Count == 1
+                ? $"El socio envió un pago de {primero.Moneda} {primero.Monto.ToString("N2", Bo)} el {primero.Fecha.ToOffset(TimeSpan.FromHours(-4)).ToString("dd/MM/yyyy HH:mm", Bo)} (transacción {primero.Referencia})."
+                : $"El socio envió {pagos.Count} pagos que esperan revisión.") +
+            " Las deudas que cubre están marcadas como «Pago QR en revisión». No las cobres en ventanilla: revisa primero el pago.";
+        _avisoQr.Visibility = Visibility.Visible;
+    }
+
+    private sealed class PagoQrEnRevision
+    {
+        public Guid Id { get; set; }
+        public string Moneda { get; set; } = "";
+        public decimal Monto { get; set; }
+        public string? Referencia { get; set; }
+        public DateTimeOffset Fecha { get; set; }
+        public List<Guid> ObligacionIds { get; set; } = new();
+    }
+
     private async Task CobrarAsync()
     {
         var sel = Seleccionadas;
@@ -592,6 +658,18 @@ public sealed class IngresosView : UserControl
             }
 
             tipoCambio = tc;
+        }
+
+        if (sel.Any(f => f.EnRevisionQr))
+        {
+            var seguir = Dialogo.Mostrar(owner,
+                "Marcaste deudas que el socio ya pagó con QR desde la app y que están esperando revisión.\n\n" +
+                "Si las cobras ahora en ventanilla, el pago QR tendrá que rechazarse y devolverle el dinero al socio.\n\n" +
+                "Lo correcto es revisar primero ese pago en «Pagos QR».\n\n¿Cobrar igual en ventanilla?",
+                "Pago QR en revisión", MessageBoxButton.YesNo, MessageBoxImage.Warning, MessageBoxResult.No);
+
+            if (seguir != MessageBoxResult.Yes)
+                return;
         }
 
         var lineas = string.Join("\n", sel.Select(f => $"{f.Concepto} {f.Periodo}: {f.Monto.ToString("N2", Bo)}"));
@@ -696,8 +774,20 @@ public sealed class IngresosView : UserControl
         public string Concepto { get; }
         public string Moneda { get; }
         public string Periodo { get; }
-        public string Nota { get; }
-        public string? NotaDetalle { get; }
+        public string Nota { get; private set; }
+        public string? NotaDetalle { get; private set; }
+
+        /// <summary>La deuda está incluida en un pago QR de la app que espera revisión.</summary>
+        public bool EnRevisionQr { get; private set; }
+
+        public void MarcarQrEnRevision(string detalle)
+        {
+            EnRevisionQr = true;
+            Nota = "Pago QR en revisión";
+            NotaDetalle = detalle;
+            Avisar(nameof(Nota));
+            Avisar(nameof(NotaDetalle));
+        }
 
         public bool Seleccionada
         {

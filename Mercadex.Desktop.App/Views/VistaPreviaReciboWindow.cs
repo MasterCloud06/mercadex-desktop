@@ -260,8 +260,15 @@ public sealed class VistaPreviaReciboWindow : Window
             negrita: true,
             tamano: 18);
 
-        if (Services.TextoRecibo.CobradoPor(_recibo) is { } cobradoPor)
-            AgregarLinea(documento, cobradoPor);
+        if (Services.TextoRecibo.Emisor(_recibo) is (string nombreEmisor, var cargoEmisor))
+        {
+            AgregarLinea(documento, " ");
+            AgregarLinea(documento, Services.TextoRecibo.LineaFirma, centrado: true);
+            AgregarLinea(documento, nombreEmisor, negrita: true, centrado: true);
+            if (cargoEmisor is not null)
+                AgregarLinea(documento, cargoEmisor, centrado: true);
+            AgregarLinea(documento, "Emitido por", tamano: 10, centrado: true);
+        }
 
         if (anulado)
         {

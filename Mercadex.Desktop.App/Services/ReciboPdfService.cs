@@ -222,8 +222,15 @@ public static class ReciboPdfService
             $"TOTAL: {recibo.Total:N2} {moneda}",
             fuenteTotal, false, azul);
 
-        if (TextoRecibo.CobradoPor(recibo) is { } cobradoPor)
-            Linea(cobradoPor, normal);
+        if (TextoRecibo.Emisor(recibo) is (string nombreEmisor, var cargoEmisor))
+        {
+            y += 26; // espacio para la firma
+            Linea(TextoRecibo.LineaFirma, normal, true);
+            Linea(nombreEmisor, negrita, true);
+            if (cargoEmisor is not null)
+                Linea(cargoEmisor, normal, true);
+            Linea("Emitido por", pequeno, true);
+        }
 
         if (string.Equals(
             recibo.Estado,

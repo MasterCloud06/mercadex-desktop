@@ -19,6 +19,14 @@ public partial class ArqueoDiarioView : UserControl
     private DateOnly _fechaConsultada;
     private bool _ocupado;
 
+    /// <summary>Caja consultada: «mia», «general» o el id de una cajera.</summary>
+    private string _caja = "mia";
+    private bool _llenandoCajas;
+
+    /// <summary>Administrador y consulta pueden ver la caja de cada cajera y la general.</summary>
+    private static bool VeTodasLasCajas =>
+        Sesion.SesionActual.Iniciada && (Sesion.SesionActual.EsAdministrador || Sesion.SesionActual.SoloConsulta);
+
     public ArqueoDiarioView()
     {
         InitializeComponent();
@@ -30,6 +38,12 @@ public partial class ArqueoDiarioView : UserControl
             TxtResponsable.IsReadOnly = true;
             TxtResponsable.ToolTip = "Se registra a nombre del usuario que inició sesión.";
         }
+
+        // Consulta no tiene caja propia: empieza viendo la caja general.
+        if (Sesion.SesionActual.Iniciada && Sesion.SesionActual.SoloConsulta)
+            _caja = "general";
+
+        PanelCaja.Visibility = VeTodasLasCajas ? Visibility.Visible : Visibility.Collapsed;
 
         FechaArqueo.SelectedDate = DateTime.Today;
         HistHasta.SelectedDate = DateTime.Today;
@@ -75,7 +89,8 @@ public partial class ArqueoDiarioView : UserControl
 
             _datos = await _api.GetAsync<ArqueoPreliminarResponse>(
                 "/api/arqueo-diario/preliminar?fecha=" +
-                fecha.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture));
+                fecha.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture) +
+                (Sesion.SesionActual.Iniciada ? "&caja=" + Uri.EscapeDataString(_caja) : ""));
 
             if (_datos == null)
             {
@@ -103,7 +118,14 @@ public partial class ArqueoDiarioView : UserControl
             if (resumen.Count == 0)
                 mensaje = "No hay cobros válidos registrados en esta fecha.";
 
+            if (Sesion.SesionActual.Iniciada && !string.IsNullOrWhiteSpace(_datos.Caja))
+                mensaje = (_datos.EsCajaGeneral
+                    ? "Caja general (todas las cajeras). "
+                    : EsMiCaja ? "Tu caja. " : $"Caja de {_datos.CajaNombre}. ") + mensaje;
+
             TxtEstado.Text = mensaje;
+
+            MostrarCajas();
 
             MostrarMoneda();
         }
@@ -120,6 +142,142 @@ public partial class ArqueoDiarioView : UserControl
             _ocupado = false;
             BtnConsultar.IsEnabled = true;
         }
+    }
+
+    /// <summary>La caja consultada es la de quien inició sesión.</summary>
+    private bool EsMiCaja =>
+        _caja == "mia" || (_datos?.Cajas ?? new()).Any(c => c.EsMia && c.CajeroId == _datos?.Caja);
+
+    /// <summary>
+    /// Puede registrar el cierre de lo que está viendo: su propia caja,
+    /// o la caja general si es administrador. Sin sesión, como antes.
+    /// </summary>
+    private bool PuedeCerrarEstaCaja =>
+        !Sesion.SesionActual.Iniciada ||
+        string.IsNullOrWhiteSpace(_datos?.Caja) ||
+        (!Sesion.SesionActual.SoloConsulta &&
+         (EsMiCaja || (_datos!.EsCajaGeneral && Sesion.SesionActual.EsAdministrador)));
+
+    private void MostrarCajas()
+    {
+        if (_datos == null || !VeTodasLasCajas)
+        {
+            TarjetaCajas.Visibility = Visibility.Collapsed;
+            return;
+        }
+
+        // Selector: mi caja, caja general y la de cada cajera del día.
+        _llenandoCajas = true;
+        try
+        {
+            var opciones = new List<OpcionCaja>();
+            if (!Sesion.SesionActual.SoloConsulta)
+                opciones.Add(new OpcionCaja("mia", "Mi caja"));
+            opciones.Add(new OpcionCaja("general", "Caja general (todo el día)"));
+            opciones.AddRange(_datos.Cajas
+                .Where(c => !c.EsMia || Sesion.SesionActual.SoloConsulta)
+                .Select(c => new OpcionCaja(c.CajeroId, "Caja de " + c.Nombre)));
+
+            // Si se consultó una caja que hoy no tiene movimientos, se conserva en la lista.
+            if (opciones.All(o => o.Valor != _caja))
+                opciones.Add(new OpcionCaja(_caja, "Caja de " + (_datos.CajaNombre ?? "cajera")));
+
+            SelectorCaja.ItemsSource = opciones;
+            SelectorCaja.SelectedItem = opciones.First(o => o.Valor == _caja);
+        }
+        finally
+        {
+            _llenandoCajas = false;
+        }
+
+        ListaCajas.Children.Clear();
+
+        if (_datos.Cajas.Count == 0)
+        {
+            TarjetaCajas.Visibility = Visibility.Collapsed;
+            return;
+        }
+
+        TarjetaCajas.Visibility = Visibility.Visible;
+
+        foreach (var c in _datos.Cajas)
+        {
+            var totales = string.Join(" · ", (c.Totales ?? new()).Select(t => Monto(t.Total, t.Moneda)));
+            var detalle = $"{Pagos(c.CantidadCobros)}" +
+                          (c.CantidadEgresos > 0 ? $" · {c.CantidadEgresos} {(c.CantidadEgresos == 1 ? "egreso" : "egresos")}" : "") +
+                          (totales.Length > 0 ? "\n" + totales : "");
+
+            var estado = new Border
+            {
+                CornerRadius = new CornerRadius(10),
+                Padding = new Thickness(8, 2, 8, 2),
+                Margin = new Thickness(0, 6, 0, 0),
+                HorizontalAlignment = HorizontalAlignment.Left,
+                Background = ColoresPanel.Hex(c.Cerrada ? "#E7F5E7" : "#FFF4D6"),
+                Child = new TextBlock
+                {
+                    Text = c.Cerrada ? "Cerrada" : "Abierta",
+                    FontSize = 12,
+                    FontWeight = FontWeights.SemiBold,
+                    Foreground = ColoresPanel.Hex(c.Cerrada ? "#0B5A0B" : "#8A5A00")
+                }
+            };
+
+            var contenido = new StackPanel();
+            contenido.Children.Add(new TextBlock
+            {
+                Text = c.Nombre + (c.EsMia ? " (tú)" : ""),
+                FontWeight = FontWeights.SemiBold,
+                FontSize = 14,
+                Foreground = ColoresPanel.Hex("#173B5C")
+            });
+            contenido.Children.Add(new TextBlock
+            {
+                Text = detalle,
+                FontSize = 12,
+                Foreground = ColoresPanel.Hex("#60748A"),
+                Margin = new Thickness(0, 2, 0, 0)
+            });
+            contenido.Children.Add(estado);
+
+            var seleccionada = c.CajeroId == _datos.Caja;
+            var boton = new Button
+            {
+                Content = contenido,
+                Padding = new Thickness(14, 10, 14, 10),
+                Margin = new Thickness(0, 0, 10, 10),
+                MinWidth = 200,
+                HorizontalContentAlignment = HorizontalAlignment.Left,
+                Cursor = System.Windows.Input.Cursors.Hand,
+                Background = ColoresPanel.Hex(seleccionada ? "#E7F0F9" : "#FFFFFF"),
+                BorderBrush = ColoresPanel.Hex(seleccionada ? "#1F4E79" : "#DFE6EE"),
+                BorderThickness = new Thickness(seleccionada ? 2 : 1),
+                ToolTip = "Ver el arqueo de esta caja"
+            };
+
+            var id = c.EsMia && !Sesion.SesionActual.SoloConsulta ? "mia" : c.CajeroId;
+            boton.Click += async (_, _) =>
+            {
+                _caja = id;
+                await ConsultarAsync(MonedaActual?.MonedaId);
+            };
+
+            ListaCajas.Children.Add(boton);
+        }
+
+        TxtAyudaCajas.Text = "Cada cajera cierra su propia caja. Haz clic en una para ver su arqueo." +
+                             (_datos.SinCajera > 0
+                                 ? $" Hay {Pagos(_datos.SinCajera)} sin cajera identificada (registrados sin sesión o antes de la 1.6.3): solo aparecen en la caja general."
+                                 : "");
+    }
+
+    private async void Caja_Changed(object sender, SelectionChangedEventArgs e)
+    {
+        if (_llenandoCajas || SelectorCaja.SelectedItem is not OpcionCaja opcion || opcion.Valor == _caja)
+            return;
+
+        _caja = opcion.Valor;
+        await ConsultarAsync(MonedaActual?.MonedaId);
     }
 
     private void Moneda_Changed(object sender, SelectionChangedEventArgs e)
@@ -206,13 +364,27 @@ public partial class ArqueoDiarioView : UserControl
 
             if (Sesion.SesionActual.Iniciada)
                 TxtResponsable.Text = Sesion.SesionActual.Nombre;
-            BtnCerrar.IsEnabled = _datos?.CantidadIncidencias == 0 ||
-                                  !(_datos?.PagosPorRevisar ?? new()).Any(x => x.Moneda == m.Moneda);
+            BtnCerrar.IsEnabled = PuedeCerrarEstaCaja &&
+                                  (_datos?.CantidadIncidencias == 0 ||
+                                   !(_datos?.PagosPorRevisar ?? new()).Any(x => x.Moneda == m.Moneda));
+            PanelEntradas.IsEnabled = PuedeCerrarEstaCaja;
             PanelCerrado.Visibility = Visibility.Collapsed;
             AvisoCambios.Visibility = Visibility.Collapsed;
             TxtContado.Text = "";
             TxtObservacion.Text = "";
         }
+
+        TxtAyudaCierre.Text = !Sesion.SesionActual.Iniciada || string.IsNullOrWhiteSpace(_datos?.Caja)
+            ? "Cuenta el efectivo de caja, escríbelo y registra el cierre. Un cierre registrado no se puede modificar."
+            : PuedeCerrarEstaCaja
+                ? (_datos!.EsCajaGeneral
+                    ? "Caja general: todos los cobros y gastos del día, de todas las cajeras. Úsala si hay una sola caja. Un cierre registrado no se puede modificar."
+                    : "Tu caja: solo los cobros que registraste tú y los gastos que pagaste en efectivo. Cuenta tu efectivo, escríbelo y registra el cierre. Un cierre registrado no se puede modificar.")
+                : Sesion.SesionActual.SoloConsulta
+                    ? "Tu usuario es de consulta: puedes ver el arqueo, pero el cierre lo registra cada cajera."
+                    : $"Esta es la caja de {_datos!.CajaNombre}. Cada cajera registra el cierre de su propia caja.";
+
+        BtnCerrar.Content = _datos?.EsCajaGeneral == false && EsMiCaja ? "Registrar cierre de mi caja" : "Registrar cierre del día";
 
         ActualizarDiferencia();
     }
@@ -319,7 +491,7 @@ public partial class ArqueoDiarioView : UserControl
         }
 
         var confirmar = Dialogo.Mostrar(
-            $"¿Registrar el cierre de caja del {_fechaConsultada:dd/MM/yyyy} en {m.Moneda}?\n\n" +
+            $"¿Registrar el cierre de {(_datos?.EsCajaGeneral == false ? "tu caja" : "caja")} del {_fechaConsultada:dd/MM/yyyy} en {m.Moneda}?\n\n" +
             $"Efectivo: {Monto(m.Efectivo, m.Moneda)}\n" +
             $"QR: {Monto(m.Qr, m.Moneda)}\n" +
             $"Otros: {Monto(m.Otros, m.Moneda)}\n" +
@@ -349,7 +521,8 @@ public partial class ArqueoDiarioView : UserControl
                     m.MonedaId,
                     contado,
                     responsable,
-                    observacion.Length == 0 ? null : observacion));
+                    observacion.Length == 0 ? null : observacion,
+                    Sesion.SesionActual.Iniciada ? _caja : null));
 
             _ocupado = false;
 
@@ -407,7 +580,8 @@ public partial class ArqueoDiarioView : UserControl
             m.Cerrado,
             m.Cierre?.FechaRegistro,
             m.Cerrado && m.Cierre != null ? m.Cierre.EgresosEfectivo : m.EgresosEfectivo,
-            m.Cerrado && m.Cierre != null ? m.Cierre.CantidadEgresos : m.CantidadEgresos);
+            m.Cerrado && m.Cierre != null ? m.Cierre.CantidadEgresos : m.CantidadEgresos,
+            _datos == null || _datos.EsCajaGeneral ? null : _datos.CajaNombre);
 
         new ActaArqueoWindow(acta) { Owner = Window.GetWindow(this) }.ShowDialog();
     }
@@ -462,7 +636,8 @@ public partial class ArqueoDiarioView : UserControl
             c.EfectivoContado, c.Diferencia,
             c.Responsable, c.Observacion,
             true, c.FechaRegistro,
-            c.EgresosEfectivo, c.CantidadEgresos);
+            c.EgresosEfectivo, c.CantidadEgresos,
+            c.EsCajaGeneral ? null : c.CajaNombre);
 
         new ActaArqueoWindow(acta) { Owner = Window.GetWindow(this) }.ShowDialog();
     }

@@ -29,6 +29,8 @@ public partial class MainWindow : Window
         Navegacion.KardexSolicitado += AbrirKardex;
         Navegacion.SocioSolicitado += AbrirSocio;
         Navegacion.CasetaSolicitada += AbrirCaseta;
+        Navegacion.PagosQrSolicitados += AbrirPagosQr;
+        Navegacion.CargoMensualSolicitado += AbrirCargoMensual;
         Closed += (_, _) =>
         {
             Navegacion.CobroSolicitado -= AbrirCobro;
@@ -36,6 +38,8 @@ public partial class MainWindow : Window
             Navegacion.KardexSolicitado -= AbrirKardex;
             Navegacion.SocioSolicitado -= AbrirSocio;
             Navegacion.CasetaSolicitada -= AbrirCaseta;
+            Navegacion.PagosQrSolicitados -= AbrirPagosQr;
+            Navegacion.CargoMensualSolicitado -= AbrirCargoMensual;
         };
 
         MostrarUsuario();
@@ -187,7 +191,20 @@ public partial class MainWindow : Window
     private void AvisoPagoQr_Cerrar(object sender, RoutedEventArgs e) =>
         AvisoPagoQr.Visibility = Visibility.Collapsed;
 
-    private void AvisoPagoQr_Revisar(object sender, RoutedEventArgs e)
+    private void AvisoPagoQr_Revisar(object sender, RoutedEventArgs e) => AbrirPagosQr();
+
+    private void AbrirCargoMensual()
+    {
+        if (DataContext is not ViewModels.MainViewModel vm)
+            return;
+
+        var vista = new Views.CobranzaView();
+        vista.MostrarCargoMensual();
+        NavObligaciones.IsChecked = true;
+        vm.CurrentView = vista;
+    }
+
+    private void AbrirPagosQr()
     {
         AvisoPagoQr.Visibility = Visibility.Collapsed;
         if (DataContext is not ViewModels.MainViewModel vm)

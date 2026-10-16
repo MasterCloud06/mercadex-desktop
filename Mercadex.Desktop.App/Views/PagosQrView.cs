@@ -231,6 +231,16 @@ public sealed class PagosQrView : UserControl
             return;
         }
 
+        // Las deudas ya se cobraron en ventanilla mientras este pago esperaba.
+        if (p.DeudasYaCobradas > 0)
+        {
+            var doble = UiKit.Aviso(out var dobleTexto, "error");
+            dobleTexto.Text = p.DeudasYaCobradas == 1
+                ? "Una de las deudas de este pago ya se cobró en ventanilla. No se puede aprobar: recházalo indicando que ya pagó en caja, y coordina la devolución del dinero al socio."
+                : $"{p.DeudasYaCobradas} deudas de este pago ya se cobraron en ventanilla. No se puede aprobar: recházalo indicando que ya pagó en caja, y coordina la devolución del dinero al socio.";
+            _ficha.Children.Add(doble);
+        }
+
         if (!(SesionActual.PuedeCobrar || !SesionActual.Iniciada))
         {
             _ficha.Children.Add(UiKit.Ayuda("Solo el administrador o la cajera pueden aprobar o rechazar pagos.", 0));
@@ -251,6 +261,8 @@ public sealed class PagosQrView : UserControl
         var acciones = new StackPanel { Orientation = Orientation.Horizontal };
         var aprobar = UiKit.Boton("Aprobar y emitir recibo", principal: true);
         aprobar.IsEnabled = false;
+        if (p.DeudasYaCobradas > 0)
+            verificado.IsEnabled = false;
         aprobar.Margin = new Thickness(0, 0, 10, 0);
         verificado.Checked += (_, _) => aprobar.IsEnabled = true;
         verificado.Unchecked += (_, _) => aprobar.IsEnabled = false;
@@ -462,6 +474,7 @@ public sealed class PagosQrView : UserControl
         public string? RevisadoPor { get; set; }
         public long? NumeroRecibo { get; set; }
         public string Deudas { get; set; } = "";
+        public int DeudasYaCobradas { get; set; }
 
         public bool Pendiente => Estado == "Pendiente";
         public string EstadoTexto => Estado switch { "Aprobado" => "Aprobado", "Rechazado" => "Rechazado", _ => "Por revisar" };

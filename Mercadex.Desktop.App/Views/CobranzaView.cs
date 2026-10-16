@@ -74,6 +74,13 @@ public sealed class CobranzaView : UserControl
     }
 
     /// <summary>Abre «Deudas registradas» filtrada por esa caseta (todas sus deudas).</summary>
+    /// <summary>Abre directamente la pestaña del cargo mensual (desde el recordatorio del panel principal).</summary>
+    public void MostrarCargoMensual()
+    {
+        if (_pestanas.Items.Count > 1)
+            _pestanas.SelectedIndex = 1;
+    }
+
     public void FiltrarCaseta(string codigo)
     {
         _fCaseta.Text = codigo;

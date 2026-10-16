@@ -36,4 +36,16 @@ public static class Navegacion
     /// <summary>Abre Casetas con la ficha de esa unidad.</summary>
     public static void AbrirCaseta(Guid unidadId) =>
         CasetaSolicitada?.Invoke(unidadId);
+
+    public static event Action? PagosQrSolicitados;
+
+    /// <summary>Abre Pagos QR (por ejemplo, desde el aviso de Cobrar).</summary>
+    public static void AbrirPagosQr() =>
+        PagosQrSolicitados?.Invoke();
+
+    public static event Action? CargoMensualSolicitado;
+
+    /// <summary>Abre Obligaciones en la pestaña del cargo mensual.</summary>
+    public static void AbrirCargoMensual() =>
+        CargoMensualSolicitado?.Invoke();
 }

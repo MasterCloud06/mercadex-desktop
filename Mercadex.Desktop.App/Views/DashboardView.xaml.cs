@@ -66,6 +66,8 @@ public partial class DashboardView : UserControl
             Mostrar(_datos);
 
             TxtEstado.Text = "Actualizado a las " + DateTime.Now.ToString("HH:mm");
+
+            await MostrarRecordatorioCargoAsync();
         }
         catch (OperationCanceledException)
         {
@@ -80,6 +82,72 @@ public partial class DashboardView : UserControl
             _cargando = false;
             BtnActualizar.IsEnabled = true;
         }
+    }
+
+    // ---------------- Recordatorio del cargo mensual ----------------
+    // Desde el día 5, si ninguna caseta tiene deudas de este mes, se recuerda
+    // al administrador que genere la mensualidad.
+
+    private Border? _recordatorio;
+
+    private static readonly string[] Meses =
+        { "enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre" };
+
+    private async Task MostrarRecordatorioCargoAsync()
+    {
+        if (_recordatorio is not null)
+        {
+            Contenido.Children.Remove(_recordatorio);
+            _recordatorio = null;
+        }
+
+        if (!(Sesion.SesionActual.EsAdministrador || !Sesion.SesionActual.Iniciada))
+            return;
+
+        EstadoMes? e;
+        try
+        {
+            e = await Services.ApiJson.GetAsync<EstadoMes>("/api/cobranza/estado-mes");
+        }
+        catch
+        {
+            return;
+        }
+
+        if (e is null || e.CargoGenerado || e.Dia < 5 || e.UnidadesActivas == 0)
+            return;
+
+        var aviso = UiKit.Aviso(out var texto, "aviso");
+        aviso.Margin = new Thickness(0, 0, 14, 16);
+        var pila = new StackPanel();
+        pila.Children.Add(new TextBlock
+        {
+            Text = $"Todavía no se cargó la mensualidad de {Meses[e.Mes - 1]} {e.Anio}",
+            FontSize = 15,
+            FontWeight = FontWeights.SemiBold,
+            Foreground = ColoresPanel.Hex("#7A5200")
+        });
+        texto.Text = $"Hoy es {e.Dia} y ninguna caseta tiene deudas de este mes. Mientras no se carguen, no aparecen al cobrar ni en la app de los socios.";
+        texto.Margin = new Thickness(0, 4, 0, 8);
+        aviso.Child = null; // el texto pasa del aviso a la pila
+        pila.Children.Add(texto);
+        var ir = UiKit.Boton("Ir al cargo mensual", principal: true);
+        ir.HorizontalAlignment = HorizontalAlignment.Left;
+        ir.Click += (_, _) => Navegacion.AbrirCargoMensual();
+        pila.Children.Add(ir);
+        aviso.Child = pila;
+
+        _recordatorio = aviso;
+        Contenido.Children.Insert(Math.Min(1, Contenido.Children.Count), aviso);
+    }
+
+    private sealed class EstadoMes
+    {
+        public int Anio { get; set; }
+        public int Mes { get; set; }
+        public int Dia { get; set; }
+        public int UnidadesActivas { get; set; }
+        public bool CargoGenerado { get; set; }
     }
 
     private void Mostrar(DashboardRespuesta d)

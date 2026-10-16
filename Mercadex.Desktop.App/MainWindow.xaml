@@ -153,6 +153,12 @@
                                 <TextBlock Text="Usuarios" VerticalAlignment="Center"/>
                             </StackPanel>
                         </RadioButton>
+                        <RadioButton x:Name="NavRegistroCambios" GroupName="MenuMercadex" Style="{StaticResource Mx.NavRadio}" Command="{Binding MostrarRegistroCambiosCommand}">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="&#xE81C;" FontFamily="Segoe MDL2 Assets" FontSize="15" Width="28" VerticalAlignment="Center"/>
+                                <TextBlock Text="Registro de cambios" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </RadioButton>
                     </StackPanel>
                 </ScrollViewer>
 

@@ -61,8 +61,11 @@ public partial class MainWindow : Window
 
         // Usuarios: solo administradores.
         var admin = Sesion.SesionActual.EsAdministrador;
-        GrupoAdministracion.Visibility = admin ? Visibility.Visible : Visibility.Collapsed;
+        // Registro de cambios: administrador y consulta (directiva).
+        var veRegistro = admin || Sesion.SesionActual.SoloConsulta;
+        GrupoAdministracion.Visibility = veRegistro ? Visibility.Visible : Visibility.Collapsed;
         NavUsuarios.Visibility = admin ? Visibility.Visible : Visibility.Collapsed;
+        NavRegistroCambios.Visibility = veRegistro ? Visibility.Visible : Visibility.Collapsed;
 
         // Solo consulta: no cobra.
         BtnCobroRapido.Visibility = Sesion.SesionActual.PuedeCobrar ? Visibility.Visible : Visibility.Collapsed;

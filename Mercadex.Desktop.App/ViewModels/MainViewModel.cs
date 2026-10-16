@@ -97,6 +97,13 @@ public partial class MainViewModel : ObservableObject
     }
 
     [RelayCommand]
+    private void MostrarRegistroCambios()
+    {
+        if (Sesion.SesionActual.EsAdministrador || Sesion.SesionActual.SoloConsulta)
+            CurrentView = new RegistroCambiosView();
+    }
+
+    [RelayCommand]
     private void MostrarUsuarios()
     {
         if (Sesion.SesionActual.EsAdministrador)

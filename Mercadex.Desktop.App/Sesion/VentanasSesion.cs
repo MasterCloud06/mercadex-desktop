@@ -65,17 +65,15 @@ internal static class UiSesion
             Padding = new Thickness(7, 0, 4, 0),
             VerticalContentAlignment = VerticalAlignment.Center,
             FocusVisualStyle = null,
-            Visibility = Visibility.Collapsed
+            Visibility = Visibility.Collapsed,
+            // Sin el estilo general: el recuadro ya lo dibuja el campo de afuera.
+            Style = new Style(typeof(TextBox))
         };
 
-        const string Ojo = "\uE7B3";        // mostrar
-        const string OjoTachado = "\uED1A"; // ocultar
-
+        // El ojo se dibuja (no depende de que Windows tenga el ícono en su fuente).
         var ver = new Button
         {
-            Content = Ojo,
-            FontFamily = new FontFamily("Segoe MDL2 Assets"),
-            FontSize = 15,
+            Content = IconoOjo(tachado: false),
             Width = 40,
             Background = Brushes.Transparent,
             BorderThickness = new Thickness(0),
@@ -116,7 +114,7 @@ internal static class UiSesion
                 caja.Focus();
             }
             sincronizando = false;
-            ver.Content = mostrar ? OjoTachado : Ojo;
+            ver.Content = IconoOjo(tachado: mostrar);
             ver.ToolTip = mostrar ? "Ocultar contraseña" : "Mostrar contraseña";
         };
 
@@ -254,6 +252,40 @@ internal static class UiSesion
     {
         texto.Text = mensaje ?? "";
         aviso.Visibility = string.IsNullOrEmpty(mensaje) ? Visibility.Collapsed : Visibility.Visible;
+    }
+
+    /// <summary>Ojo dibujado con líneas; tachado = la contraseña está a la vista.</summary>
+    private static UIElement IconoOjo(bool tachado)
+    {
+        var lienzo = new Canvas { Width = 20, Height = 20 };
+        var trazo = new SolidColorBrush(Color.FromRgb(0x5A, 0x6B, 0x7D));
+
+        lienzo.Children.Add(new System.Windows.Shapes.Path
+        {
+            Data = Geometry.Parse("M1.5,10 C4.5,4.5 15.5,4.5 18.5,10 C15.5,15.5 4.5,15.5 1.5,10 Z"),
+            Stroke = trazo,
+            StrokeThickness = 1.6,
+            StrokeLineJoin = PenLineJoin.Round
+        });
+
+        var pupila = new System.Windows.Shapes.Ellipse { Width = 6, Height = 6, Stroke = trazo, StrokeThickness = 1.6 };
+        Canvas.SetLeft(pupila, 7);
+        Canvas.SetTop(pupila, 7);
+        lienzo.Children.Add(pupila);
+
+        if (tachado)
+        {
+            lienzo.Children.Add(new System.Windows.Shapes.Line
+            {
+                X1 = 3, Y1 = 17, X2 = 17, Y2 = 3,
+                Stroke = trazo,
+                StrokeThickness = 1.6,
+                StrokeStartLineCap = PenLineCap.Round,
+                StrokeEndLineCap = PenLineCap.Round
+            });
+        }
+
+        return lienzo;
     }
 }
 

@@ -323,15 +323,24 @@ public partial class MapaMercadoView : UserControl
                     RadiusY = 4,
                     Fill = Pincel("#F6F8FB")
                 });
-                hueco.Children.Add(new TextBlock
+                // Se muestra el número que dice el plano, marcado como repetido.
+                var rotulo = new StackPanel { HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center };
+                rotulo.Children.Add(new TextBlock
                 {
-                    Text = "?",
-                    FontSize = 22,
+                    Text = c.Numero,
+                    FontSize = 15,
                     FontWeight = FontWeights.Bold,
-                    Foreground = Pincel("#9AABBD"),
-                    HorizontalAlignment = HorizontalAlignment.Center,
-                    VerticalAlignment = VerticalAlignment.Center
+                    Foreground = Pincel("#7D8EA1"),
+                    HorizontalAlignment = HorizontalAlignment.Center
                 });
+                rotulo.Children.Add(new TextBlock
+                {
+                    Text = "repetido",
+                    FontSize = 9.5,
+                    Foreground = Pincel("#9AABBD"),
+                    HorizontalAlignment = HorizontalAlignment.Center
+                });
+                hueco.Children.Add(rotulo);
                 Canvas.SetLeft(hueco, c.X - 26);
                 Canvas.SetTop(hueco, c.Y - 32);
                 Plano.Children.Add(hueco);

@@ -208,7 +208,7 @@ public static class MapaPdfService
             {
                 var rect = new XRect(x0 + (c.X - 26) * escala, yOrigen + (c.Y - 32 - desde) * escala, 52 * escala, 64 * escala);
                 g.DrawRectangle(new XPen(XColor.FromArgb(154, 171, 189), 0.6) { DashStyle = XDashStyle.Dash }, rect);
-                g.DrawString("?", fNumero, grisClaro, rect, XStringFormats.Center);
+                g.DrawString(c.Numero + "?", fNumero, grisClaro, rect, XStringFormats.Center);
             }
         }
 

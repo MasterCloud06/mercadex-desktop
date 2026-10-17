@@ -6,7 +6,12 @@ using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Media;
 using Mercadex.Desktop.App.Configuration;
+using System.Diagnostics;
+using System.IO;
+using System.Windows.Input;
+using System.Windows.Shapes;
 using Mercadex.Desktop.App.Models;
+using Mercadex.Desktop.App.Services;
 
 namespace Mercadex.Desktop.App.Views;
 
@@ -69,6 +74,15 @@ public partial class MapaMercadoView : UserControl
             DibujarFiltros();
             Dibujar();
             MostrarDetalle();
+
+            var plano = _datos.Plano;
+            BtnCargarPlano.Visibility =
+                plano != null && plano.CasetasEnPlano > 0 && plano.Cargadas < plano.CasetasEnPlano &&
+                (Sesion.SesionActual.EsAdministrador || !Sesion.SesionActual.Iniciada)
+                    ? Visibility.Visible
+                    : Visibility.Collapsed;
+            if (plano != null && plano.Cargadas == 0)
+                VerPlano.IsChecked = true;
 
             TxtEstado.Text = "Cada cuadro es una unidad. El color indica cómo está con sus pagos. Actualizado a las "
                              + DateTime.Now.ToString("HH:mm") + ".";
@@ -163,6 +177,13 @@ public partial class MapaMercadoView : UserControl
         Dibujar();
     }
 
+    private void Vista_Changed(object sender, RoutedEventArgs e)
+    {
+        if (ScrollPlano == null)
+            return;
+        Dibujar();
+    }
+
     private bool Coincide(MapaUnidad u)
     {
         if (_filtroSituacion != null && u.Situacion != _filtroSituacion)
@@ -180,6 +201,278 @@ public partial class MapaMercadoView : UserControl
     // Mapa
 
     private void Dibujar()
+    {
+        var plano = VerPlano.IsChecked == true && _datos?.Plano is { Ancho: > 0 };
+        ScrollPlano.Visibility = plano ? Visibility.Visible : Visibility.Collapsed;
+        ScrollBloques.Visibility = plano ? Visibility.Collapsed : Visibility.Visible;
+
+        if (plano)
+            DibujarPlano();
+        else
+            DibujarBloques();
+    }
+
+    // ---------------------------------------------------------------
+    // Plano oficial
+
+    private readonly Dictionary<Guid, Border> _celdasPlano = new();
+
+    private void DibujarPlano()
+    {
+        Plano.Children.Clear();
+        _celdasPlano.Clear();
+        PanelFueraPlano.Children.Clear();
+
+        if (_datos?.Plano is not { } plano)
+            return;
+
+        Plano.Width = plano.Ancho;
+        Plano.Height = plano.Alto;
+
+        var enPlano = Todas().Where(u => u.PlanoX != null && u.PlanoY != null).ToList();
+
+        if (enPlano.Count == 0)
+        {
+            var aviso = new TextBlock
+            {
+                Text = "Las casetas todavía no tienen su lugar en el plano.\nPulsa «Cargar casetas del plano» (arriba) para ubicarlas según el plano oficial.",
+                FontSize = 34,
+                Foreground = Pincel("#5A6B7D"),
+                TextAlignment = TextAlignment.Center
+            };
+            Canvas.SetLeft(aviso, 380);
+            Canvas.SetTop(aviso, 520);
+            Plano.Children.Add(aviso);
+        }
+
+        // Pasillos y galerías (texto vertical, como en el plano).
+        foreach (var p in plano.Pasillos.Where(p => p.Sector != "frente"))
+        {
+            var etiqueta = new TextBlock
+            {
+                Text = p.Nombre.ToUpper(Bo),
+                FontSize = 15,
+                FontWeight = FontWeights.SemiBold,
+                Foreground = Pincel("#7A8A9C"),
+                LayoutTransform = new RotateTransform(90)
+            };
+            Canvas.SetLeft(etiqueta, p.X - 10);
+            Canvas.SetTop(etiqueta, p.Y - 30);
+            Plano.Children.Add(etiqueta);
+        }
+
+        var ingreso = new TextBlock { Text = "INGRESO", FontSize = 18, FontWeight = FontWeights.Bold, Foreground = Pincel("#7A8A9C"), LayoutTransform = new RotateTransform(90) };
+        Canvas.SetLeft(ingreso, 1905);
+        Canvas.SetTop(ingreso, 520);
+        Plano.Children.Add(ingreso);
+
+        // Casetas.
+        foreach (var u in enPlano)
+        {
+            var s = Situaciones.GetValueOrDefault(u.Situacion, Situaciones["al-dia"]);
+            var celda = new Border
+            {
+                Width = 52,
+                Height = 64,
+                Background = Pincel(s.Fondo),
+                BorderBrush = Pincel(_seleccionada?.Id == u.Id ? "#12304D" : s.Borde),
+                BorderThickness = new Thickness(_seleccionada?.Id == u.Id ? 4 : 1.5),
+                CornerRadius = new CornerRadius(4),
+                Cursor = Cursors.Hand,
+                Opacity = Coincide(u) ? 1 : 0.18,
+                ToolTip = $"{u.TipoTexto} {u.Codigo} · {u.Pasillo ?? "sin pasillo"}\n{u.Titular ?? "Sin titular registrado"}" +
+                          (u.Obligaciones > 0 ? "\nDebe " + TextoDeuda(u, corto: false).Replace("\n", " + ") : ""),
+                Child = new TextBlock
+                {
+                    Text = u.Codigo,
+                    FontSize = u.Codigo.Length > 3 ? 13 : 17,
+                    FontWeight = FontWeights.Bold,
+                    Foreground = Pincel(s.Texto),
+                    HorizontalAlignment = HorizontalAlignment.Center,
+                    VerticalAlignment = VerticalAlignment.Center
+                }
+            };
+
+            celda.MouseLeftButtonUp += (_, _) => Seleccionar(u);
+            celda.MouseLeftButtonDown += (_, e) =>
+            {
+                if (e.ClickCount == 2)
+                    Navegacion.AbrirCobro(u.Id, u.Codigo);
+            };
+
+            Canvas.SetLeft(celda, u.PlanoX!.Value - 26);
+            Canvas.SetTop(celda, u.PlanoY!.Value - 32);
+            Plano.Children.Add(celda);
+            _celdasPlano[u.Id] = celda;
+        }
+
+        // Lugares que el plano numera dos veces: hay que confirmarlos.
+        if (enPlano.Count > 0)
+        {
+            foreach (var c in plano.PorConfirmar)
+            {
+                var hueco = new Grid { Width = 52, Height = 64, ToolTip = $"El plano repite el número {c.Numero} en este lugar.\nConfirmen qué caseta es y regístrenla en Casetas." };
+                hueco.Children.Add(new Rectangle
+                {
+                    Stroke = Pincel("#9AABBD"),
+                    StrokeThickness = 2,
+                    StrokeDashArray = new DoubleCollection { 3, 2 },
+                    RadiusX = 4,
+                    RadiusY = 4,
+                    Fill = Pincel("#F6F8FB")
+                });
+                hueco.Children.Add(new TextBlock
+                {
+                    Text = "?",
+                    FontSize = 22,
+                    FontWeight = FontWeights.Bold,
+                    Foreground = Pincel("#9AABBD"),
+                    HorizontalAlignment = HorizontalAlignment.Center,
+                    VerticalAlignment = VerticalAlignment.Center
+                });
+                Canvas.SetLeft(hueco, c.X - 26);
+                Canvas.SetTop(hueco, c.Y - 32);
+                Plano.Children.Add(hueco);
+            }
+        }
+
+        // Comedores, ambulantes y unidades que no figuran en el plano.
+        var fuera = Todas().Where(u => u.PlanoX == null && Coincide(u))
+            .OrderBy(u => u.Tipo).ThenBy(u => u.Codigo.Length).ThenBy(u => u.Codigo).ToList();
+        if (fuera.Count > 0)
+        {
+            PanelFueraPlano.Children.Add(new TextBlock
+            {
+                Text = $"Fuera del plano: comedores, ambulantes y otras unidades ({fuera.Count})",
+                FontSize = 16,
+                FontWeight = FontWeights.SemiBold,
+                Foreground = Pincel("#12304D"),
+                Margin = new Thickness(0, 0, 0, 10)
+            });
+            var celdas = new WrapPanel();
+            foreach (var u in fuera)
+                celdas.Children.Add(CrearCelda(u));
+            PanelFueraPlano.Children.Add(celdas);
+        }
+
+        if (plano.PorConfirmar.Count > 0 && enPlano.Count > 0)
+        {
+            PanelFueraPlano.Children.Add(new TextBlock
+            {
+                Text = $"Los {plano.PorConfirmar.Count} cuadros con «?» son lugares que el plano numera dos veces (" +
+                       string.Join(", ", plano.PorConfirmar.Select(c => c.Numero).Distinct()) +
+                       "). Confirmen qué caseta es cada uno.",
+                Foreground = Pincel("#5A6B7D"),
+                FontSize = 12.5,
+                TextWrapping = TextWrapping.Wrap,
+                Margin = new Thickness(0, 12, 0, 0)
+            });
+        }
+    }
+
+    private void Seleccionar(MapaUnidad u)
+    {
+        if (_seleccionada is { } anterior && _celdasPlano.TryGetValue(anterior.Id, out var celdaAnterior))
+        {
+            var s = Situaciones.GetValueOrDefault(anterior.Situacion, Situaciones["al-dia"]);
+            celdaAnterior.BorderBrush = Pincel(s.Borde);
+            celdaAnterior.BorderThickness = new Thickness(1.5);
+        }
+
+        _seleccionada = u;
+        if (_celdasPlano.TryGetValue(u.Id, out var celda))
+        {
+            celda.BorderBrush = Pincel("#12304D");
+            celda.BorderThickness = new Thickness(4);
+        }
+
+        foreach (var otra in PanelBloques.Children.OfType<WrapPanel>().Concat(PanelFueraPlano.Children.OfType<WrapPanel>())
+                     .SelectMany(w => w.Children.OfType<Button>()))
+            otra.Tag = null;
+
+        MostrarDetalle();
+    }
+
+    // ---------------------------------------------------------------
+    // Botones del plano
+
+    private async void CargarPlano_Click(object sender, RoutedEventArgs e)
+    {
+        var plano = _datos?.Plano;
+        if (plano == null)
+            return;
+
+        if (Dialogo.Mostrar(Window.GetWindow(this),
+                $"Se cargarán las {plano.CasetasEnPlano} casetas del plano oficial:\n\n" +
+                "• Se crean las casetas que todavía no están registradas.\n" +
+                "• A cada caseta se le pone su pasillo o galería y su lugar en el mapa.\n" +
+                "• No se cambian titulares, deudas, recibos ni el bloque.\n\n¿Continuar?",
+                "Cargar casetas del plano", MessageBoxButton.YesNo, MessageBoxImage.Question, MessageBoxResult.Yes) != MessageBoxResult.Yes)
+            return;
+
+        BtnCargarPlano.IsEnabled = false;
+        try
+        {
+            var r = await ApiJson.PostAsync<ResultadoPlano>("/api/mapa-mercado/cargar-plano", new { });
+            var texto = r?.Mensaje ?? "Listo.";
+            if (r?.Conflictos is { Count: > 0 } conflictos)
+                texto += $"\n\nNo se tocaron estos números porque ya son de un comedor o ambulante: {string.Join(", ", conflictos)}.";
+            if (r?.PorConfirmar is { Count: > 0 } dudas)
+                texto += $"\n\nEl plano repite estos números en dos lugares; quedan marcados con «?» para que los confirmen: " +
+                         string.Join(", ", dudas.Select(d => d.Numero).Distinct()) + ".";
+
+            Dialogo.Mostrar(Window.GetWindow(this), texto, "Casetas del plano", MessageBoxButton.OK, MessageBoxImage.Information);
+            await CargarAsync();
+        }
+        catch (Exception ex)
+        {
+            Dialogo.Mostrar(Window.GetWindow(this), ex.Message, "No se cargaron las casetas", MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
+        finally
+        {
+            BtnCargarPlano.IsEnabled = true;
+        }
+    }
+
+    private void PlanoOficial_Click(object sender, RoutedEventArgs e)
+    {
+        var ruta = System.IO.Path.Combine(AppContext.BaseDirectory, "Assets", "plano-mercado.pdf");
+        if (!File.Exists(ruta))
+        {
+            Dialogo.Mostrar(Window.GetWindow(this), "No se encontró el plano oficial en esta instalación.", "Plano oficial",
+                MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+
+        try
+        {
+            Process.Start(new ProcessStartInfo { FileName = ruta, UseShellExecute = true });
+        }
+        catch (Exception ex)
+        {
+            Dialogo.Mostrar(Window.GetWindow(this), "No se pudo abrir el PDF: " + ex.Message, "Plano oficial",
+                MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
+    }
+
+    private void Reporte_Click(object sender, RoutedEventArgs e)
+    {
+        if (_datos == null)
+            return;
+        MapaPdfService.Guardar(Window.GetWindow(this), _datos);
+    }
+
+    private sealed class ResultadoPlano
+    {
+        public string? Mensaje { get; set; }
+        public List<string>? Conflictos { get; set; }
+        public List<MapaPorConfirmar>? PorConfirmar { get; set; }
+    }
+
+    // ---------------------------------------------------------------
+    // Por bloque
+
+    private void DibujarBloques()
     {
         PanelBloques.Children.Clear();
 
@@ -279,11 +572,8 @@ public partial class MapaMercadoView : UserControl
 
         celda.Click += (_, _) =>
         {
-            _seleccionada = u;
-            foreach (var otra in PanelBloques.Children.OfType<WrapPanel>().SelectMany(w => w.Children.OfType<Button>()))
-                otra.Tag = null;
+            Seleccionar(u);
             celda.Tag = "seleccionada";
-            MostrarDetalle();
         };
 
         celda.MouseDoubleClick += (_, _) => Navegacion.AbrirCobro(u.Id, u.Codigo);
@@ -313,8 +603,9 @@ public partial class MapaMercadoView : UserControl
         });
         PanelDetalle.Children.Add(new TextBlock
         {
-            Text = u.Bloque == "Sin bloque" ? "Sin bloque asignado" : "Bloque " + u.Bloque,
+            Text = (u.Pasillo ?? "Sin pasillo") + " · " + (u.Bloque == "Sin bloque" ? "sin bloque" : "Bloque " + u.Bloque),
             Foreground = Pincel("#5A6B7D"),
+            TextWrapping = TextWrapping.Wrap,
             Margin = new Thickness(0, 2, 0, 12)
         });
 

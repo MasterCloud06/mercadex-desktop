@@ -18,7 +18,7 @@
     <Grid>
 
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="224"/>
+            <ColumnDefinition x:Name="ColumnaMenu" Width="224"/>
             <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
 
@@ -33,15 +33,37 @@
                 </Grid.RowDefinitions>
 
                 <!-- MARCA: cuadro amarillo como sello + nombre -->
-                <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="20,22,12,10">
+                <StackPanel Grid.Row="0">
+                <StackPanel x:Name="Marca" Orientation="Horizontal" Margin="15,22,12,8">
                     <Border Width="34" Height="34" CornerRadius="9" Background="{StaticResource Mx.AccentBrush}">
                         <TextBlock Text="M" FontSize="19" FontWeight="Bold" Foreground="#163A5B"
                                    HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,-1,0,0"/>
                     </Border>
-                    <StackPanel Margin="11,0,0,0" VerticalAlignment="Center">
+                    <StackPanel x:Name="MarcaTexto" Margin="11,0,0,0" VerticalAlignment="Center">
                         <TextBlock Text="Mercadex" Foreground="White" FontSize="19" FontWeight="SemiBold"/>
                         <TextBlock Text="Gestión del mercado" Foreground="#8FA9C1" FontSize="11.5" Margin="0,1,0,0"/>
                     </StackPanel>
+                </StackPanel>
+
+                <!-- Actualizar la pantalla (F5) y esconder el menú -->
+                <StackPanel x:Name="BarraMenu" Orientation="Horizontal" Margin="10,0,10,4">
+                    <Button x:Name="BtnRecargar" Click="Recargar_Click" Style="{StaticResource Mx.ButtonBase}" Background="Transparent"
+                            BorderBrush="Transparent" Foreground="#B9CCDD" Height="30" Padding="8,0" Margin="0,0,2,0" Cursor="Hand"
+                            ToolTip="Volver a cargar los datos de esta pantalla (F5)">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="&#xE72C;" FontFamily="Segoe MDL2 Assets" FontSize="13" Width="22" VerticalAlignment="Center"/>
+                            <TextBlock x:Name="TxtRecargar" Text="Actualizar" FontSize="12.5" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Button>
+                    <Button x:Name="BtnPlegar" Click="Plegar_Click" Style="{StaticResource Mx.ButtonBase}" Background="Transparent"
+                            BorderBrush="Transparent" Foreground="#B9CCDD" Height="30" Padding="8,0" Cursor="Hand"
+                            ToolTip="Esconder el menú para tener más espacio">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock x:Name="IconoPlegar" Text="&#xE76B;" FontFamily="Segoe MDL2 Assets" FontSize="13" Width="22" VerticalAlignment="Center"/>
+                            <TextBlock x:Name="TxtPlegar" Text="Ocultar menú" FontSize="12.5" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
                 </StackPanel>
 
                 <!-- NAVEGACIÓN, agrupada como trabaja la asociación -->
@@ -140,6 +162,12 @@
                                 <TextBlock Text="Reportes" VerticalAlignment="Center"/>
                             </StackPanel>
                         </RadioButton>
+                        <RadioButton x:Name="NavComunicados" GroupName="MenuMercadex" Style="{StaticResource Mx.NavRadio}" Command="{Binding MostrarComunicadosCommand}">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="&#xE789;" FontFamily="Segoe MDL2 Assets" FontSize="15" Width="28" VerticalAlignment="Center"/>
+                                <TextBlock Text="Comunicados" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </RadioButton>
                         <TextBlock x:Name="GrupoAdministracion" Text="Administración" Style="{StaticResource Mx.NavGroup}"/>
                         <RadioButton x:Name="NavConceptos" GroupName="MenuMercadex" Style="{StaticResource Mx.NavRadio}" Command="{Binding MostrarConceptosCommand}">
                             <StackPanel Orientation="Horizontal">
@@ -163,7 +191,7 @@
                 </ScrollViewer>
 
                 <!-- PIE -->
-                <Border Grid.Row="2" BorderBrush="#24496C" BorderThickness="0,1,0,0" Padding="20,12,14,14">
+                <Border x:Name="PieMenu" Grid.Row="2" BorderBrush="#24496C" BorderThickness="0,1,0,0" Padding="20,12,14,14">
                     <StackPanel>
                         <!-- Usuario con sesión iniciada -->
                         <DockPanel>

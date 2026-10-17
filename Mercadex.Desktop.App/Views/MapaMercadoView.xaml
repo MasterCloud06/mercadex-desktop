@@ -88,8 +88,18 @@
                 <TextBlock x:Name="TxtEstado" Text="Cada cuadro es una unidad. El color indica cómo está con sus pagos."
                            Foreground="#5A6B7D" FontSize="13" Margin="0,3,0,0"/>
             </StackPanel>
-            <Button x:Name="BtnActualizar" Grid.Column="1" Content="Actualizar" Click="Actualizar_Click"
-                    Style="{StaticResource Mx.PrimaryButton}" VerticalAlignment="Top"/>
+            <WrapPanel Grid.Column="1" VerticalAlignment="Top" HorizontalAlignment="Right">
+                <Button x:Name="BtnCargarPlano" Content="Cargar casetas del plano" Click="CargarPlano_Click"
+                        Style="{StaticResource Mx.PrimaryButton}" Margin="0,0,8,0" Visibility="Collapsed"
+                        ToolTip="Crea las casetas que faltan y les pone su pasillo y su lugar en el mapa, según el plano oficial."/>
+                <Button x:Name="BtnReporte" Content="Generar reporte" Click="Reporte_Click"
+                        Style="{StaticResource Mx.SecondaryButton}" Margin="0,0,8,0"
+                        ToolTip="PDF: el mapa en una hoja dividida en dos (pasillos y galerías) y la lista de casetas por pasillo."/>
+                <Button x:Name="BtnPlanoOficial" Content="Plano oficial (PDF)" Click="PlanoOficial_Click"
+                        Style="{StaticResource Mx.SecondaryButton}" Margin="0,0,8,0"/>
+                <Button x:Name="BtnActualizar" Content="Actualizar" Click="Actualizar_Click"
+                        Style="{StaticResource Mx.SecondaryButton}"/>
+            </WrapPanel>
         </Grid>
 
         <!-- BÚSQUEDA Y FILTROS POR SITUACIÓN -->
@@ -99,8 +109,16 @@
                     <ColumnDefinition Width="280"/>
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
-                <TextBox x:Name="TxtBuscar" TextChanged="Buscar_TextChanged" Height="36"
-                         Tag="Buscar caseta o titular"/>
+                <StackPanel>
+                    <TextBox x:Name="TxtBuscar" TextChanged="Buscar_TextChanged" Height="36"
+                             Tag="Buscar caseta o titular"/>
+                    <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                        <RadioButton x:Name="VerPlano" Content="Plano" GroupName="VistaMapa" IsChecked="True"
+                                     Checked="Vista_Changed" Margin="0,0,16,0" VerticalContentAlignment="Center"/>
+                        <RadioButton x:Name="VerBloques" Content="Por bloque" GroupName="VistaMapa"
+                                     Checked="Vista_Changed" VerticalContentAlignment="Center"/>
+                    </StackPanel>
+                </StackPanel>
                 <WrapPanel x:Name="PanelFiltros" Grid.Column="1" Margin="16,0,0,0" VerticalAlignment="Center"/>
             </Grid>
         </Border>
@@ -113,9 +131,20 @@
             </Grid.ColumnDefinitions>
 
             <Border Style="{StaticResource Mx.Card}" Padding="18,6,8,6" Margin="0,0,14,0">
-                <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-                    <StackPanel x:Name="PanelBloques" Margin="0,0,10,10"/>
-                </ScrollViewer>
+                <Grid>
+                    <ScrollViewer x:Name="ScrollBloques" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"
+                                  Visibility="Collapsed">
+                        <StackPanel x:Name="PanelBloques" Margin="0,0,10,10"/>
+                    </ScrollViewer>
+                    <ScrollViewer x:Name="ScrollPlano" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                        <StackPanel Margin="0,8,10,10">
+                            <Viewbox Stretch="Uniform" StretchDirection="Both">
+                                <Canvas x:Name="Plano" Width="1960" Height="1220"/>
+                            </Viewbox>
+                            <StackPanel x:Name="PanelFueraPlano" Margin="0,14,0,0"/>
+                        </StackPanel>
+                    </ScrollViewer>
+                </Grid>
             </Border>
 
             <Border Grid.Column="1" Style="{StaticResource Mx.Card}" Margin="0" VerticalAlignment="Top">

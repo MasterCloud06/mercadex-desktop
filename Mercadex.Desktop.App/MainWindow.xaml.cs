@@ -24,6 +24,8 @@ public partial class MainWindow : Window
         if (version != null)
             VersionTexto.Text = $"Versión {version.Major}.{version.Minor}.{version.Build}";
 
+        Loaded += (_, _) => PlegarMenu(Preferencias.MenuPlegado);
+
         Navegacion.CobroSolicitado += AbrirCobro;
         Navegacion.DeudasSolicitadas += AbrirDeudas;
         Navegacion.KardexSolicitado += AbrirKardex;
@@ -303,8 +305,83 @@ public partial class MainWindow : Window
 
     // ---------------- Cobro rápido (Ctrl + K) ----------------
 
+    // ---------------- Menú plegable y actualizar la pantalla ----------------
+
+    private bool _menuPlegado;
+
+    private void Plegar_Click(object sender, RoutedEventArgs e)
+    {
+        PlegarMenu(!_menuPlegado);
+        Preferencias.MenuPlegado = _menuPlegado;
+    }
+
+    private void Recargar_Click(object sender, RoutedEventArgs e) => RecargarPantalla();
+
+    /// <summary>Vuelve a abrir la pantalla actual para traer los datos de nuevo.</summary>
+    private void RecargarPantalla()
+    {
+        if (DataContext is ViewModels.MainViewModel vm)
+            vm.RecargarVista();
+    }
+
+    /// <summary>
+    /// Menú plegado: solo los íconos (con el nombre al pasar el mouse).
+    /// Desplegado: íconos y nombres, como siempre.
+    /// </summary>
+    private void PlegarMenu(bool plegado)
+    {
+        _menuPlegado = plegado;
+        ColumnaMenu.Width = new GridLength(plegado ? 64 : 224);
+        MarcaTexto.Visibility = plegado ? Visibility.Collapsed : Visibility.Visible;
+        PieMenu.Visibility = plegado ? Visibility.Collapsed : Visibility.Visible;
+        BarraMenu.Orientation = plegado ? Orientation.Vertical : Orientation.Horizontal;
+        TxtRecargar.Visibility = TxtPlegar.Visibility = plegado ? Visibility.Collapsed : Visibility.Visible;
+        IconoPlegar.Text = plegado ? "\uE76C" : "\uE76B";
+        BtnPlegar.ToolTip = plegado ? "Mostrar el menú completo" : "Esconder el menú para tener más espacio";
+
+        if (MenuScroll.Content is not Panel menu)
+            return;
+
+        foreach (var hijo in menu.Children.OfType<FrameworkElement>())
+        {
+            switch (hijo)
+            {
+                case TextBlock grupo:
+                    // Títulos de grupo (Socios y casetas, Cobranza…). Se achican en vez de
+                    // ocultarse para no pisar lo que se oculta según el rol del usuario.
+                    grupo.Height = plegado ? 0 : double.NaN;
+                    grupo.Margin = plegado ? new Thickness(0, 6, 0, 0) : (Thickness)grupo.GetValue(MarginProperty);
+                    if (!plegado) grupo.ClearValue(MarginProperty);
+                    break;
+
+                case ContentControl opcion when opcion.Content is Panel contenido:
+                    var nombre = "";
+                    foreach (var parte in contenido.Children.OfType<FrameworkElement>())
+                    {
+                        var esIcono = parte is TextBlock t && t.FontFamily.Source.Contains("MDL2");
+                        if (parte is TextBlock texto && !esIcono && !string.IsNullOrEmpty(texto.Text) && texto.Text != "Ctrl K")
+                            nombre = texto.Text;
+                        if (!esIcono && parte is TextBlock)
+                            parte.Visibility = plegado ? Visibility.Collapsed : Visibility.Visible;
+                    }
+
+                    if (opcion.Tag is null && nombre.Length > 0)
+                        opcion.Tag = opcion.ToolTip ?? "";
+                    opcion.ToolTip = plegado ? nombre : (opcion.Tag as string is { Length: > 0 } original ? original : null);
+                    break;
+            }
+        }
+    }
+
     private void Window_PreviewKeyDown(object sender, KeyEventArgs e)
     {
+        if (e.Key == Key.F5 && Keyboard.Modifiers == ModifierKeys.None)
+        {
+            e.Handled = true;
+            RecargarPantalla();
+            return;
+        }
+
         if (e.Key == Key.K && Keyboard.Modifiers == ModifierKeys.Control && Sesion.SesionActual.PuedeCobrar)
         {
             e.Handled = true;

@@ -334,10 +334,27 @@ public partial class MainWindow : Window
         ColumnaMenu.Width = new GridLength(plegado ? 64 : 224);
         MarcaTexto.Visibility = plegado ? Visibility.Collapsed : Visibility.Visible;
         PieMenu.Visibility = plegado ? Visibility.Collapsed : Visibility.Visible;
-        BarraMenu.Orientation = plegado ? Orientation.Vertical : Orientation.Horizontal;
-        TxtRecargar.Visibility = TxtPlegar.Visibility = plegado ? Visibility.Collapsed : Visibility.Visible;
+        // Plegado: solo queda el botón para volver a mostrar el menú, centrado y bien visible.
+        // "Actualizar" sigue con F5 y con el botón de cada pantalla.
+        BarraMenu.Margin = plegado ? new Thickness(0, 4, 0, 6) : new Thickness(10, 0, 10, 4);
+        BarraMenu.HorizontalAlignment = plegado ? HorizontalAlignment.Center : HorizontalAlignment.Stretch;
+        BtnRecargar.Visibility = plegado ? Visibility.Collapsed : Visibility.Visible;
+        TxtPlegar.Visibility = plegado ? Visibility.Collapsed : Visibility.Visible;
         IconoPlegar.Text = plegado ? "\uE76C" : "\uE76B";
+        IconoPlegar.Width = plegado ? double.NaN : 20;
+        IconoPlegar.FontSize = plegado ? 15 : 13;
+        BtnPlegar.Width = plegado ? 40 : double.NaN;
+        BtnPlegar.Height = plegado ? 36 : 30;
+        BtnPlegar.Padding = plegado ? new Thickness(0) : new Thickness(6, 0, 6, 0);
+        BtnPlegar.HorizontalContentAlignment = HorizontalAlignment.Center;
+        BtnPlegar.Background = plegado ? (Brush)new BrushConverter().ConvertFrom("#24496C")! : Brushes.Transparent;
+        BtnPlegar.Foreground = plegado ? Brushes.White : (Brush)new BrushConverter().ConvertFrom("#B9CCDD")!;
         BtnPlegar.ToolTip = plegado ? "Mostrar el menú completo" : "Esconder el menú para tener más espacio";
+
+        // Cobro rápido: en plegado queda como un cuadro amarillo con el ícono al centro.
+        BtnCobroRapido.Margin = plegado ? new Thickness(12, 4, 12, 10) : new Thickness(14, 4, 14, 10);
+        BtnCobroRapido.Padding = plegado ? new Thickness(0) : new Thickness(12, 0, 12, 0);
+        BtnCobroRapido.HorizontalContentAlignment = plegado ? HorizontalAlignment.Center : HorizontalAlignment.Stretch;
 
         if (MenuScroll.Content is not Panel menu)
             return;

@@ -17,6 +17,19 @@ public partial class MainViewModel : ObservableObject
         CurrentView = new DashboardView();
     }
 
+    /// <summary>Abre de nuevo la pantalla actual (botón Actualizar / F5).</summary>
+    public void RecargarVista()
+    {
+        if (CurrentView is null)
+            return;
+
+        var tipo = CurrentView.GetType();
+        if (tipo.GetConstructor(Type.EmptyTypes) is null)
+            return;
+
+        CurrentView = Activator.CreateInstance(tipo);
+    }
+
     [RelayCommand]
     private void MostrarDashboard()
     {
@@ -88,6 +101,12 @@ public partial class MainViewModel : ObservableObject
     private void MostrarPagosQr()
     {
         CurrentView = new PagosQrView();
+    }
+
+    [RelayCommand]
+    private void MostrarComunicados()
+    {
+        CurrentView = new ComunicadosView();
     }
 
     [RelayCommand]

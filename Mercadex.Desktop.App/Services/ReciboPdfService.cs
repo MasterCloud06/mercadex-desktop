@@ -226,10 +226,9 @@ public static class ReciboPdfService
         {
             y += 26; // espacio para la firma
             Linea(TextoRecibo.LineaFirma, normal, true);
-            Linea(nombreEmisor, negrita, true);
+            Linea("Elaborado por: " + nombreEmisor, negrita, true);
             if (cargoEmisor is not null)
                 Linea(cargoEmisor, normal, true);
-            Linea("Emitido por", pequeno, true);
         }
 
         if (string.Equals(

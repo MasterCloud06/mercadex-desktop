@@ -292,12 +292,12 @@ public sealed class KardexView : UserControl
             texto.Children.Add(new TextBlock { Text = t.Nombre, FontSize = 16, FontWeight = FontWeights.SemiBold, Foreground = UiKit.Tinta, TextWrapping = TextWrapping.Wrap });
             texto.Children.Add(new TextBlock
             {
-                Text = $"CI: {Texto(t.Documento)}\nCelular: {Texto(t.Telefono)}\nRegistrado el {t.FechaRegistro.ToOffset(TimeSpan.FromHours(-4)).ToString("dd/MM/yyyy", Bo)}",
+                Text = $"CI: {Texto(t.Documento)}   ·   Expedido en: {(string.IsNullOrWhiteSpace(t.LugarExpedicion) ? "—" : t.LugarExpedicion)}\nCelular: {Texto(t.Telefono)}\nRegistrado el {t.FechaRegistro.ToOffset(TimeSpan.FromHours(-4)).ToString("dd/MM/yyyy", Bo)}",
                 Foreground = UiKit.Suave,
                 LineHeight = 21,
                 Margin = new Thickness(0, 2, 0, 4)
             });
-            var corregir = new Button { Content = "Corregir nombre, CI o celular en Socios", Style = UiKit.Estilo("Mx.NavLink"), HorizontalAlignment = HorizontalAlignment.Left };
+            var corregir = new Button { Content = "Corregir nombre, CI, lugar de expedición o celular en Socios", Style = UiKit.Estilo("Mx.NavLink"), HorizontalAlignment = HorizontalAlignment.Left };
             corregir.Click += (_, _) => Navegacion.AbrirSocio(t.Id);
             texto.Children.Add(corregir);
             datos.Children.Add(texto);
@@ -690,6 +690,7 @@ public sealed class KardexView : UserControl
         public Guid Id { get; set; }
         public string Nombre { get; set; } = "";
         public string? Documento { get; set; }
+        public string? LugarExpedicion { get; set; }
         public string? Telefono { get; set; }
         public DateTimeOffset FechaRegistro { get; set; }
     }

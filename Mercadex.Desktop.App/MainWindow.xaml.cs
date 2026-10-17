@@ -24,6 +24,8 @@ public partial class MainWindow : Window
         if (version != null)
             VersionTexto.Text = $"Versión {version.Major}.{version.Minor}.{version.Build}";
 
+        Loaded += (_, _) => PlegarMenu(Preferencias.MenuPlegado);
+
         Navegacion.CobroSolicitado += AbrirCobro;
         Navegacion.DeudasSolicitadas += AbrirDeudas;
         Navegacion.KardexSolicitado += AbrirKardex;
@@ -303,8 +305,100 @@ public partial class MainWindow : Window
 
     // ---------------- Cobro rápido (Ctrl + K) ----------------
 
+    // ---------------- Menú plegable y actualizar la pantalla ----------------
+
+    private bool _menuPlegado;
+
+    private void Plegar_Click(object sender, RoutedEventArgs e)
+    {
+        PlegarMenu(!_menuPlegado);
+        Preferencias.MenuPlegado = _menuPlegado;
+    }
+
+    private void Recargar_Click(object sender, RoutedEventArgs e) => RecargarPantalla();
+
+    /// <summary>Vuelve a abrir la pantalla actual para traer los datos de nuevo.</summary>
+    private void RecargarPantalla()
+    {
+        if (DataContext is ViewModels.MainViewModel vm)
+            vm.RecargarVista();
+    }
+
+    /// <summary>
+    /// Menú plegado: solo los íconos (con el nombre al pasar el mouse).
+    /// Desplegado: íconos y nombres, como siempre.
+    /// </summary>
+    private void PlegarMenu(bool plegado)
+    {
+        _menuPlegado = plegado;
+        ColumnaMenu.Width = new GridLength(plegado ? 64 : 224);
+        MarcaTexto.Visibility = plegado ? Visibility.Collapsed : Visibility.Visible;
+        PieMenu.Visibility = plegado ? Visibility.Collapsed : Visibility.Visible;
+        // Plegado: solo queda el botón para volver a mostrar el menú, centrado y bien visible.
+        // "Actualizar" sigue con F5 y con el botón de cada pantalla.
+        BarraMenu.Margin = plegado ? new Thickness(0, 4, 0, 6) : new Thickness(10, 0, 10, 4);
+        BarraMenu.HorizontalAlignment = plegado ? HorizontalAlignment.Center : HorizontalAlignment.Stretch;
+        BtnRecargar.Visibility = plegado ? Visibility.Collapsed : Visibility.Visible;
+        TxtPlegar.Visibility = plegado ? Visibility.Collapsed : Visibility.Visible;
+        IconoPlegar.Text = plegado ? "\uE76C" : "\uE76B";
+        IconoPlegar.Width = plegado ? double.NaN : 20;
+        IconoPlegar.FontSize = plegado ? 15 : 13;
+        BtnPlegar.Width = plegado ? 40 : double.NaN;
+        BtnPlegar.Height = plegado ? 36 : 30;
+        BtnPlegar.Padding = plegado ? new Thickness(0) : new Thickness(6, 0, 6, 0);
+        BtnPlegar.HorizontalContentAlignment = HorizontalAlignment.Center;
+        BtnPlegar.Background = plegado ? (Brush)new BrushConverter().ConvertFrom("#24496C")! : Brushes.Transparent;
+        BtnPlegar.Foreground = plegado ? Brushes.White : (Brush)new BrushConverter().ConvertFrom("#B9CCDD")!;
+        BtnPlegar.ToolTip = plegado ? "Mostrar el menú completo" : "Esconder el menú para tener más espacio";
+
+        // Cobro rápido: en plegado queda como un cuadro amarillo con el ícono al centro.
+        BtnCobroRapido.Margin = plegado ? new Thickness(12, 4, 12, 10) : new Thickness(14, 4, 14, 10);
+        BtnCobroRapido.Padding = plegado ? new Thickness(0) : new Thickness(12, 0, 12, 0);
+        BtnCobroRapido.HorizontalContentAlignment = plegado ? HorizontalAlignment.Center : HorizontalAlignment.Stretch;
+
+        if (MenuScroll.Content is not Panel menu)
+            return;
+
+        foreach (var hijo in menu.Children.OfType<FrameworkElement>())
+        {
+            switch (hijo)
+            {
+                case TextBlock grupo:
+                    // Títulos de grupo (Socios y casetas, Cobranza…). Se achican en vez de
+                    // ocultarse para no pisar lo que se oculta según el rol del usuario.
+                    grupo.Height = plegado ? 0 : double.NaN;
+                    grupo.Margin = plegado ? new Thickness(0, 6, 0, 0) : (Thickness)grupo.GetValue(MarginProperty);
+                    if (!plegado) grupo.ClearValue(MarginProperty);
+                    break;
+
+                case ContentControl opcion when opcion.Content is Panel contenido:
+                    var nombre = "";
+                    foreach (var parte in contenido.Children.OfType<FrameworkElement>())
+                    {
+                        var esIcono = parte is TextBlock t && t.FontFamily.Source.Contains("MDL2");
+                        if (parte is TextBlock texto && !esIcono && !string.IsNullOrEmpty(texto.Text) && texto.Text != "Ctrl K")
+                            nombre = texto.Text;
+                        if (!esIcono && parte is TextBlock)
+                            parte.Visibility = plegado ? Visibility.Collapsed : Visibility.Visible;
+                    }
+
+                    if (opcion.Tag is null && nombre.Length > 0)
+                        opcion.Tag = opcion.ToolTip ?? "";
+                    opcion.ToolTip = plegado ? nombre : (opcion.Tag as string is { Length: > 0 } original ? original : null);
+                    break;
+            }
+        }
+    }
+
     private void Window_PreviewKeyDown(object sender, KeyEventArgs e)
     {
+        if (e.Key == Key.F5 && Keyboard.Modifiers == ModifierKeys.None)
+        {
+            e.Handled = true;
+            RecargarPantalla();
+            return;
+        }
+
         if (e.Key == Key.K && Keyboard.Modifiers == ModifierKeys.Control && Sesion.SesionActual.PuedeCobrar)
         {
             e.Handled = true;

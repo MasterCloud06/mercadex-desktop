@@ -6,7 +6,7 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
-    <Version>1.6.3</Version>
+    <Version>1.6.4</Version>
     <!-- Ícono del programa: barra de tareas, accesos directos y el .exe -->
     <ApplicationIcon>Assets\mercadex.ico</ApplicationIcon>
   </PropertyGroup>
@@ -24,6 +24,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- Plano oficial del mercado (Asociación 13 de Julio), se abre desde el Mapa. -->
+    <None Update="Assets\plano-mercado.pdf">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </None>
     <None Update="appsettings.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>

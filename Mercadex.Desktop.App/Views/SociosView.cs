@@ -48,7 +48,8 @@ public sealed class SociosView : UserControl
         var titulo = new DockPanel();
         if (_admin)
         {
-            var nuevo = UiKit.Boton("Registrar socio", principal: true);
+            var nuevo = UiKit.Boton("Registrar persona", principal: true);
+            nuevo.ToolTip = "Un socio, o un comerciante de comedor o ambulante que no es socio.";
             nuevo.VerticalAlignment = VerticalAlignment.Center;
             nuevo.Click += async (_, _) => await NuevoSocioAsync();
             DockPanel.SetDock(nuevo, Dock.Right);
@@ -57,13 +58,16 @@ public sealed class SociosView : UserControl
         titulo.Children.Add(UiKit.Encabezado("Socios"));
         arriba.Children.Add(titulo);
         arriba.Children.Add(UiKit.Ayuda(
-            "El padrón de socios con sus casetas y lo que deben. Elige un socio para ver su ficha, cobrarle o abrir el Kardex de su caseta.", 10));
+            "El padrón de socios con sus casetas y lo que deben, y los comerciantes que no son socios (comedores y ambulantes). " +
+            "Elige a una persona para ver su ficha, cobrarle o abrir el Kardex de su caseta.", 10));
 
         // ---------- Filtros ----------
 
         _estado.ItemsSource = new List<UiKit.Item<string>>
         {
             new("activos", "Activos"),
+            new("socios", "Solo socios"),
+            new("no-socios", "No socios (comedores y ambulantes)"),
             new("con-deuda", "Con deuda"),
             new("sin-caseta", "Sin caseta"),
             new("fallecidos", "Fallecidos"),
@@ -71,6 +75,7 @@ public sealed class SociosView : UserControl
             new("todos", "Todos")
         };
         _estado.SelectedIndex = 0;
+        _estado.Width = 250;
         _estado.SelectionChanged += async (_, _) =>
         {
             if (IsLoaded)
@@ -102,7 +107,8 @@ public sealed class SociosView : UserControl
         cuerpo.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(16) });
         cuerpo.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(400) });
 
-        _tabla.Columns.Add(UiKit.Columna("Socio", nameof(SocioFila.NombreCompleto), 2));
+        _tabla.Columns.Add(UiKit.Columna("Nombre", nameof(SocioFila.NombreCompleto), 2));
+        _tabla.Columns.Add(UiKit.Columna("Tipo", nameof(SocioFila.TipoTexto), 0.8));
         _tabla.Columns.Add(UiKit.Columna("CI", nameof(SocioFila.DocumentoTexto), 0.9));
         _tabla.Columns.Add(UiKit.Columna("Celular", nameof(SocioFila.TelefonoTexto), 0.9));
         _tabla.Columns.Add(UiKit.Columna("Casetas", nameof(SocioFila.CasetasTexto), 0.9));
@@ -138,7 +144,7 @@ public sealed class SociosView : UserControl
     public void SeleccionarAlCargar(Guid socioId)
     {
         _seleccionarAlCargar = socioId;
-        _estado.SelectedIndex = 5; // Todos: el socio puede estar dado de baja.
+        _estado.SelectedIndex = 7; // Todos: el socio puede estar dado de baja.
     }
 
     // =====================================================================
@@ -183,7 +189,7 @@ public sealed class SociosView : UserControl
             {
                 _resumen.Text = string.IsNullOrWhiteSpace(_buscar.Text)
                     ? "No hay socios en esta lista."
-                    : "Ningún socio coincide con la búsqueda. Si es nuevo, regístralo con «Registrar socio».";
+                    : "Ningún socio coincide con la búsqueda. Si es nuevo, regístralo con «Registrar persona».";
             }
             else
             {
@@ -287,7 +293,7 @@ public sealed class SociosView : UserControl
         cabeza.Children.Add(chip);
         cabeza.Children.Add(new TextBlock
         {
-            Text = $"{f.Apellidos} {f.Nombres}",
+            Text = $"{f.Nombres} {f.Apellidos}",
             FontSize = 21,
             FontWeight = FontWeights.Bold,
             Foreground = UiKit.Titulo,
@@ -295,7 +301,8 @@ public sealed class SociosView : UserControl
         });
         _ficha.Children.Add(cabeza);
         _ficha.Children.Add(UiKit.Ayuda(
-            $"CI {Texto(f.Documento)}   ·   Cel. {Texto(f.Telefono)}\n" +
+            (f.EsSocio ? "Socio" : "No socio (comedor o ambulante)") + "\n" +
+            $"CI {Texto(f.Documento)}{(string.IsNullOrWhiteSpace(f.LugarExpedicion) ? "" : " " + f.LugarExpedicion)}   ·   Cel. {Texto(f.Telefono)}\n" +
             $"Registrado en el sistema el {f.FechaRegistro.ToOffset(TimeSpan.FromHours(-4)).ToString("dd/MM/yyyy", Bo)}", 10));
 
         // ---------- Deuda ----------
@@ -493,7 +500,7 @@ public sealed class SociosView : UserControl
         }
 
         var u = elegida.Valor;
-        var texto = $"Socio: {f.Apellidos} {f.Nombres}\nUnidad: {u.TipoTexto} {u.Codigo}\n\n";
+        var texto = $"Socio: {f.Nombres} {f.Apellidos}\nUnidad: {u.TipoTexto} {u.Codigo}\n\n";
         texto += u.Titular is null
             ? "Quedará como titular de esta unidad.\n\n¿Asignar?"
             : $"Esta unidad ya tiene titular: {u.Titular}. Pasará al historial y {f.Nombres} será el nuevo titular. " +
@@ -523,7 +530,7 @@ public sealed class SociosView : UserControl
             }
 
             var confirmar = Dialogo.Mostrar(Window.GetWindow(this),
-                $"Socio: {f.Apellidos} {f.Nombres}\n\nYa no aparecerá entre los socios activos ni se le podrá asignar casetas. " +
+                $"Socio: {f.Nombres} {f.Apellidos}\n\nYa no aparecerá entre los socios activos ni se le podrá asignar casetas. " +
                 "Sus recibos, deudas y documentos se conservan, y puedes reactivarlo cuando quieras.\n\n¿Dar de baja?",
                 "Dar de baja", MessageBoxButton.YesNo, MessageBoxImage.Warning);
 
@@ -657,8 +664,12 @@ public sealed class SociosView : UserControl
         public List<string> Casetas { get; set; } = new();
         public List<MontoMoneda> Deuda { get; set; } = new();
         public int DeudasPendientes { get; set; }
+        public bool EsSocio { get; set; } = true;
+        public string? LugarExpedicion { get; set; }
 
-        public string DocumentoTexto => string.IsNullOrWhiteSpace(Documento) ? "—" : Documento;
+        public string TipoTexto => EsSocio ? "Socio" : "No socio";
+        public string DocumentoTexto => string.IsNullOrWhiteSpace(Documento) ? "—"
+            : string.IsNullOrWhiteSpace(LugarExpedicion) ? Documento : $"{Documento} {LugarExpedicion}";
         public string TelefonoTexto => string.IsNullOrWhiteSpace(Telefono) ? "—" : Telefono!;
         public string CasetasTexto => Casetas.Count == 0 ? "—" : string.Join(", ", Casetas);
         public string DeudaTexto => Deuda.Count == 0 ? "—" : Montos(Deuda);
@@ -671,6 +682,8 @@ public sealed class SociosView : UserControl
         public string Nombres { get; set; } = "";
         public string Apellidos { get; set; } = "";
         public string Documento { get; set; } = "";
+        public string? LugarExpedicion { get; set; }
+        public bool EsSocio { get; set; } = true;
         public string? Telefono { get; set; }
         public DateTimeOffset FechaRegistro { get; set; }
         public bool Activo { get; set; }
@@ -737,7 +750,7 @@ internal sealed class VentanaDatosSocio : Window
     {
         var nuevo = socio is null;
 
-        Title = nuevo ? "Registrar socio" : "Corregir datos del socio";
+        Title = nuevo ? "Registrar persona" : "Corregir datos";
         Width = 480;
         SizeToContent = SizeToContent.Height;
         ResizeMode = ResizeMode.NoResize;
@@ -750,13 +763,24 @@ internal sealed class VentanaDatosSocio : Window
         var pila = new StackPanel { Margin = new Thickness(26, 22, 26, 22) };
         pila.Children.Add(new TextBlock { Text = Title, FontSize = 20, FontWeight = FontWeights.SemiBold, Foreground = UiKit.Tinta });
         pila.Children.Add(UiKit.Ayuda(nuevo
-            ? "Datos personales del socio. Después le asignas su caseta y completas su Kardex."
+            ? "Datos personales. Después le asignas su caseta, comedor o puesto ambulante; a los socios se les completa el Kardex."
             : "Corrige errores de escritura o actualiza el celular. Sus casetas, recibos y deudas no cambian.", 14));
+
+        // Socio de la asociación o comerciante que no es socio (comedores y ambulantes del manual).
+        var esSocio = UiKit.Opcion("Socio de la asociación", "tipoPersona", socio?.EsSocio ?? true);
+        var noSocio = UiKit.Opcion("No socio (comedor o ambulante)", "tipoPersona", !(socio?.EsSocio ?? true));
+        var tipos = new WrapPanel { Margin = new Thickness(0, 0, 0, 8) };
+        tipos.Children.Add(esSocio);
+        tipos.Children.Add(noSocio);
+        pila.Children.Add(tipos);
 
         var nombres = UiKit.Texto(200, 150);
         var apellidos = UiKit.Texto(200, 150);
         var documento = UiKit.Texto(200, 50);
         var telefono = UiKit.Texto(200, 50);
+        var expedicion = UiKit.Combo(200);
+        expedicion.IsEditable = true;
+        expedicion.ItemsSource = new[] { "", "LP", "SC", "CB", "OR", "PT", "CH", "TJ", "BE", "PD", "Extranjero" };
 
         if (socio is not null)
         {
@@ -764,16 +788,21 @@ internal sealed class VentanaDatosSocio : Window
             apellidos.Text = socio.Apellidos;
             documento.Text = socio.Documento;
             telefono.Text = socio.Telefono ?? "";
+            expedicion.Text = socio.LugarExpedicion ?? "";
         }
 
         var fila1 = new WrapPanel();
-        fila1.Children.Add(UiKit.Campo("Apellidos", apellidos));
-        fila1.Children.Add(UiKit.Campo("Nombres", nombres, 0));
+        fila1.Children.Add(UiKit.Campo("Nombres", nombres));
+        fila1.Children.Add(UiKit.Campo("Apellidos", apellidos, 0));
         pila.Children.Add(fila1);
         var fila2 = new WrapPanel();
-        fila2.Children.Add(UiKit.Campo("CI (con extensión, ej. 1234567 LP)", documento));
-        fila2.Children.Add(UiKit.Campo("Celular", telefono, 0));
+        fila2.Children.Add(UiKit.Campo("N.º de CI", documento));
+        fila2.Children.Add(UiKit.Campo("Expedido en (opcional)", expedicion, 0));
         pila.Children.Add(fila2);
+        var fila3 = new WrapPanel();
+        fila3.Children.Add(UiKit.Campo("Celular", telefono, 0));
+        pila.Children.Add(fila3);
+        pila.Children.Add(UiKit.Ayuda("El lugar de expedición es opcional aquí; el Kardex de la caseta lo pide para completar el expediente.", 10));
 
         var error = new TextBlock { Foreground = ColoresPanel.Hex("#A12A2A"), TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 0, 0, 8) };
         pila.Children.Add(error);
@@ -786,9 +815,9 @@ internal sealed class VentanaDatosSocio : Window
         guardar.IsDefault = true;
         guardar.Click += async (_, _) =>
         {
-            if (apellidos.Text.Trim().Length == 0) { error.Text = "Escribe los apellidos."; apellidos.Focus(); return; }
             if (nombres.Text.Trim().Length == 0) { error.Text = "Escribe los nombres."; nombres.Focus(); return; }
-            if (nuevo && documento.Text.Trim().Length == 0) { error.Text = "Escribe el CI."; documento.Focus(); return; }
+            if (apellidos.Text.Trim().Length == 0) { error.Text = "Escribe los apellidos."; apellidos.Focus(); return; }
+            if (nuevo && esSocio.IsChecked == true && documento.Text.Trim().Length == 0) { error.Text = "Escribe el CI del socio."; documento.Focus(); return; }
 
             guardar.IsEnabled = false;
             error.Text = "";
@@ -801,10 +830,13 @@ internal sealed class VentanaDatosSocio : Window
                         nombres = nombres.Text.Trim(),
                         apellidos = apellidos.Text.Trim(),
                         documentoIdentidad = documento.Text.Trim(),
-                        telefono = string.IsNullOrWhiteSpace(telefono.Text) ? null : telefono.Text.Trim()
+                        telefono = string.IsNullOrWhiteSpace(telefono.Text) ? null : telefono.Text.Trim(),
+                        lugarExpedicion = expedicion.Text.Trim(),
+                        esSocio = esSocio.IsChecked == true
                     });
                     CreadoId = r?.Id;
-                    Resultado = $"Se registró a {nombres.Text.Trim()} {apellidos.Text.Trim()}.";
+                    Resultado = $"Se registró a {nombres.Text.Trim()} {apellidos.Text.Trim()}" +
+                                (esSocio.IsChecked == true ? "." : " como no socio.");
                 }
                 else
                 {
@@ -813,7 +845,9 @@ internal sealed class VentanaDatosSocio : Window
                         nombres = nombres.Text.Trim(),
                         apellidos = apellidos.Text.Trim(),
                         documentoIdentidad = documento.Text.Trim(),
-                        telefono = telefono.Text.Trim()
+                        telefono = telefono.Text.Trim(),
+                        lugarExpedicion = expedicion.Text.Trim(),
+                        esSocio = esSocio.IsChecked == true
                     });
                     Resultado = r?.Mensaje ?? "Datos guardados.";
                 }
@@ -834,7 +868,7 @@ internal sealed class VentanaDatosSocio : Window
         pila.Children.Add(botones);
 
         Content = pila;
-        Loaded += (_, _) => apellidos.Focus();
+        Loaded += (_, _) => nombres.Focus();
     }
 
     private sealed class Creado

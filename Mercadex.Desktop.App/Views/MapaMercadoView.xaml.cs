@@ -31,6 +31,7 @@ public partial class MapaMercadoView : UserControl
         ["reciente"] = ("Deuda reciente",    "#FFF5D9", "#F5D88A", "#6E4F00"),
         ["atrasada"] = ("Atrasada (31–90 días)", "#FDE9E0", "#F3B9A0", "#8A3417"),
         ["critica"]  = ("Más de 90 días",    "#D03B3B", "#B52F2F", "#FFFFFF"),
+        ["sin-titular"] = ("Sin titular",    "#FFFFFF", "#C9D3DF", "#5A6B7D"),
         ["inactiva"] = ("Inactiva",          "#EEF1F5", "#DCE2EA", "#8696A7"),
     };
 
@@ -66,6 +67,7 @@ public partial class MapaMercadoView : UserControl
         {
             _datos = await Http.GetFromJsonAsync<MapaMercadoRespuesta>("/api/mapa-mercado")
                      ?? throw new InvalidOperationException("Respuesta vacía.");
+            MarcarSinTitular(_datos);
 
             // Mantener la selección tras actualizar.
             if (_seleccionada != null)
@@ -119,7 +121,7 @@ public partial class MapaMercadoView : UserControl
         foreach (var (clave, s) in Situaciones)
         {
             var cantidad = conteo.GetValueOrDefault(clave);
-            if (cantidad == 0 && clave == "inactiva")
+            if (cantidad == 0 && clave is "inactiva" or "sin-titular")
                 continue;
 
             PanelFiltros.Children.Add(CrearChip(clave, s.Nombre, cantidad, s.Fondo == "#D03B3B" ? s.Fondo : s.Borde));
@@ -530,6 +532,18 @@ public partial class MapaMercadoView : UserControl
         }
     }
 
+    /// <summary>
+    /// Una unidad sin titular y sin deudas no está "al día": está vacía.
+    /// Se muestra aparte para no confundirla con quien paga puntual.
+    /// Si tiene deudas pendientes, manda el color de la deuda.
+    /// </summary>
+    private static void MarcarSinTitular(MapaMercadoRespuesta datos)
+    {
+        foreach (var u in datos.Bloques.SelectMany(b => b.Unidades))
+            if (u.Situacion == "al-dia" && string.IsNullOrWhiteSpace(u.Titular))
+                u.Situacion = "sin-titular";
+    }
+
     private Button CrearCelda(MapaUnidad u)
     {
         var s = Situaciones.GetValueOrDefault(u.Situacion, Situaciones["al-dia"]);
@@ -538,6 +552,7 @@ public partial class MapaMercadoView : UserControl
         var linea2 = u.Situacion switch
         {
             "inactiva" => "Inactiva",
+            "sin-titular" => "Sin titular",
             "al-dia" => "Al día",
             _ => TextoDeuda(u, corto: true)
         };
@@ -627,6 +642,10 @@ public partial class MapaMercadoView : UserControl
             Fila("Debe", TextoDeuda(u, corto: false));
             Fila("Obligaciones pendientes", u.Obligaciones.ToString(Bo));
             Fila("La más antigua", u.DiasDeuda == 1 ? "hace 1 día" : $"hace {u.DiasDeuda} días");
+        }
+        else if (u.Situacion == "sin-titular")
+        {
+            Fila("Debe", "Nada. Todavía no tiene titular: asígnalo en Casetas.");
         }
         else if (u.Activa)
         {

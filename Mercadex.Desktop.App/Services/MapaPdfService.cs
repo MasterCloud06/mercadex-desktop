@@ -29,6 +29,7 @@ public static class MapaPdfService
         ("reciente", "Deuda reciente", XColor.FromArgb(255, 245, 217), XColor.FromArgb(230, 190, 90), XColor.FromArgb(110, 79, 0)),
         ("atrasada", "31 a 90 días", XColor.FromArgb(253, 233, 224), XColor.FromArgb(230, 150, 120), XColor.FromArgb(138, 52, 23)),
         ("critica", "Más de 90 días", XColor.FromArgb(208, 59, 59), XColor.FromArgb(181, 47, 47), XColor.FromArgb(255, 255, 255)),
+        ("sin-titular", "Sin titular", XColor.FromArgb(255, 255, 255), XColor.FromArgb(185, 196, 210), XColor.FromArgb(90, 107, 125)),
         ("inactiva", "Inactiva", XColor.FromArgb(238, 241, 245), XColor.FromArgb(200, 208, 218), XColor.FromArgb(134, 150, 167)),
     };
 

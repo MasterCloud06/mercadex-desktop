@@ -59,7 +59,7 @@ public sealed class CobranzaView : UserControl
         if (SesionActual.EsAdministrador || !SesionActual.Iniciada)
         {
             _pestanas.Items.Add(Pestana("Cargo mensual a varias casetas", ConstruirCargoMasivo()));
-            _pestanas.Items.Add(Pestana("Cargo a una caseta", ConstruirCargoIndividual()));
+            _pestanas.Items.Add(Pestana("Asignar una deuda", ConstruirCargoIndividual()));
             _pestanas.Items.Add(Pestana("Tarifas por caseta", ConstruirTarifas()));
         }
 
@@ -802,13 +802,13 @@ public sealed class CobranzaView : UserControl
     {
         var pila = new StackPanel();
         pila.Children.Add(UiKit.Ayuda(
-            "Registra una deuda para una sola caseta: un excedente de luz, una multa, un alquiler que faltó. " +
+            "Asigna una deuda a una sola unidad —caseta, comedor o ambulante, sea socio o no—: un excedente de luz, una multa, un alquiler que faltó. " +
             "Si la caseta ya tiene el mismo concepto en ese mes, Mercadex no la duplica."));
 
         var tarjeta = new StackPanel();
 
         var fila1 = new WrapPanel();
-        fila1.Children.Add(UiKit.Campo("Caseta", _iCaseta));
+        fila1.Children.Add(UiKit.Campo("Caseta, comedor o ambulante (N.º)", _iCaseta));
         var nuevoConcepto = UiKit.Boton("+ Nuevo concepto");
         nuevoConcepto.Margin = new Thickness(0, 0, 14, 10);
         nuevoConcepto.Click += async (_, _) => await NuevoConceptoAsync(_iConcepto);

@@ -426,6 +426,46 @@ public sealed class ConceptosView : UserControl
         estado.HorizontalAlignment = HorizontalAlignment.Stretch;
         estado.Click += async (_, _) => await CambiarEstadoAsync(c);
         _ficha.Children.Add(estado);
+
+        // Eliminar: solo si nunca se usó (sin deudas ni tarifas).
+        if (c.Deudas == 0 && c.Tarifas == 0)
+        {
+            _ficha.Children.Add(new Border { Height = 1, Background = ColoresPanel.Hex("#E6ECF2"), Margin = new Thickness(0, 18, 0, 16) });
+            _ficha.Children.Add(Seccion("Eliminar"));
+            _ficha.Children.Add(new TextBlock
+            {
+                Text = "Este concepto nunca se usó: se puede eliminar del todo. Los que ya tienen deudas o tarifas solo se desactivan.",
+                FontSize = 13,
+                Foreground = UiKit.Suave,
+                TextWrapping = TextWrapping.Wrap,
+                LineHeight = 19,
+                Margin = new Thickness(0, 0, 0, 10)
+            });
+            var eliminar = UiKit.Boton("Eliminar concepto", peligro: true);
+            eliminar.HorizontalAlignment = HorizontalAlignment.Stretch;
+            eliminar.Click += async (_, _) => await EliminarAsync(c);
+            _ficha.Children.Add(eliminar);
+        }
+    }
+
+    private async Task EliminarAsync(ConceptoFila c)
+    {
+        if (Dialogo.Mostrar(Window.GetWindow(this),
+                $"Concepto: {c.Nombre}\n\nNunca se usó en deudas ni tarifas. Se eliminará del todo.\n\n¿Eliminar?",
+                "Eliminar concepto", MessageBoxButton.YesNo, MessageBoxImage.Warning, MessageBoxResult.No) != MessageBoxResult.Yes)
+            return;
+
+        try
+        {
+            var r = await ApiJson.EnviarAsync<Mensaje>(System.Net.Http.HttpMethod.Delete, $"/api/conceptos-cobro/{c.Id}", null);
+            _tabla.SelectedItem = null;
+            await CargarAsync();
+            _resumen.Text = "✓ " + (r?.Texto ?? "Concepto eliminado.");
+        }
+        catch (Exception ex)
+        {
+            Dialogo.Mostrar(Window.GetWindow(this), ex.Message, "No se eliminó el concepto", MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
     }
 
     private static TextBlock Seccion(string texto) => new()

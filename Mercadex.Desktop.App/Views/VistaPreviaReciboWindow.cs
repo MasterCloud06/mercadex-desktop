@@ -264,10 +264,9 @@ public sealed class VistaPreviaReciboWindow : Window
         {
             AgregarLinea(documento, " ");
             AgregarLinea(documento, Services.TextoRecibo.LineaFirma, centrado: true);
-            AgregarLinea(documento, nombreEmisor, negrita: true, centrado: true);
+            AgregarLinea(documento, "Elaborado por: " + nombreEmisor, negrita: true, centrado: true);
             if (cargoEmisor is not null)
                 AgregarLinea(documento, cargoEmisor, centrado: true);
-            AgregarLinea(documento, "Emitido por", tamano: 10, centrado: true);
         }
 
         if (anulado)

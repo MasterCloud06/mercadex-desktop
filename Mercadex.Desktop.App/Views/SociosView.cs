@@ -111,9 +111,17 @@ public sealed class SociosView : UserControl
         _tabla.Columns.Add(UiKit.Columna("Tipo", nameof(SocioFila.TipoTexto), 0.8));
         _tabla.Columns.Add(UiKit.Columna("CI", nameof(SocioFila.DocumentoTexto), 0.9));
         _tabla.Columns.Add(UiKit.Columna("Celular", nameof(SocioFila.TelefonoTexto), 0.9));
-        _tabla.Columns.Add(UiKit.Columna("Casetas", nameof(SocioFila.CasetasTexto), 0.9));
+        var columnaCasetas = UiKit.Columna("Casetas", nameof(SocioFila.CasetasTexto), 0.9);
+        columnaCasetas.SortMemberPath = nameof(SocioFila.CasetaOrden);
+        columnaCasetas.MinWidth = 270;
+        _tabla.Columns.Add(columnaCasetas);
         _tabla.Columns.Add(UiKit.Columna("Debe", nameof(SocioFila.DeudaTexto), 1.1, derecha: true));
         _tabla.Columns.Add(UiKit.Columna("Estado", nameof(SocioFila.EstadoTexto), 0.8));
+        _tabla.MinColumnWidth = 90;
+        _tabla.Columns[0].MinWidth = 220;
+        _tabla.Columns[5].MinWidth = 110;
+        _tabla.Columns[6].MinWidth = 100;
+        ScrollViewer.SetHorizontalScrollBarVisibility(_tabla, ScrollBarVisibility.Auto);
 
         var estiloFila = new Style(typeof(DataGridRow), UiKit.Estilo("Mx.Row"));
         var deBaja = new DataTrigger { Binding = new Binding(nameof(SocioFila.Activo)), Value = false };
@@ -182,7 +190,7 @@ public sealed class SociosView : UserControl
                 ruta += "&texto=" + Uri.EscapeDataString(_buscar.Text.Trim());
 
             var r = await ApiJson.GetAsync<PadronRespuesta>(ruta);
-            var filas = r?.Socios ?? new();
+            var filas = OrdenarPorCasetas(r?.Socios ?? new());
             _tabla.ItemsSource = filas;
 
             if (r is null || filas.Count == 0)
@@ -573,6 +581,25 @@ public sealed class SociosView : UserControl
     // AYUDANTES
     // =====================================================================
 
+    public static List<SocioFila> OrdenarPorCasetas(IEnumerable<SocioFila> filas)
+    {
+        var lista = filas.ToList();
+        foreach (var socio in lista)
+        {
+            socio.Casetas = socio.Casetas
+                .OrderBy(c => int.TryParse(c, out var numero) ? numero : int.MaxValue)
+                .ThenBy(c => c, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+        }
+
+        return lista
+            .OrderBy(s => s.Casetas.Count == 0)
+            .ThenBy(s => s.CasetaOrden)
+            .ThenBy(s => s.Casetas.FirstOrDefault(), StringComparer.OrdinalIgnoreCase)
+            .ThenBy(s => s.NombreCompleto, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+    }
+
     private static TextBlock Seccion(string texto) => new()
     {
         Text = texto,
@@ -668,11 +695,15 @@ public sealed class SociosView : UserControl
         public string? LugarExpedicion { get; set; }
 
         public string TipoTexto => EsSocio ? "Socio" : "No socio";
-        public string DocumentoTexto => string.IsNullOrWhiteSpace(Documento) ? "—"
+        public string DocumentoTexto => string.IsNullOrWhiteSpace(Documento) ? "---"
             : string.IsNullOrWhiteSpace(LugarExpedicion) ? Documento : $"{Documento} {LugarExpedicion}";
-        public string TelefonoTexto => string.IsNullOrWhiteSpace(Telefono) ? "—" : Telefono!;
-        public string CasetasTexto => Casetas.Count == 0 ? "—" : string.Join(", ", Casetas);
-        public string DeudaTexto => Deuda.Count == 0 ? "—" : Montos(Deuda);
+        public string TelefonoTexto => string.IsNullOrWhiteSpace(Telefono) ? "---" : Telefono!;
+        public int CasetaOrden => Casetas
+            .Select(c => int.TryParse(c, out var numero) ? numero : int.MaxValue)
+            .DefaultIfEmpty(int.MaxValue)
+            .Min();
+        public string CasetasTexto => Casetas.Count == 0 ? "---" : string.Join(", ", Casetas);
+        public string DeudaTexto => Deuda.Count == 0 ? "---" : Montos(Deuda);
         public string EstadoTexto => !Activo ? "De baja" : Fallecido ? "Fallecido" : "Activo";
     }
 

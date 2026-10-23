@@ -1,5 +1,5 @@
 #define MyAppName "Mercadex"
-#define MyAppVersion "1.6.4"
+#define MyAppVersion "1.6.5"
 #define MyAppPublisher "Mercadex"
 #define MyAppExeName "Mercadex.Desktop.App.exe"
 

@@ -13,7 +13,7 @@ namespace Mercadex.Desktop.App.Views;
 /// <summary>
 /// Obligaciones (manual: Generador de cobranza). Cuatro pestañas, cada una
 /// con una sola tarea:
-/// 1. Deudas registradas: buscar, modificar monto, ver historial, ir a cobrar.
+/// 1. Deudas registradas: buscar, modificar monto, ver historial, anular, ir a cobrar.
 /// 2. Cargo mensual a varias casetas: con vista previa antes de generar.
 /// 3. Cargo a una caseta.
 /// 4. Tarifas por caseta: el monto de cada caseta para cada concepto.
@@ -228,6 +228,9 @@ public sealed class CobranzaView : UserControl
     private readonly Button _btnModificar = UiKit.Boton("Modificar monto");
     private readonly Button _btnHistorial = UiKit.Boton("Ver historial");
     private readonly Button _btnCobrar = UiKit.Boton("Ir a cobrar", principal: true);
+    private readonly Button _btnAnular = UiKit.Boton("Anular deuda", peligro: true);
+    private readonly Button _btnAnularBusqueda = UiKit.Boton("Anular pendientes de esta búsqueda", peligro: true);
+    private readonly Button _btnVerAnulacion = UiKit.Boton("Ver anulación");
     private readonly TextBlock _ayudaSeleccion = new() { Foreground = UiKit.Suave, VerticalAlignment = VerticalAlignment.Center, TextWrapping = TextWrapping.Wrap };
 
     private UIElement ConstruirDeudas()
@@ -316,18 +319,44 @@ public sealed class CobranzaView : UserControl
         _btnModificar.Click += async (_, _) => await ModificarMontoAsync();
         _btnHistorial.Click += async (_, _) => await VerHistorialAsync();
         _btnCobrar.Click += (_, _) => IrACobrar();
+        _btnAnular.Margin = new Thickness(10, 0, 0, 0);
+        _btnVerAnulacion.Margin = new Thickness(10, 0, 0, 0);
+        _btnAnular.Click += async (_, _) => await AnularSeleccionadaAsync();
+        _btnAnularBusqueda.Click += async (_, _) => await AnularBusquedaAsync();
+        _btnVerAnulacion.Click += async (_, _) => await VerAnulacionAsync();
 
         var acciones = new DockPanel { Margin = new Thickness(0, 10, 0, 0) };
         var botones = new StackPanel { Orientation = Orientation.Horizontal };
         DockPanel.SetDock(botones, Dock.Right);
         botones.Children.Add(_btnHistorial);
+        botones.Children.Add(_btnVerAnulacion);
         if (SesionActual.EsAdministrador || !SesionActual.Iniciada)
+        {
             botones.Children.Add(_btnModificar);
+            botones.Children.Add(_btnAnular);
+        }
         if (SesionActual.PuedeCobrar || !SesionActual.Iniciada)
             botones.Children.Add(_btnCobrar);
         acciones.Children.Add(botones);
         acciones.Children.Add(_ayudaSeleccion);
         pila.Children.Add(acciones);
+
+        // Anular en bloque: todas las pendientes de los filtros elegidos (solo el administrador).
+        if (SesionActual.EsAdministrador || !SesionActual.Iniciada)
+        {
+            var masiva = new DockPanel { Margin = new Thickness(0, 12, 0, 0) };
+            DockPanel.SetDock(_btnAnularBusqueda, Dock.Right);
+            masiva.Children.Add(_btnAnularBusqueda);
+            masiva.Children.Add(new TextBlock
+            {
+                Text = "Para anular varias a la vez, filtra por concepto, mes, año, caseta o bloque y pulsa «Buscar». " +
+                       "Verás la lista y el total antes de confirmar.",
+                Foreground = UiKit.Suave,
+                TextWrapping = TextWrapping.Wrap,
+                VerticalAlignment = VerticalAlignment.Center
+            });
+            pila.Children.Add(masiva);
+        }
 
         ActualizarAccionesDeuda();
         return pila;
@@ -349,6 +378,8 @@ public sealed class CobranzaView : UserControl
             parametros.Add($"anio={anio}");
         if (Valor<string?>(_fBloque) is { } bloque)
             parametros.Add("bloque=" + Uri.EscapeDataString(bloque));
+
+        _filtrosBuscados = FiltrosParaAnular();
 
         try
         {
@@ -397,12 +428,90 @@ public sealed class CobranzaView : UserControl
         _btnModificar.IsEnabled = pendiente;
         _btnCobrar.IsEnabled = pendiente;
         _btnHistorial.IsEnabled = d is { Modificaciones: > 0 };
+        _btnAnular.IsEnabled = pendiente;
+        _btnVerAnulacion.IsEnabled = d?.Estado == "Anulada";
+        _btnAnularBusqueda.IsEnabled = _filtrosBuscados is { Count: > 0 };
 
         _ayudaSeleccion.Text = d is null
             ? "Elige una deuda de la lista."
             : pendiente
                 ? $"Caseta {d.Caseta} · {d.Concepto} {d.Periodo} · {d.Moneda} {d.Monto.ToString("N2", Bo)}"
                 : $"Esta deuda está {d.Estado.ToLowerInvariant()}: no se puede modificar ni cobrar.";
+    }
+
+    /// <summary>Filtros de la búsqueda actual (sin el estado: solo se anulan pendientes).</summary>
+    private Dictionary<string, object?>? _filtrosBuscados;
+
+    private Dictionary<string, object?> FiltrosParaAnular()
+    {
+        var f = new Dictionary<string, object?>();
+        if (!string.IsNullOrWhiteSpace(_fCaseta.Text))
+            f["caseta"] = _fCaseta.Text.Trim();
+        if (Valor<Guid?>(_fConcepto) is { } concepto)
+            f["conceptoCobroId"] = concepto;
+        if (Valor<int?>(_fMes) is { } mes)
+            f["mes"] = mes;
+        if (Valor<int?>(_fAnio) is { } anio)
+            f["anio"] = anio;
+        if (Valor<string?>(_fBloque) is { } bloque)
+            f["bloque"] = bloque;
+        return f;
+    }
+
+    private async Task AnularSeleccionadaAsync()
+    {
+        if (_tablaDeudas.SelectedItem is not DeudaFila d || d.Estado != "Pendiente")
+            return;
+
+        await AbrirAnulacionAsync(new Dictionary<string, object?> { ["obligacionIds"] = new[] { d.Id } });
+    }
+
+    private async Task AnularBusquedaAsync()
+    {
+        if (_filtrosBuscados is not { Count: > 0 } filtros)
+            return;
+
+        await AbrirAnulacionAsync(filtros);
+    }
+
+    private async Task AbrirAnulacionAsync(Dictionary<string, object?> pedido)
+    {
+        var ventana = new VentanaAnularDeudas(pedido) { Owner = Window.GetWindow(this) };
+        if (ventana.ShowDialog() != true)
+            return;
+
+        Dialogo.Mostrar(Window.GetWindow(this), ventana.Mensaje, "Deudas anuladas", MessageBoxButton.OK, MessageBoxImage.Information);
+        await BuscarDeudasAsync();
+    }
+
+    private async Task VerAnulacionAsync()
+    {
+        if (_tablaDeudas.SelectedItem is not DeudaFila d || d.Estado != "Anulada")
+            return;
+
+        try
+        {
+            var a = await ApiJson.GetAsync<AnulacionDeuda>($"{VentanaAnularDeudas.Ruta}/obligacion/{d.Id}");
+            Dialogo.Mostrar(Window.GetWindow(this),
+                $"Caseta {d.Caseta} · {d.Concepto} {d.Periodo} · {d.Moneda} {d.Monto.ToString("N2", Bo)}\n\n" +
+                $"Anulada el {a?.Fecha.ToString("dd/MM/yyyy HH:mm", Bo)} por {a?.Responsable}\n" +
+                $"Motivo: {a?.Motivo}\n" +
+                (a is { DeudasEnLaAnulacion: > 1 } ? $"\nSe anuló junto con otras {a.DeudasEnLaAnulacion - 1} deudas." : ""),
+                "Deuda anulada", MessageBoxButton.OK, MessageBoxImage.None);
+        }
+        catch (Exception ex)
+        {
+            Dialogo.Mostrar(Window.GetWindow(this), ex.Message, "No se pudo consultar", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+    private sealed class AnulacionDeuda
+    {
+        public string Motivo { get; set; } = "";
+        public string Responsable { get; set; } = "";
+        /// <summary>Hora de Bolivia (la envía la API con -04:00).</summary>
+        public DateTimeOffset Fecha { get; set; }
+        public int DeudasEnLaAnulacion { get; set; }
     }
 
     private void IrACobrar()

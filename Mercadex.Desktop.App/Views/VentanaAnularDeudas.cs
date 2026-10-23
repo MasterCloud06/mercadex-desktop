@@ -1,6 +1,8 @@
 using System.Globalization;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
+using System.Windows.Data;
 using System.Windows.Media;
 using Mercadex.Desktop.App.Services;
 
@@ -8,8 +10,9 @@ namespace Mercadex.Desktop.App.Views;
 
 /// <summary>
 /// Anular una deuda o varias: primero la vista previa (cuántas, cuánto y
-/// cuáles no se pueden anular) y el botón para confirmar. El motivo es
-/// opcional. Nada cambia hasta pulsar «Anular». La API registra quién
+/// cuáles no se pueden anular) y el botón para confirmar. Cuando son varias,
+/// todas vienen marcadas y se pueden desmarcar las que no se anulan. El motivo
+/// es opcional. Nada cambia hasta pulsar «Anular». La API registra quién
 /// anuló, cuándo y, si se escribió, por qué.
 /// </summary>
 internal sealed class VentanaAnularDeudas : Window
@@ -31,6 +34,8 @@ internal sealed class VentanaAnularDeudas : Window
     private readonly TextBlock _error = new() { Foreground = ColoresPanel.Hex("#A12A2A"), TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 0, 0, 8) };
     private readonly Button _anular = UiKit.Boton("Anular", peligro: true);
     private readonly StackPanel _confirmacion = new();
+    private readonly StackPanel _marcar = new() { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 0, 0, 8), Visibility = Visibility.Collapsed };
+    private readonly DataGridTemplateColumn _columnaAnular;
 
     private VistaPrevia? _previa;
 
@@ -60,12 +65,42 @@ internal sealed class VentanaAnularDeudas : Window
         pila.Children.Add(_resumen);
         pila.Children.Add(_filtros);
 
+        // Casilla «Anular»: con varias deudas, se desmarcan las que no se anulan.
+        var casilla = new FrameworkElementFactory(typeof(CheckBox));
+        casilla.SetBinding(ToggleButton.IsCheckedProperty,
+            new Binding(nameof(FilaPrevia.Incluir)) { Mode = BindingMode.TwoWay, UpdateSourceTrigger = UpdateSourceTrigger.PropertyChanged });
+        casilla.SetValue(FrameworkElement.HorizontalAlignmentProperty, HorizontalAlignment.Center);
+        casilla.SetValue(FrameworkElement.VerticalAlignmentProperty, VerticalAlignment.Center);
+        casilla.AddHandler(ButtonBase.ClickEvent, new RoutedEventHandler((_, _) => Actualizar()));
+        _columnaAnular = new DataGridTemplateColumn
+        {
+            Header = "Anular",
+            CellTemplate = new DataTemplate { VisualTree = casilla },
+            Width = new DataGridLength(0.6, DataGridLengthUnitType.Star),
+            Visibility = Visibility.Collapsed
+        };
+        _tabla.Columns.Add(_columnaAnular);
         _tabla.Columns.Add(UiKit.Columna("Caseta", nameof(FilaPrevia.Caseta), 0.8));
         _tabla.Columns.Add(UiKit.Columna("Concepto", nameof(FilaPrevia.Concepto), 1.8));
         _tabla.Columns.Add(UiKit.Columna("Período", nameof(FilaPrevia.Periodo), 0.9));
         _tabla.Columns.Add(UiKit.Columna("Monto", nameof(FilaPrevia.Monto), 0.9, "N2", derecha: true));
         _tabla.Columns.Add(UiKit.Columna("Moneda", nameof(FilaPrevia.Moneda), 0.7));
-        _tabla.MaxHeight = 230;
+        _tabla.MaxHeight = 300;
+
+        var marcarTodas = UiKit.Boton("Marcar todas");
+        var desmarcarTodas = UiKit.Boton("Desmarcar todas");
+        desmarcarTodas.Margin = new Thickness(8, 0, 14, 0);
+        marcarTodas.Click += (_, _) => MarcarTodas(true);
+        desmarcarTodas.Click += (_, _) => MarcarTodas(false);
+        _marcar.Children.Add(marcarTodas);
+        _marcar.Children.Add(desmarcarTodas);
+        _marcar.Children.Add(new TextBlock
+        {
+            Text = "Desmarca las que no quieres anular.",
+            Foreground = UiKit.Suave,
+            VerticalAlignment = VerticalAlignment.Center
+        });
+        pila.Children.Add(_marcar);
         pila.Children.Add(_tabla);
         pila.Children.Add(_bloqueadas);
 
@@ -116,13 +151,13 @@ internal sealed class VentanaAnularDeudas : Window
         if (_previa is null)
             return;
 
-        var total = string.Join(" + ", _previa.Totales.Select(t => $"{t.Moneda} {t.Total.ToString("N2", Bo)}"));
-        _resumen.Text = _previa.Cantidad switch
-        {
-            0 => "No hay deudas que se puedan anular.",
-            1 => $"Se anulará 1 deuda · {total}",
-            _ => $"Se anularán {_previa.Cantidad} deudas · {total}"
-        };
+        foreach (var d in _previa.Deudas)
+            d.Incluir = true;
+
+        var elegir = _previa.Deudas.Count > 1;
+        _columnaAnular.Visibility = elegir ? Visibility.Visible : Visibility.Collapsed;
+        _marcar.Visibility = elegir ? Visibility.Visible : Visibility.Collapsed;
+
         _filtros.Text = _previa.Filtros;
         _tabla.ItemsSource = _previa.Deudas;
         _tabla.Visibility = _previa.Deudas.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
@@ -134,12 +169,68 @@ internal sealed class VentanaAnularDeudas : Window
               (_previa.Bloqueadas.Count > 15 ? $"\n… y {_previa.Bloqueadas.Count - 15} más." : "");
 
         _confirmacion.Visibility = _previa.Cantidad > 0 ? Visibility.Visible : Visibility.Collapsed;
-        _anular.Content = _previa.Cantidad == 1 ? "Anular 1 deuda" : $"Anular {_previa.Cantidad} deudas";
         Actualizar();
     }
 
-    private void Actualizar() =>
-        _anular.IsEnabled = _previa is { Cantidad: > 0 };
+    private List<FilaPrevia> Marcadas() =>
+        _previa?.Deudas.Where(d => d.Incluir).ToList() ?? new();
+
+    /// <summary>Resumen, total y botón según las deudas marcadas.</summary>
+    private void Actualizar()
+    {
+        var marcadas = Marcadas();
+
+        if (_previa is { Cantidad: > 0 })
+        {
+            var total = string.Join(" + ", marcadas
+                .GroupBy(d => d.Moneda)
+                .Select(g => $"{g.Key} {g.Sum(d => d.Monto).ToString("N2", Bo)}"));
+            var desmarcadas = _previa.Deudas.Count - marcadas.Count;
+
+            _resumen.Text = marcadas.Count switch
+            {
+                0 => "Desmarcaste todas: no se anulará ninguna.",
+                1 => $"Se anulará 1 deuda · {total}",
+                _ => $"Se anularán {marcadas.Count} deudas · {total}"
+            } + (desmarcadas > 0 ? $"  ({desmarcadas} desmarcada{(desmarcadas == 1 ? "" : "s")})" : "");
+        }
+        else if (_previa is not null)
+        {
+            _resumen.Text = "No hay deudas que se puedan anular.";
+        }
+
+        _anular.Content = marcadas.Count == 1 ? "Anular 1 deuda" : $"Anular {marcadas.Count} deudas";
+        _anular.IsEnabled = marcadas.Count > 0;
+    }
+
+    private void MarcarTodas(bool marcar)
+    {
+        foreach (var d in _previa?.Deudas ?? new())
+            d.Incluir = marcar;
+
+        _tabla.Items.Refresh();
+        Actualizar();
+    }
+
+    /// <summary>
+    /// Lo que se confirma: el pedido original o, si hay desmarcadas, el mismo
+    /// pedido sin ellas (las elegidas una por una, o los filtros con exclusiones).
+    /// </summary>
+    private Dictionary<string, object?> PedidoFinal(List<FilaPrevia> marcadas)
+    {
+        var pedido = new Dictionary<string, object?>(_pedido);
+        var desmarcadas = _previa!.Deudas.Where(d => !d.Incluir).Select(d => d.Id).ToList();
+
+        if (desmarcadas.Count == 0)
+            return pedido;
+
+        if (pedido.ContainsKey("obligacionIds"))
+            pedido["obligacionIds"] = marcadas.Select(d => d.Id).ToList();
+        else
+            pedido["excluirObligacionIds"] = desmarcadas;
+
+        return pedido;
+    }
 
     private async Task AnularAsync()
     {
@@ -149,17 +240,33 @@ internal sealed class VentanaAnularDeudas : Window
         _anular.IsEnabled = false;
         _error.Text = "";
 
-        var cuerpo = new Dictionary<string, object?>(_pedido)
-        {
-            ["motivo"] = _motivo.Text.Trim(),
-            ["confirmo"] = true,
-            ["claveOperacion"] = _clave,
-            ["huella"] = _previa.Huella,
-            ["cantidadEsperada"] = _previa.Cantidad
-        };
+        var marcadas = Marcadas();
+        var pedido = PedidoFinal(marcadas);
 
         try
         {
+            // Con desmarcadas, la API calcula la vista previa de lo que de verdad se
+            // anula; si no coincide con lo marcado (algo cambió), no se anula nada.
+            var previa = _previa;
+            if (marcadas.Count != _previa.Deudas.Count)
+            {
+                previa = await ApiJson.PostAsync<VistaPrevia>($"{Ruta}/vista-previa", pedido)
+                         ?? throw new InvalidOperationException("No se recibió la vista previa.");
+
+                if (previa.Cantidad != marcadas.Count ||
+                    !previa.Deudas.Select(d => d.Id).ToHashSet().SetEquals(marcadas.Select(d => d.Id)))
+                    throw new InvalidOperationException("Las deudas cambiaron desde la vista previa. No se anuló nada.");
+            }
+
+            var cuerpo = new Dictionary<string, object?>(pedido)
+            {
+                ["motivo"] = _motivo.Text.Trim(),
+                ["confirmo"] = true,
+                ["claveOperacion"] = _clave,
+                ["huella"] = previa.Huella,
+                ["cantidadEsperada"] = previa.Cantidad
+            };
+
             var r = await ApiJson.PostAsync<Respuesta>(Ruta, cuerpo);
             Mensaje = r?.Mensaje ?? "Deudas anuladas.";
             DialogResult = true;
@@ -191,11 +298,15 @@ internal sealed class VentanaAnularDeudas : Window
 
     public sealed class FilaPrevia
     {
+        public Guid Id { get; set; }
         public string Caseta { get; set; } = "";
         public string Concepto { get; set; } = "";
         public string Periodo { get; set; } = "";
         public decimal Monto { get; set; }
         public string Moneda { get; set; } = "";
+
+        /// <summary>Marcada: se anula.</summary>
+        public bool Incluir { get; set; } = true;
     }
 
     private sealed class FilaBloqueada

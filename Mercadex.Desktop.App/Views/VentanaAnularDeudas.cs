@@ -8,14 +8,13 @@ namespace Mercadex.Desktop.App.Views;
 
 /// <summary>
 /// Anular una deuda o varias: primero la vista previa (cuántas, cuánto y
-/// cuáles no se pueden anular), después motivo y confirmación. Nada cambia
-/// hasta pulsar «Anular». La API registra quién anuló, cuándo y por qué.
+/// cuáles no se pueden anular) y el botón para confirmar. El motivo es
+/// opcional. Nada cambia hasta pulsar «Anular». La API registra quién
+/// anuló, cuándo y, si se escribió, por qué.
 /// </summary>
 internal sealed class VentanaAnularDeudas : Window
 {
     public const string Ruta = "/api/obligaciones-anulaciones";
-
-    private const int MotivoMinimo = 10;
 
     private static readonly CultureInfo Bo = CultureInfo.GetCultureInfo("es-BO");
 
@@ -29,7 +28,6 @@ internal sealed class VentanaAnularDeudas : Window
     private readonly DataGrid _tabla = UiKit.Tabla();
     private readonly TextBlock _bloqueadas = new() { TextWrapping = TextWrapping.Wrap, Foreground = UiKit.Suave, Margin = new Thickness(0, 10, 0, 0) };
     private readonly TextBox _motivo = UiKit.Texto(560, 500);
-    private readonly CheckBox _confirmo = new() { Margin = new Thickness(0, 4, 0, 10), VerticalContentAlignment = VerticalAlignment.Top };
     private readonly TextBlock _error = new() { Foreground = ColoresPanel.Hex("#A12A2A"), TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 0, 0, 8) };
     private readonly Button _anular = UiKit.Boton("Anular", peligro: true);
     private readonly StackPanel _confirmacion = new();
@@ -71,17 +69,13 @@ internal sealed class VentanaAnularDeudas : Window
         pila.Children.Add(_tabla);
         pila.Children.Add(_bloqueadas);
 
-        _motivo.Height = 70;
+        _motivo.Height = 54;
         _motivo.TextWrapping = TextWrapping.Wrap;
         _motivo.AcceptsReturn = true;
         _motivo.VerticalContentAlignment = VerticalAlignment.Top;
-        _motivo.TextChanged += (_, _) => Actualizar();
-        _confirmo.Checked += (_, _) => Actualizar();
-        _confirmo.Unchecked += (_, _) => Actualizar();
 
         _confirmacion.Margin = new Thickness(0, 14, 0, 0);
-        _confirmacion.Children.Add(UiKit.Campo($"Motivo de la anulación (obligatorio, mínimo {MotivoMinimo} letras)", _motivo));
-        _confirmacion.Children.Add(_confirmo);
+        _confirmacion.Children.Add(UiKit.Campo("Motivo (opcional)", _motivo));
         _confirmacion.Visibility = Visibility.Collapsed;
         pila.Children.Add(_confirmacion);
 
@@ -106,7 +100,6 @@ internal sealed class VentanaAnularDeudas : Window
         _error.Text = "";
         _resumen.Text = "Preparando la vista previa…";
         _previa = null;
-        _confirmo.IsChecked = false;
         Actualizar();
 
         try
@@ -140,26 +133,13 @@ internal sealed class VentanaAnularDeudas : Window
                 .Select(b => $"• {b.Caseta} · {b.Concepto} {b.Periodo} · {b.Moneda} {b.Monto.ToString("N2", Bo)}: {b.Motivo}")) +
               (_previa.Bloqueadas.Count > 15 ? $"\n… y {_previa.Bloqueadas.Count - 15} más." : "");
 
-        _confirmo.Content = new TextBlock
-        {
-            TextWrapping = TextWrapping.Wrap,
-            Width = 540,
-            Text = _previa.Cantidad == 1
-                ? "Revisé la deuda. Entiendo que dejará de cobrarse y no se volverá a generar."
-                : $"Revisé la lista. Entiendo que estas {_previa.Cantidad} deudas dejarán de cobrarse y no se volverán a generar."
-        };
         _confirmacion.Visibility = _previa.Cantidad > 0 ? Visibility.Visible : Visibility.Collapsed;
         _anular.Content = _previa.Cantidad == 1 ? "Anular 1 deuda" : $"Anular {_previa.Cantidad} deudas";
         Actualizar();
-
-        if (_previa.Cantidad > 0)
-            _motivo.Focus();
     }
 
     private void Actualizar() =>
-        _anular.IsEnabled = _previa is { Cantidad: > 0 } &&
-                            _motivo.Text.Trim().Length >= MotivoMinimo &&
-                            _confirmo.IsChecked == true;
+        _anular.IsEnabled = _previa is { Cantidad: > 0 };
 
     private async Task AnularAsync()
     {

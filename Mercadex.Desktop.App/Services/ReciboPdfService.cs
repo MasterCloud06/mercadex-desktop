@@ -222,6 +222,12 @@ public static class ReciboPdfService
             $"TOTAL: {recibo.Total:N2} {moneda}",
             fuenteTotal, false, azul);
 
+        if (TextoRecibo.Observaciones(recibo) is { } observaciones)
+        {
+            Separador();
+            Linea(observaciones, normal);
+        }
+
         if (TextoRecibo.Emisor(recibo) is (string nombreEmisor, var cargoEmisor))
         {
             y += 26; // espacio para la firma

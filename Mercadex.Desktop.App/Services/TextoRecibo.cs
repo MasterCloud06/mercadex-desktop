@@ -61,6 +61,10 @@ public static class TextoRecibo
                (string.IsNullOrWhiteSpace(recibo.MotivoAnulacion) ? "" : $". Motivo: {recibo.MotivoAnulacion}");
     }
 
+    /// <summary>Observaciones que escribió la caja al cobrar (opcional).</summary>
+    public static string? Observaciones(ReciboDto recibo) =>
+        string.IsNullOrWhiteSpace(recibo.Observaciones) ? null : $"Observaciones: {recibo.Observaciones.Trim()}";
+
     public static string? CobradoPor(ReciboDto recibo) =>
         string.IsNullOrWhiteSpace(recibo.RegistradoPor) ? null : $"Elaborado por: {recibo.RegistradoPor}";
 

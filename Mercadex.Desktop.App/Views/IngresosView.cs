@@ -65,6 +65,7 @@ public sealed class IngresosView : UserControl
     private readonly TextBox _tipoCambio = UiKit.Texto(120, 10);
     private readonly StackPanel _panelTipoCambio;
     private readonly TextBox _pagador = UiKit.Texto(300, 150);
+    private readonly TextBox _observaciones = UiKit.Texto(300, 500);
     private readonly Button _cobrar;
     private readonly Border _avisoResumen;
     private readonly TextBlock _avisoResumenTexto;
@@ -172,6 +173,14 @@ public sealed class IngresosView : UserControl
         resumen.Children.Add(_panelTipoCambio);
 
         resumen.Children.Add(UiKit.Campo("Persona que paga", _pagador, 0));
+
+        // Observaciones del recibo: opcionales, se imprimen en el recibo.
+        _observaciones.Height = 56;
+        _observaciones.TextWrapping = TextWrapping.Wrap;
+        _observaciones.AcceptsReturn = true;
+        _observaciones.VerticalContentAlignment = VerticalAlignment.Top;
+        _observaciones.ToolTip = "Opcional. Se imprime en el recibo.";
+        resumen.Children.Add(UiKit.Campo("Observaciones (opcional)", _observaciones, 0));
 
         _cobrar = new Button
         {
@@ -703,7 +712,8 @@ public sealed class IngresosView : UserControl
                 NombrePagador = pagador,
                 TipoCambio = tipoCambio,
                 Referencia = forma.Valor == 1 || referencia.Length == 0 ? null : referencia,
-                Items = sel.Select(f => new ItemCobroIngresoModel { ObligacionId = f.Id, NombreConcepto = f.Concepto }).ToList()
+                Items = sel.Select(f => new ItemCobroIngresoModel { ObligacionId = f.Id, NombreConcepto = f.Concepto }).ToList(),
+                Observaciones = string.IsNullOrWhiteSpace(_observaciones.Text) ? null : _observaciones.Text.Trim()
             });
 
             if (resultado?.Recibo is null)
@@ -719,6 +729,7 @@ public sealed class IngresosView : UserControl
 
         // A partir de aquí el cobro está registrado: nunca se debe repetir.
         _referencia.Clear();
+        _observaciones.Clear();
 
         try
         {

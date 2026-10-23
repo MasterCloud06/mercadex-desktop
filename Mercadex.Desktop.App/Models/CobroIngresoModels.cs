@@ -78,6 +78,9 @@ public sealed class ProcesarCobroIngresoModel
     public decimal TipoCambio { get; set; }
     public string? Referencia { get; set; }
     public List<ItemCobroIngresoModel> Items { get; set; } = new();
+
+    /// <summary>Observaciones que se imprimen en el recibo (opcional).</summary>
+    public string? Observaciones { get; set; }
 }
 
 public sealed class ResultadoCobroIngresoModel

@@ -260,6 +260,12 @@ public sealed class VistaPreviaReciboWindow : Window
             negrita: true,
             tamano: 18);
 
+        if (Services.TextoRecibo.Observaciones(_recibo) is { } observaciones)
+        {
+            AgregarLinea(documento, " ");
+            AgregarLinea(documento, observaciones);
+        }
+
         if (Services.TextoRecibo.Emisor(_recibo) is (string nombreEmisor, var cargoEmisor))
         {
             AgregarLinea(documento, " ");

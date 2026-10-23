@@ -2,6 +2,8 @@ using System.Globalization;
 using System.Net.Http;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
+using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Media;
 using Mercadex.Desktop.App.Models;
@@ -13,8 +15,9 @@ namespace Mercadex.Desktop.App.Views;
 /// <summary>
 /// Obligaciones (manual: Generador de cobranza). Cuatro pestañas, cada una
 /// con una sola tarea:
-/// 1. Deudas registradas: buscar, modificar monto, ver historial, ir a cobrar.
-/// 2. Cargo mensual a varias casetas: con vista previa antes de generar.
+/// 1. Deudas registradas: buscar, modificar monto, ver historial, anular, ir a cobrar.
+/// 2. Cargo mensual a varias casetas: con vista previa antes de generar,
+///    donde se pueden desmarcar las casetas que no reciben la deuda.
 /// 3. Cargo a una caseta.
 /// 4. Tarifas por caseta: el monto de cada caseta para cada concepto.
 /// </summary>
@@ -228,6 +231,9 @@ public sealed class CobranzaView : UserControl
     private readonly Button _btnModificar = UiKit.Boton("Modificar monto");
     private readonly Button _btnHistorial = UiKit.Boton("Ver historial");
     private readonly Button _btnCobrar = UiKit.Boton("Ir a cobrar", principal: true);
+    private readonly Button _btnAnular = UiKit.Boton("Anular deuda", peligro: true);
+    private readonly Button _btnAnularBusqueda = UiKit.Boton("Anular pendientes de esta búsqueda", peligro: true);
+    private readonly Button _btnVerAnulacion = UiKit.Boton("Ver anulación");
     private readonly TextBlock _ayudaSeleccion = new() { Foreground = UiKit.Suave, VerticalAlignment = VerticalAlignment.Center, TextWrapping = TextWrapping.Wrap };
 
     private UIElement ConstruirDeudas()
@@ -316,18 +322,44 @@ public sealed class CobranzaView : UserControl
         _btnModificar.Click += async (_, _) => await ModificarMontoAsync();
         _btnHistorial.Click += async (_, _) => await VerHistorialAsync();
         _btnCobrar.Click += (_, _) => IrACobrar();
+        _btnAnular.Margin = new Thickness(10, 0, 0, 0);
+        _btnVerAnulacion.Margin = new Thickness(10, 0, 0, 0);
+        _btnAnular.Click += async (_, _) => await AnularSeleccionadaAsync();
+        _btnAnularBusqueda.Click += async (_, _) => await AnularBusquedaAsync();
+        _btnVerAnulacion.Click += async (_, _) => await VerAnulacionAsync();
 
         var acciones = new DockPanel { Margin = new Thickness(0, 10, 0, 0) };
         var botones = new StackPanel { Orientation = Orientation.Horizontal };
         DockPanel.SetDock(botones, Dock.Right);
         botones.Children.Add(_btnHistorial);
+        botones.Children.Add(_btnVerAnulacion);
         if (SesionActual.EsAdministrador || !SesionActual.Iniciada)
+        {
             botones.Children.Add(_btnModificar);
+            botones.Children.Add(_btnAnular);
+        }
         if (SesionActual.PuedeCobrar || !SesionActual.Iniciada)
             botones.Children.Add(_btnCobrar);
         acciones.Children.Add(botones);
         acciones.Children.Add(_ayudaSeleccion);
         pila.Children.Add(acciones);
+
+        // Anular en bloque: todas las pendientes de los filtros elegidos (solo el administrador).
+        if (SesionActual.EsAdministrador || !SesionActual.Iniciada)
+        {
+            var masiva = new DockPanel { Margin = new Thickness(0, 12, 0, 0) };
+            DockPanel.SetDock(_btnAnularBusqueda, Dock.Right);
+            masiva.Children.Add(_btnAnularBusqueda);
+            masiva.Children.Add(new TextBlock
+            {
+                Text = "Para anular varias a la vez, filtra por concepto, mes, año, caseta o bloque y pulsa «Buscar». " +
+                       "Verás la lista y el total antes de confirmar.",
+                Foreground = UiKit.Suave,
+                TextWrapping = TextWrapping.Wrap,
+                VerticalAlignment = VerticalAlignment.Center
+            });
+            pila.Children.Add(masiva);
+        }
 
         ActualizarAccionesDeuda();
         return pila;
@@ -349,6 +381,8 @@ public sealed class CobranzaView : UserControl
             parametros.Add($"anio={anio}");
         if (Valor<string?>(_fBloque) is { } bloque)
             parametros.Add("bloque=" + Uri.EscapeDataString(bloque));
+
+        _filtrosBuscados = FiltrosParaAnular();
 
         try
         {
@@ -397,12 +431,90 @@ public sealed class CobranzaView : UserControl
         _btnModificar.IsEnabled = pendiente;
         _btnCobrar.IsEnabled = pendiente;
         _btnHistorial.IsEnabled = d is { Modificaciones: > 0 };
+        _btnAnular.IsEnabled = pendiente;
+        _btnVerAnulacion.IsEnabled = d?.Estado == "Anulada";
+        _btnAnularBusqueda.IsEnabled = _filtrosBuscados is { Count: > 0 };
 
         _ayudaSeleccion.Text = d is null
             ? "Elige una deuda de la lista."
             : pendiente
                 ? $"Caseta {d.Caseta} · {d.Concepto} {d.Periodo} · {d.Moneda} {d.Monto.ToString("N2", Bo)}"
                 : $"Esta deuda está {d.Estado.ToLowerInvariant()}: no se puede modificar ni cobrar.";
+    }
+
+    /// <summary>Filtros de la búsqueda actual (sin el estado: solo se anulan pendientes).</summary>
+    private Dictionary<string, object?>? _filtrosBuscados;
+
+    private Dictionary<string, object?> FiltrosParaAnular()
+    {
+        var f = new Dictionary<string, object?>();
+        if (!string.IsNullOrWhiteSpace(_fCaseta.Text))
+            f["caseta"] = _fCaseta.Text.Trim();
+        if (Valor<Guid?>(_fConcepto) is { } concepto)
+            f["conceptoCobroId"] = concepto;
+        if (Valor<int?>(_fMes) is { } mes)
+            f["mes"] = mes;
+        if (Valor<int?>(_fAnio) is { } anio)
+            f["anio"] = anio;
+        if (Valor<string?>(_fBloque) is { } bloque)
+            f["bloque"] = bloque;
+        return f;
+    }
+
+    private async Task AnularSeleccionadaAsync()
+    {
+        if (_tablaDeudas.SelectedItem is not DeudaFila d || d.Estado != "Pendiente")
+            return;
+
+        await AbrirAnulacionAsync(new Dictionary<string, object?> { ["obligacionIds"] = new[] { d.Id } });
+    }
+
+    private async Task AnularBusquedaAsync()
+    {
+        if (_filtrosBuscados is not { Count: > 0 } filtros)
+            return;
+
+        await AbrirAnulacionAsync(filtros);
+    }
+
+    private async Task AbrirAnulacionAsync(Dictionary<string, object?> pedido)
+    {
+        var ventana = new VentanaAnularDeudas(pedido) { Owner = Window.GetWindow(this) };
+        if (ventana.ShowDialog() != true)
+            return;
+
+        Dialogo.Mostrar(Window.GetWindow(this), ventana.Mensaje, "Deudas anuladas", MessageBoxButton.OK, MessageBoxImage.Information);
+        await BuscarDeudasAsync();
+    }
+
+    private async Task VerAnulacionAsync()
+    {
+        if (_tablaDeudas.SelectedItem is not DeudaFila d || d.Estado != "Anulada")
+            return;
+
+        try
+        {
+            var a = await ApiJson.GetAsync<AnulacionDeuda>($"{VentanaAnularDeudas.Ruta}/obligacion/{d.Id}");
+            Dialogo.Mostrar(Window.GetWindow(this),
+                $"Caseta {d.Caseta} · {d.Concepto} {d.Periodo} · {d.Moneda} {d.Monto.ToString("N2", Bo)}\n\n" +
+                $"Anulada el {a?.Fecha.ToString("dd/MM/yyyy HH:mm", Bo)} por {a?.Responsable}\n" +
+                $"Motivo: {a?.Motivo}\n" +
+                (a is { DeudasEnLaAnulacion: > 1 } ? $"\nSe anuló junto con otras {a.DeudasEnLaAnulacion - 1} deudas." : ""),
+                "Deuda anulada", MessageBoxButton.OK, MessageBoxImage.None);
+        }
+        catch (Exception ex)
+        {
+            Dialogo.Mostrar(Window.GetWindow(this), ex.Message, "No se pudo consultar", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+    private sealed class AnulacionDeuda
+    {
+        public string Motivo { get; set; } = "";
+        public string Responsable { get; set; } = "";
+        /// <summary>Hora de Bolivia (la envía la API con -04:00).</summary>
+        public DateTimeOffset Fecha { get; set; }
+        public int DeudasEnLaAnulacion { get; set; }
     }
 
     private void IrACobrar()
@@ -492,7 +604,10 @@ public sealed class CobranzaView : UserControl
     private Border? _mResumen;
     private TextBlock _mResumenTexto = new();
     private readonly DataGrid _mTabla = UiKit.Tabla();
+    private readonly StackPanel _mMarcar = new() { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 0, 0, 8), Visibility = Visibility.Collapsed };
     private int? _mListasPrevia;
+    private List<FilaPrevia> _mFilasPrevia = new();
+    private string _mOmitidas = "";
 
     private UIElement ConstruirCargoMasivo()
     {
@@ -562,6 +677,21 @@ public sealed class CobranzaView : UserControl
         _mResumen.Visibility = Visibility.Collapsed;
         pila.Children.Add(_mResumen);
 
+        // Casilla «Cobrar»: el administrador puede desmarcar casetas que no reciben la deuda.
+        var casilla = new FrameworkElementFactory(typeof(CheckBox));
+        casilla.SetBinding(ToggleButton.IsCheckedProperty,
+            new Binding(nameof(FilaPrevia.Incluir)) { Mode = BindingMode.TwoWay, UpdateSourceTrigger = UpdateSourceTrigger.PropertyChanged });
+        casilla.SetBinding(UIElement.IsEnabledProperty, new Binding(nameof(FilaPrevia.PuedeElegir)));
+        casilla.SetBinding(UIElement.VisibilityProperty, new Binding(nameof(FilaPrevia.VisibilidadCasilla)));
+        casilla.SetValue(FrameworkElement.HorizontalAlignmentProperty, HorizontalAlignment.Center);
+        casilla.SetValue(FrameworkElement.VerticalAlignmentProperty, VerticalAlignment.Center);
+        casilla.AddHandler(ButtonBase.ClickEvent, new RoutedEventHandler((_, _) => ActualizarSeleccionMasiva()));
+        _mTabla.Columns.Add(new DataGridTemplateColumn
+        {
+            Header = "Cobrar",
+            CellTemplate = new DataTemplate { VisualTree = casilla },
+            Width = new DataGridLength(0.55, DataGridLengthUnitType.Star)
+        });
         _mTabla.Columns.Add(UiKit.Columna("Caseta", nameof(FilaPrevia.Codigo), 0.8));
         _mTabla.Columns.Add(UiKit.Columna("Bloque", nameof(FilaPrevia.BloqueTexto), 1));
         _mTabla.Columns.Add(UiKit.Columna("Tipo", nameof(FilaPrevia.Tipo), 0.9));
@@ -570,6 +700,21 @@ public sealed class CobranzaView : UserControl
         _mTabla.Columns.Add(UiKit.Columna("Moneda", nameof(FilaPrevia.Moneda), 0.7));
         _mTabla.Height = 320;
         _mTabla.Visibility = Visibility.Collapsed;
+
+        var marcarTodas = UiKit.Boton("Marcar todas");
+        var desmarcarTodas = UiKit.Boton("Desmarcar todas");
+        desmarcarTodas.Margin = new Thickness(8, 0, 14, 0);
+        marcarTodas.Click += (_, _) => MarcarTodasMasivo(true);
+        desmarcarTodas.Click += (_, _) => MarcarTodasMasivo(false);
+        _mMarcar.Children.Add(marcarTodas);
+        _mMarcar.Children.Add(desmarcarTodas);
+        _mMarcar.Children.Add(new TextBlock
+        {
+            Text = "Desmarca las casetas que no deben recibir esta deuda.",
+            Foreground = UiKit.Suave,
+            VerticalAlignment = VerticalAlignment.Center
+        });
+        pila.Children.Add(_mMarcar);
         pila.Children.Add(_mTabla);
 
         _mGenerar.Margin = new Thickness(0, 12, 0, 0);
@@ -606,8 +751,10 @@ public sealed class CobranzaView : UserControl
     private void InvalidarPrevia()
     {
         _mListasPrevia = null;
+        _mFilasPrevia = new();
         _mGenerar.Visibility = Visibility.Collapsed;
         _mTabla.Visibility = Visibility.Collapsed;
+        _mMarcar.Visibility = Visibility.Collapsed;
         if (_mResumen is not null)
             _mResumen.Visibility = Visibility.Collapsed;
     }
@@ -674,27 +821,23 @@ public sealed class CobranzaView : UserControl
             var r = await ApiJson.GetAsync<PreviaRespuesta>("/api/cobranza/cargo-masivo/vista-previa?" + query)
                     ?? throw new InvalidOperationException("No se recibió la vista previa.");
 
-            _mTabla.ItemsSource = r.Filas;
-            _mTabla.Visibility = Visibility.Visible;
+            _mFilasPrevia = r.Filas;
+            foreach (var f in _mFilasPrevia)
+                f.Incluir = f.PuedeElegir;
 
-            var totales = string.Join(" + ", r.Totales.Select(t => $"{t.Moneda} {t.Total.ToString("N2", Bo)}"));
-            var lineas = new List<string>
-            {
-                r.Listas > 0
-                    ? $"Se generarán {r.Listas} deudas por un total de {totales}."
-                    : "No se generará ninguna deuda."
-            };
+            _mTabla.ItemsSource = _mFilasPrevia;
+            _mTabla.Visibility = Visibility.Visible;
+            _mMarcar.Visibility = r.Listas > 0 ? Visibility.Visible : Visibility.Collapsed;
+
+            var lineas = new List<string>();
             if (r.YaTenian > 0)
                 lineas.Add($"{r.YaTenian} ya tenían esta deuda en {Meses[Valor<int>(_mMes) - 1].ToLowerInvariant()} y se omiten.");
             if (r.SinTarifa > 0)
                 lineas.Add($"{r.SinTarifa} no tienen tarifa para este concepto y se omiten. Puedes asignarla en «Tarifas por caseta».");
+            _mOmitidas = string.Join("\n", lineas);
 
-            _mResumenTexto.Text = string.Join("\n", lineas);
+            ActualizarSeleccionMasiva();
             _mResumen!.Visibility = Visibility.Visible;
-
-            _mListasPrevia = r.Listas;
-            _mGenerar.Content = r.Listas == 1 ? "Generar 1 deuda" : $"Generar {r.Listas} deudas";
-            _mGenerar.Visibility = r.Listas > 0 ? Visibility.Visible : Visibility.Collapsed;
         }
         catch (Exception ex)
         {
@@ -705,6 +848,42 @@ public sealed class CobranzaView : UserControl
         {
             _mVerPrevia.IsEnabled = true;
         }
+    }
+
+    /// <summary>Resumen, total y botón según las casetas marcadas.</summary>
+    private void ActualizarSeleccionMasiva()
+    {
+        var marcadas = _mFilasPrevia.Where(f => f.PuedeElegir && f.Incluir).ToList();
+        var desmarcadas = _mFilasPrevia.Count(f => f.PuedeElegir && !f.Incluir);
+
+        var totales = string.Join(" + ", marcadas
+            .GroupBy(f => f.Moneda)
+            .Select(g => $"{g.Key} {g.Sum(f => f.Monto ?? 0).ToString("N2", Bo)}"));
+
+        var lineas = new List<string>
+        {
+            marcadas.Count > 0
+                ? $"Se generarán {marcadas.Count} deudas por un total de {totales}."
+                : "No se generará ninguna deuda."
+        };
+        if (desmarcadas > 0)
+            lineas.Add(desmarcadas == 1 ? "1 caseta desmarcada no recibirá la deuda." : $"{desmarcadas} casetas desmarcadas no recibirán la deuda.");
+        if (_mOmitidas.Length > 0)
+            lineas.Add(_mOmitidas);
+
+        _mResumenTexto.Text = string.Join("\n", lineas);
+        _mListasPrevia = marcadas.Count;
+        _mGenerar.Content = marcadas.Count == 1 ? "Generar 1 deuda" : $"Generar {marcadas.Count} deudas";
+        _mGenerar.Visibility = marcadas.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
+    }
+
+    private void MarcarTodasMasivo(bool marcar)
+    {
+        foreach (var f in _mFilasPrevia.Where(f => f.PuedeElegir))
+            f.Incluir = marcar;
+
+        _mTabla.Items.Refresh();
+        ActualizarSeleccionMasiva();
     }
 
     private async Task GenerarMasivoAsync()
@@ -719,6 +898,8 @@ public sealed class CobranzaView : UserControl
 
         var concepto = (_mConcepto.SelectedItem as UiKit.Item<Guid?>)?.Texto;
         var periodo = $"{Meses[Valor<int>(_mMes) - 1]} {Valor<int>(_mAnio)}";
+
+        var desmarcadas = _mFilasPrevia.Where(f => f.PuedeElegir && !f.Incluir).ToList();
 
         var confirmar = Dialogo.Mostrar(Window.GetWindow(this),
             $"Concepto: {concepto}\nPeríodo: {periodo}\nDeudas nuevas: {listas}\n\n{_mResumenTexto.Text}\n\n¿Generar las deudas?",
@@ -746,7 +927,8 @@ public sealed class CobranzaView : UserControl
                 ["monedaId"] = datos["monedaId"] is { } mo ? Guid.Parse(mo) : null,
                 ["fechaEmision"] = datos["fechaEmision"],
                 ["fechaVencimiento"] = datos["fechaVencimiento"],
-                ["listasEsperadas"] = listas
+                ["listasEsperadas"] = listas,
+                ["excluirUnidadIds"] = desmarcadas.Select(f => f.UnidadId).ToList()
             };
 
             var r = await ApiJson.PostAsync<ResultadoGeneracion>("/api/cobranza/cargo-masivo", cuerpo);
@@ -1221,6 +1403,7 @@ public sealed class CobranzaView : UserControl
 
     public sealed class FilaPrevia
     {
+        public Guid UnidadId { get; set; }
         public string Codigo { get; set; } = "";
         public string? Bloque { get; set; }
         public string Tipo { get; set; } = "";
@@ -1229,6 +1412,13 @@ public sealed class CobranzaView : UserControl
         public string Moneda { get; set; } = "";
 
         public string BloqueTexto => string.IsNullOrWhiteSpace(Bloque) ? "—" : Bloque!;
+
+        /// <summary>Marcada: recibe la deuda. Solo las «Lista» se pueden desmarcar.</summary>
+        public bool Incluir { get; set; }
+
+        public bool PuedeElegir => Estado == "Lista";
+
+        public Visibility VisibilidadCasilla => PuedeElegir ? Visibility.Visible : Visibility.Hidden;
 
         public string Resultado => Estado switch
         {

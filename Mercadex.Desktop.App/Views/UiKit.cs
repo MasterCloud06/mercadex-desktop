@@ -8,11 +8,12 @@ namespace Mercadex.Desktop.App.Views;
 /// <summary>Piezas de interfaz con el estilo de Mercadex para pantallas hechas en código.</summary>
 public static class UiKit
 {
-    public static readonly Brush Tinta = ColoresPanel.Hex("#12304D");
-    public static readonly Brush Titulo = ColoresPanel.Hex("#173B5C");
-    public static readonly Brush Suave = ColoresPanel.Hex("#5A6B7D");
-    public static readonly Brush Etiqueta = ColoresPanel.Hex("#4A5E73");
-    public static readonly Brush Fondo = ColoresPanel.Hex("#F3F6FA");
+    // En modo oscuro se convierten según su papel (ver Tema).
+    public static readonly Brush Tinta = Tema.Pincel(ColoresPanel.Hex("#12304D"), Tema.Rol.Texto);
+    public static readonly Brush Titulo = Tema.Pincel(ColoresPanel.Hex("#173B5C"), Tema.Rol.Texto);
+    public static readonly Brush Suave = Tema.Pincel(ColoresPanel.Hex("#5A6B7D"), Tema.Rol.Texto);
+    public static readonly Brush Etiqueta = Tema.Pincel(ColoresPanel.Hex("#4A5E73"), Tema.Rol.Texto);
+    public static readonly Brush Fondo = Tema.Pincel(ColoresPanel.Hex("#F3F6FA"), Tema.Rol.Fondo);
 
     public static Style Estilo(string clave) => (Style)Application.Current.FindResource(clave);
 
@@ -152,14 +153,14 @@ public static class UiKit
         texto = new TextBlock
         {
             TextWrapping = TextWrapping.Wrap,
-            Foreground = ColoresPanel.Hex(tinta),
+            Foreground = Tema.Pincel(ColoresPanel.Hex(tinta), Tema.Rol.Texto),
             LineHeight = 20
         };
 
         return new Border
         {
-            Background = ColoresPanel.Hex(fondo),
-            BorderBrush = ColoresPanel.Hex(borde),
+            Background = Tema.Pincel(ColoresPanel.Hex(fondo), Tema.Rol.Fondo),
+            BorderBrush = Tema.Pincel(ColoresPanel.Hex(borde), Tema.Rol.Borde),
             BorderThickness = new Thickness(1),
             CornerRadius = new CornerRadius(8),
             Padding = new Thickness(12, 9, 12, 9),

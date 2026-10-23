@@ -21,6 +21,8 @@
   <ItemGroup>
     <!-- El mismo ícono para la barra de título de cada ventana -->
     <Resource Include="Assets\mercadex.ico" />
+    <!-- Copia de Styles.xaml en texto para preparar el modo oscuro (Tema.cs). -->
+    <EmbeddedResource Include="Resources\Styles.xaml" LogicalName="Mercadex.Estilos.xaml" />
   </ItemGroup>
 
   <ItemGroup>

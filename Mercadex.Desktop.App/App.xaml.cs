@@ -20,6 +20,9 @@ public partial class App : Application
     {
         base.OnStartup(e);
 
+        // Modo oscuro (preferencia de esta computadora), antes de abrir cualquier ventana.
+        Tema.Iniciar(this);
+
         // Ícono de Mercadex en la barra de título de todas las ventanas.
         try
         {

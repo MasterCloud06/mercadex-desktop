@@ -16,6 +16,8 @@ public static class Preferencias
     private sealed class Datos
     {
         public bool MenuPlegado { get; set; }
+
+        public bool ModoOscuro { get; set; }
     }
 
     private static Datos? _datos;
@@ -47,6 +49,17 @@ public static class Preferencias
         catch
         {
             // Sin permiso de escritura: la preferencia dura hasta cerrar el programa.
+        }
+    }
+
+    /// <summary>Se aplica al abrir Mercadex (ver <see cref="Tema"/>).</summary>
+    public static bool ModoOscuro
+    {
+        get => Leer().ModoOscuro;
+        set
+        {
+            Leer().ModoOscuro = value;
+            Guardar();
         }
     }
 

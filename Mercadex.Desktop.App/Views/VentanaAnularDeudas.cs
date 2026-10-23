@@ -11,7 +11,8 @@ namespace Mercadex.Desktop.App.Views;
 /// <summary>
 /// Anular una deuda o varias: primero la vista previa (cuántas, cuánto y
 /// cuáles no se pueden anular) y el botón para confirmar. Cuando son varias,
-/// todas vienen marcadas y se pueden desmarcar las que no se anulan. El motivo
+/// todas vienen marcadas y, como en el filtro de Excel, se busca la caseta y se
+/// desmarcan las que no se anulan o se usa «(Seleccionar todo)». El motivo
 /// es opcional. Nada cambia hasta pulsar «Anular». La API registra quién
 /// anuló, cuándo y, si se escribió, por qué.
 /// </summary>
@@ -35,6 +36,9 @@ internal sealed class VentanaAnularDeudas : Window
     private readonly Button _anular = UiKit.Boton("Anular", peligro: true);
     private readonly StackPanel _confirmacion = new();
     private readonly StackPanel _marcar = new() { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 0, 0, 8), Visibility = Visibility.Collapsed };
+    private readonly CheckBox _todas = new() { Content = "(Seleccionar todo)", VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(14, 0, 0, 0) };
+    private readonly TextBox _buscar = UiKit.Texto(220, 40);
+    private ListCollectionView? _vista;
     private readonly DataGridTemplateColumn _columnaAnular;
 
     private VistaPrevia? _previa;
@@ -87,19 +91,18 @@ internal sealed class VentanaAnularDeudas : Window
         _tabla.Columns.Add(UiKit.Columna("Moneda", nameof(FilaPrevia.Moneda), 0.7));
         _tabla.MaxHeight = 300;
 
-        var marcarTodas = UiKit.Boton("Marcar todas");
-        var desmarcarTodas = UiKit.Boton("Desmarcar todas");
-        desmarcarTodas.Margin = new Thickness(8, 0, 14, 0);
-        marcarTodas.Click += (_, _) => MarcarTodas(true);
-        desmarcarTodas.Click += (_, _) => MarcarTodas(false);
-        _marcar.Children.Add(marcarTodas);
-        _marcar.Children.Add(desmarcarTodas);
-        _marcar.Children.Add(new TextBlock
+        // Como el filtro de Excel: buscar y «(Seleccionar todo)» sobre lo que se ve.
+        // Buscar solo oculta filas: las marcas de las ocultas se conservan.
+        _buscar.ToolTip = "Buscar caseta, concepto o período";
+        _buscar.TextChanged += (_, _) =>
         {
-            Text = "Desmarca las que no quieres anular.",
-            Foreground = UiKit.Suave,
-            VerticalAlignment = VerticalAlignment.Center
-        });
+            _vista?.Refresh();
+            Actualizar();
+        };
+        _todas.Click += (_, _) => MarcarVisibles(_todas.IsChecked == true);
+        _marcar.Children.Add(new TextBlock { Text = "Buscar:", Foreground = UiKit.Etiqueta, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 6, 0) });
+        _marcar.Children.Add(_buscar);
+        _marcar.Children.Add(_todas);
         pila.Children.Add(_marcar);
         pila.Children.Add(_tabla);
         pila.Children.Add(_bloqueadas);
@@ -159,7 +162,9 @@ internal sealed class VentanaAnularDeudas : Window
         _marcar.Visibility = elegir ? Visibility.Visible : Visibility.Collapsed;
 
         _filtros.Text = _previa.Filtros;
-        _tabla.ItemsSource = _previa.Deudas;
+        _buscar.Text = "";
+        _vista = new ListCollectionView(_previa.Deudas) { Filter = o => o is FilaPrevia f && Coincide(f, _buscar.Text) };
+        _tabla.ItemsSource = _vista;
         _tabla.Visibility = _previa.Deudas.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
 
         _bloqueadas.Text = _previa.Bloqueadas.Count == 0
@@ -171,6 +176,18 @@ internal sealed class VentanaAnularDeudas : Window
         _confirmacion.Visibility = _previa.Cantidad > 0 ? Visibility.Visible : Visibility.Collapsed;
         Actualizar();
     }
+
+    internal static bool Coincide(FilaPrevia fila, string texto)
+    {
+        texto = texto.Trim();
+        return texto.Length == 0
+            || fila.Caseta.Contains(texto, StringComparison.OrdinalIgnoreCase)
+            || fila.Concepto.Contains(texto, StringComparison.OrdinalIgnoreCase)
+            || fila.Periodo.Contains(texto, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private List<FilaPrevia> Visibles() =>
+        _previa?.Deudas.Where(d => Coincide(d, _buscar.Text)).ToList() ?? new();
 
     private List<FilaPrevia> Marcadas() =>
         _previa?.Deudas.Where(d => d.Incluir).ToList() ?? new();
@@ -201,11 +218,18 @@ internal sealed class VentanaAnularDeudas : Window
 
         _anular.Content = marcadas.Count == 1 ? "Anular 1 deuda" : $"Anular {marcadas.Count} deudas";
         _anular.IsEnabled = marcadas.Count > 0;
+
+        // «(Seleccionar todo)»: marcada, vacía o a medias según las filas visibles.
+        var visibles = Visibles();
+        _todas.IsEnabled = visibles.Count > 0;
+        _todas.IsChecked = visibles.Count > 0 && visibles.All(d => d.Incluir) ? true
+            : visibles.Any(d => d.Incluir) ? null
+            : false;
     }
 
-    private void MarcarTodas(bool marcar)
+    private void MarcarVisibles(bool marcar)
     {
-        foreach (var d in _previa?.Deudas ?? new())
+        foreach (var d in Visibles())
             d.Incluir = marcar;
 
         _tabla.Items.Refresh();

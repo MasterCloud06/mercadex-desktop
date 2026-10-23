@@ -25,6 +25,7 @@ public partial class MainWindow : Window
             VersionTexto.Text = $"Versión {version.Major}.{version.Minor}.{version.Build}";
 
         Loaded += (_, _) => PlegarMenu(Preferencias.MenuPlegado);
+        BtnModoOscuro.Content = Tema.Oscuro ? "Modo claro" : "Modo oscuro";
 
         Navegacion.CobroSolicitado += AbrirCobro;
         Navegacion.DeudasSolicitadas += AbrirDeudas;
@@ -244,6 +245,30 @@ public partial class MainWindow : Window
 
         if (respuesta == MessageBoxResult.Yes)
             ((App)Application.Current).CerrarSesion();
+    }
+
+    private void ModoOscuro_Click(object sender, RoutedEventArgs e)
+    {
+        var nuevo = !Tema.Oscuro;
+        var respuesta = Dialogo.Mostrar(this,
+            $"Mercadex se volverá a abrir en {(nuevo ? "modo oscuro" : "modo claro")}. Lo que no hayas guardado se pierde. ¿Continuar?",
+            nuevo ? "Modo oscuro" : "Modo claro", MessageBoxButton.YesNo, MessageBoxImage.Question);
+
+        if (respuesta != MessageBoxResult.Yes)
+            return;
+
+        Preferencias.ModoOscuro = nuevo;
+
+        var ruta = Environment.ProcessPath;
+        if (string.IsNullOrEmpty(ruta))
+        {
+            Dialogo.Mostrar(this, "Se aplicará la próxima vez que abras Mercadex.",
+                "Mercadex", MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+
+        System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(ruta) { UseShellExecute = false });
+        Application.Current.Shutdown();
     }
 
     // ---------------- Ir a cobrar una unidad ----------------

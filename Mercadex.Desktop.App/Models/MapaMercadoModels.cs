@@ -7,6 +7,9 @@ public sealed class MapaMercadoRespuesta
     public DateTimeOffset Generado { get; set; }
     public List<MapaBloque> Bloques { get; set; } = new();
 
+    /// <summary>Cuentas (conceptos de cobro) con deuda pendiente; vacía en servidores anteriores.</summary>
+    public List<MapaConcepto> Conceptos { get; set; } = new();
+
     /// <summary>Plano oficial (servidor 1.6.4 o posterior; null en versiones anteriores).</summary>
     public MapaPlano? Plano { get; set; }
 }
@@ -62,6 +65,9 @@ public sealed class MapaUnidad
 
     public List<MapaDeuda> Deudas { get; set; } = new();
 
+    /// <summary>Lo que debe de cada cuenta (concepto de cobro).</summary>
+    public List<MapaUnidadConcepto> Conceptos { get; set; } = new();
+
     public string? Pasillo { get; set; }
     public string? PasilloCodigo { get; set; }
     public int? PlanoX { get; set; }
@@ -73,6 +79,24 @@ public sealed class MapaUnidad
         3 => "Ambulante",
         _ => "Caseta"
     };
+}
+
+public sealed class MapaConcepto
+{
+    public Guid Id { get; set; }
+    public string Codigo { get; set; } = "";
+    public string Nombre { get; set; } = "";
+
+    /// <summary>Unidades que deben esta cuenta.</summary>
+    public int Unidades { get; set; }
+    public int Obligaciones { get; set; }
+}
+
+public sealed class MapaUnidadConcepto
+{
+    public Guid Id { get; set; }
+    public int Obligaciones { get; set; }
+    public List<MapaDeuda> Deudas { get; set; } = new();
 }
 
 public sealed class MapaDeuda

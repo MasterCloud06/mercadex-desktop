@@ -147,13 +147,27 @@
                 </Grid>
             </Border>
 
-            <Border Grid.Column="1" Style="{StaticResource Mx.Card}" Margin="0" VerticalAlignment="Top">
-                <StackPanel x:Name="PanelDetalle">
-                    <TextBlock Text="Selecciona una unidad" FontSize="16" FontWeight="SemiBold" Foreground="#12304D"/>
-                    <TextBlock Text="Haz clic en un cuadro del mapa para ver su titular, lo que debe y cobrar desde aquí."
-                               TextWrapping="Wrap" Foreground="#5A6B7D" Margin="0,6,0,0"/>
+            <ScrollViewer Grid.Column="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                <StackPanel>
+                    <Border Style="{StaticResource Mx.Card}" Margin="0">
+                        <StackPanel x:Name="PanelDetalle">
+                            <TextBlock Text="Selecciona una unidad" FontSize="16" FontWeight="SemiBold" Foreground="#12304D"/>
+                            <TextBlock Text="Haz clic en un cuadro del mapa para ver su titular, lo que debe y cobrar desde aquí."
+                                       TextWrapping="Wrap" Foreground="#5A6B7D" Margin="0,6,0,0"/>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Pintar el mapa por cuenta, como el plano pintado a mano. -->
+                    <Border x:Name="TarjetaCuentas" Style="{StaticResource Mx.Card}" Margin="0,14,0,0" Visibility="Collapsed">
+                        <StackPanel>
+                            <TextBlock Text="Ver por cuenta" FontSize="16" FontWeight="SemiBold" Foreground="#12304D"/>
+                            <TextBlock Text="Marca una o varias cuentas: el mapa pinta las casetas que las deben. El número es cuántas la deben."
+                                       TextWrapping="Wrap" Foreground="#5A6B7D" FontSize="12.5" Margin="0,4,0,12"/>
+                            <StackPanel x:Name="PanelCuentas"/>
+                        </StackPanel>
+                    </Border>
                 </StackPanel>
-            </Border>
+            </ScrollViewer>
         </Grid>
     </Grid>
 </UserControl>

@@ -92,10 +92,30 @@ public static class Tema
         }
     }
 
+    private static readonly HashSet<Brush> Fijos = new();
+
+    /// <summary>
+    /// Pincel que el modo oscuro no convierte (por ejemplo, los colores de las
+    /// cuentas en el mapa, que deben verse igual en los dos modos).
+    /// </summary>
+    public static Brush Fijo(Brush pincel)
+    {
+        pincel.Freeze();
+        lock (Fijos)
+            Fijos.Add(pincel);
+        return pincel;
+    }
+
+    private static bool EsFijo(Brush pincel)
+    {
+        lock (Fijos)
+            return Fijos.Contains(pincel);
+    }
+
     /// <summary>Un pincel con el color convertido (en modo claro, el mismo pincel).</summary>
     public static Brush Pincel(Brush pincel, Rol rol)
     {
-        if (!Oscuro || pincel is not SolidColorBrush solido)
+        if (!Oscuro || pincel is not SolidColorBrush solido || EsFijo(pincel))
             return pincel;
 
         var convertido = AOscuro(solido.Color, rol);

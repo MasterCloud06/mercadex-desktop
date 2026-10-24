@@ -38,7 +38,8 @@ public sealed class ReportesView : UserControl
                 new("servicios", "Servicios por fechas", "Pagos y monto por servicio", () => new IngresosReporteView(TipoReporteIngresos.Servicios)),
                 new("acumulados", "Servicios acumulados", "Cada servicio mes por mes", () => new IngresosReporteView(TipoReporteIngresos.Acumulados)),
                 new("detalle", "Detalle de cobros", "Cada cobro, uno por uno", () => new IngresosReporteView(TipoReporteIngresos.Detalle)),
-                new("bloques", "Pagos por servicio y bloque", "Un servicio, agrupado por bloque", () => new IngresosReporteView(TipoReporteIngresos.PorBloque))
+                new("bloques", "Pagos por servicio y bloque", "Un servicio, agrupado por bloque", () => new IngresosReporteView(TipoReporteIngresos.PorBloque)),
+                new("historial", "Historial de pagos de una caseta", "Fecha, cuenta y monto de cada pago", () => new HistorialCasetaReporteView())
             }),
             ("Deudas", new()
             {

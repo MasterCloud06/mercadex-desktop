@@ -36,7 +36,8 @@ public static class MapaPdfService
     /// <summary>Línea que separa el sector de los pasillos (arriba) del de las galerías (abajo).</summary>
     private const int Division = 560;
 
-    public static void Guardar(Window? dueno, MapaMercadoRespuesta datos)
+    /// <param name="cuentas">Si se marcaron cuentas en el mapa, la hoja del mapa se pinta por cuenta.</param>
+    public static void Guardar(Window? dueno, MapaMercadoRespuesta datos, CuentasMapa? cuentas = null)
     {
         var unidades = datos.Bloques.SelectMany(b => b.Unidades).ToList();
         if (unidades.Count == 0)
@@ -50,7 +51,9 @@ public static class MapaPdfService
             Title = "Guardar reporte del mapa",
             Filter = "Documento PDF (*.pdf)|*.pdf",
             DefaultExt = ".pdf",
-            FileName = $"Mapa_del_mercado_{DateTime.Now:yyyy-MM-dd}.pdf",
+            FileName = cuentas is null
+                ? $"Mapa_del_mercado_{DateTime.Now:yyyy-MM-dd}.pdf"
+                : $"Mapa_por_cuenta_{DateTime.Now:yyyy-MM-dd}.pdf",
             AddExtension = true,
             OverwritePrompt = true
         };
@@ -60,7 +63,7 @@ public static class MapaPdfService
 
         try
         {
-            Escribir(dialogo.FileName, datos);
+            Escribir(dialogo.FileName, datos, cuentas);
         }
         catch (IOException)
         {
@@ -82,7 +85,7 @@ public static class MapaPdfService
         }
     }
 
-    public static void Escribir(string ruta, MapaMercadoRespuesta datos)
+    public static void Escribir(string ruta, MapaMercadoRespuesta datos, CuentasMapa? cuentas = null)
     {
         var unidades = datos.Bloques.SelectMany(b => b.Unidades).ToList();
 
@@ -91,13 +94,13 @@ public static class MapaPdfService
         pdf.Info.Creator = "Mercadex";
 
         if (datos.Plano is { Ancho: > 0 } plano && unidades.Any(u => u.PlanoX != null))
-            HojaDelMapa(pdf, plano, unidades);
+            HojaDelMapa(pdf, plano, unidades, cuentas);
 
         // Lista por pasillo (con el formato de los demás reportes) a continuación.
         var temporal = Path.Combine(Path.GetTempPath(), $"mercadex-mapa-{Guid.NewGuid():N}.pdf");
         try
         {
-            ReportePdfService.EscribirPdf(temporal, Lista(unidades));
+            ReportePdfService.EscribirPdf(temporal, Lista(unidades, cuentas, datos.Conceptos));
             using var lista = PdfReader.Open(temporal, PdfDocumentOpenMode.Import);
             foreach (var p in lista.Pages)
                 pdf.AddPage(p);
@@ -114,7 +117,13 @@ public static class MapaPdfService
     // HOJA 1: EL MAPA DIVIDIDO EN DOS
     // =====================================================================
 
-    private static void HojaDelMapa(PdfDocument pdf, MapaPlano plano, List<MapaUnidad> unidades)
+    private static XColor X(string hex)
+    {
+        var (r, g, b) = CuentasMapa.Rgb(hex);
+        return XColor.FromArgb(r, g, b);
+    }
+
+    private static void HojaDelMapa(PdfDocument pdf, MapaPlano plano, List<MapaUnidad> unidades, CuentasMapa? cuentas)
     {
         var pagina = pdf.AddPage();
         pagina.Width = XUnit.FromPoint(842);   // A4 horizontal
@@ -142,7 +151,8 @@ public static class MapaPdfService
         g.DrawRectangle(azul, 0, 0, pagina.Width.Point, 7);
         g.DrawRectangle(amarillo, 0, 7, 90, 3);
         g.DrawString(Asociacion, fSub, gris, new XRect(margen, 16, ancho, 10), XStringFormats.TopLeft);
-        g.DrawString("Mapa del mercado", fTitulo, azul, new XRect(margen, 26, ancho, 18), XStringFormats.TopLeft);
+        g.DrawString(cuentas is null ? "Mapa del mercado" : "Mapa del mercado por cuenta", fTitulo, azul,
+            new XRect(margen, 26, ancho, 18), XStringFormats.TopLeft);
 
         // Resumen y leyenda a la derecha del título.
         var enPlano = unidades.Where(u => u.PlanoX != null).ToList();
@@ -150,14 +160,37 @@ public static class MapaPdfService
         var resumen = $"{enPlano.Count} casetas en el plano · {enPlano.Count - conDeuda} al día · {conDeuda} con deuda";
         g.DrawString(resumen, fSub, gris, new XRect(margen, 46, ancho, 10), XStringFormats.TopLeft);
 
-        var xLeyenda = margen + ancho;
-        foreach (var s in Enumerable.Reverse(Situaciones))
+        // Leyenda: por situación o, si se pinta por cuenta, cada cuenta con su color.
+        List<(string Nombre, XColor Relleno, XColor Borde, int Cantidad)> leyenda;
+        if (cuentas is null)
         {
-            var texto = $"{s.Nombre} ({enPlano.Count(u => u.Situacion == s.Clave)})";
+            leyenda = Situaciones.Select(s => (s.Nombre, s.Relleno, s.Borde, enPlano.Count(u => u.Situacion == s.Clave))).ToList();
+        }
+        else
+        {
+            leyenda = cuentas.Marcadas
+                .Select(m => (m.Cuenta.Nombre, X(m.Colores.Fondo), X(m.Colores.Borde),
+                    enPlano.Count(u => cuentas.QueDebe(u) is { Count: 1 } d && d[0].Cuenta.Id == m.Cuenta.Id)))
+                .ToList();
+            if (cuentas.Marcadas.Count > 1)
+                leyenda.Add(("Más de una", X(CuentasMapa.Varias.Fondo), X(CuentasMapa.Varias.Borde), cuentas.ConVarias(enPlano)));
+        }
+
+        // De derecha a izquierda; si no entra junto al título, sigue en la línea de abajo.
+        var xLeyenda = margen + ancho;
+        var yLeyenda = 30.0;
+        foreach (var s in Enumerable.Reverse(leyenda))
+        {
+            var texto = $"{s.Nombre} ({s.Cantidad})";
             var w = g.MeasureString(texto, fSub).Width;
+            if (xLeyenda - (w + 16) < margen + 300 && xLeyenda < margen + ancho)
+            {
+                xLeyenda = margen + ancho;
+                yLeyenda += 11;
+            }
             xLeyenda -= w + 16;
-            g.DrawRectangle(new XPen(s.Borde, 0.6), new XSolidBrush(s.Relleno), xLeyenda, 30, 8, 8);
-            g.DrawString(texto, fSub, gris, new XRect(xLeyenda + 11, 29, w + 4, 10), XStringFormats.TopLeft);
+            g.DrawRectangle(new XPen(s.Borde, 0.6), new XSolidBrush(s.Relleno), xLeyenda, yLeyenda, 8, 8);
+            g.DrawString(texto, fSub, gris, new XRect(xLeyenda + 11, yLeyenda - 1, w + 4, 10), XStringFormats.TopLeft);
         }
 
         // Escala: el ancho del plano entra en la hoja; cada mitad tiene su franja.
@@ -196,6 +229,11 @@ public static class MapaPdfService
             {
                 var s = Situaciones.FirstOrDefault(x => x.Clave == u.Situacion);
                 if (s.Nombre is null) s = Situaciones[0];
+                if (cuentas is not null)
+                {
+                    var c = cuentas.ColoresDe(u);
+                    s = (s.Clave, s.Nombre, X(c.Fondo), X(c.Borde), X(c.Texto));
+                }
 
                 var rx = x0 + (u.PlanoX!.Value - 26) * escala;
                 var ry = yOrigen + (u.PlanoY!.Value - 32 - desde) * escala;
@@ -226,8 +264,10 @@ public static class MapaPdfService
     // LISTA POR PASILLO
     // =====================================================================
 
-    private static Reporte Lista(List<MapaUnidad> unidades)
+    private static Reporte Lista(List<MapaUnidad> unidades, CuentasMapa? cuentas, List<MapaConcepto> conceptos)
     {
+        var nombres = conceptos.ToDictionary(c => c.Id, c => c.Nombre);
+
         var filas = new List<FilaReporte>();
 
         string Nombre(MapaUnidad u) => u.PlanoX != null || u.Pasillo != null
@@ -256,7 +296,9 @@ public static class MapaPdfService
                 {
                     $"{u.TipoTexto} {u.Codigo}",
                     u.Titular ?? "—",
-                    Situaciones.FirstOrDefault(s => s.Clave == u.Situacion).Nombre ?? u.Situacion,
+                    cuentas is null
+                        ? Situaciones.FirstOrDefault(s => s.Clave == u.Situacion).Nombre ?? u.Situacion
+                        : string.Join(", ", cuentas.QueDebe(u).Select(m => m.Cuenta.Nombre)) is { Length: > 0 } debe ? debe : "—",
                     u.Obligaciones > 0 ? Deuda(u) : ""
                 }));
             }
@@ -268,13 +310,15 @@ public static class MapaPdfService
         return new Reporte
         {
             Titulo = "Casetas por pasillo",
-            Filtros = "Todas las unidades del mercado, agrupadas por pasillo o galería.",
+            Filtros = cuentas is null
+                ? "Todas las unidades del mercado, agrupadas por pasillo o galería."
+                : $"Todas las unidades, agrupadas por pasillo o galería. Cuentas marcadas: {cuentas.Nombres()}.",
             Resumen = new() { $"{total} unidades · {total - conDeuda} al día · {conDeuda} con deuda" },
             Columnas = new()
             {
                 new ColumnaReporte("Unidad", 1.1),
                 new ColumnaReporte("Titular", 2.6),
-                new ColumnaReporte("Situación", 1.2),
+                new ColumnaReporte(cuentas is null ? "Situación" : "Debe de las marcadas", cuentas is null ? 1.2 : 1.8),
                 new ColumnaReporte("Debe", 1.2, Derecha: true)
             },
             Filas = filas,

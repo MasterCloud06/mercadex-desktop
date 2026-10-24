@@ -17,7 +17,8 @@ namespace Mercadex.Desktop.App.Views;
 
 /// <summary>
 /// Mapa del mercado: todas las unidades por bloque, coloreadas según
-/// su situación de pago. Desde el detalle se puede ir a cobrar.
+/// su situación de pago o, si se marcan cuentas, según la cuenta que deben
+/// (como el plano pintado a mano). Desde el detalle se puede ir a cobrar.
 /// </summary>
 public partial class MapaMercadoView : UserControl
 {
@@ -39,6 +40,10 @@ public partial class MapaMercadoView : UserControl
     private MapaUnidad? _seleccionada;
     private string? _filtroSituacion;
     private bool _cargando;
+
+    // Cuentas marcadas para pintar el mapa (vacío: colores por situación).
+    private readonly HashSet<Guid> _cuentas = new();
+    private CuentasMapa _pintar = new(Array.Empty<MapaConcepto>(), new HashSet<Guid>());
 
     public MapaMercadoView()
     {
@@ -69,11 +74,16 @@ public partial class MapaMercadoView : UserControl
                      ?? throw new InvalidOperationException("Respuesta vacía.");
             MarcarSinTitular(_datos);
 
+            // Las cuentas marcadas que ya no tienen deuda se quitan.
+            _cuentas.IntersectWith(_datos.Conceptos.Select(c => c.Id));
+            _pintar = new CuentasMapa(_datos.Conceptos, _cuentas);
+
             // Mantener la selección tras actualizar.
             if (_seleccionada != null)
                 _seleccionada = Todas().FirstOrDefault(u => u.Id == _seleccionada.Id);
 
             DibujarFiltros();
+            DibujarCuentas();
             Dibujar();
             MostrarDetalle();
 
@@ -200,6 +210,145 @@ public partial class MapaMercadoView : UserControl
     }
 
     // ---------------------------------------------------------------
+    // Pintar por cuenta
+
+    private (Brush Fondo, Brush Borde, Brush Texto) Estilo(MapaUnidad u)
+    {
+        if (_pintar.Activa)
+        {
+            var c = _pintar.ColoresDe(u);
+            return (c.PincelFondo, c.PincelBorde, c.PincelTexto);
+        }
+
+        var s = Situaciones.GetValueOrDefault(u.Situacion, Situaciones["al-dia"]);
+        return (Pincel(s.Fondo), Pincel(s.Borde), Pincel(s.Texto));
+    }
+
+    private void DibujarCuentas()
+    {
+        PanelCuentas.Children.Clear();
+        var conceptos = _datos?.Conceptos ?? new();
+        TarjetaCuentas.Visibility = conceptos.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
+        if (conceptos.Count == 0)
+            return;
+
+        for (var i = 0; i < conceptos.Count; i++)
+        {
+            var cuenta = conceptos[i];
+            var colores = CuentasMapa.ColorDe(i);
+
+            var contenido = new DockPanel { LastChildFill = true };
+            var cantidad = new TextBlock
+            {
+                Text = cuenta.Unidades.ToString(Bo),
+                Foreground = Pincel("#5A6B7D"),
+                FontWeight = FontWeights.SemiBold,
+                Margin = new Thickness(8, 0, 0, 0),
+                VerticalAlignment = VerticalAlignment.Center,
+                ToolTip = cuenta.Unidades == 1 ? "1 unidad la debe" : $"{cuenta.Unidades} unidades la deben"
+            };
+            DockPanel.SetDock(cantidad, Dock.Right);
+            contenido.Children.Add(cantidad);
+            var muestra = new Border
+            {
+                Width = 14,
+                Height = 14,
+                CornerRadius = new CornerRadius(3),
+                Background = colores.PincelFondo,
+                BorderBrush = colores.PincelBorde,
+                BorderThickness = new Thickness(1),
+                Margin = new Thickness(0, 0, 8, 0),
+                VerticalAlignment = VerticalAlignment.Center
+            };
+            DockPanel.SetDock(muestra, Dock.Left);
+            contenido.Children.Add(muestra);
+            contenido.Children.Add(new TextBlock
+            {
+                Text = cuenta.Nombre,
+                TextWrapping = TextWrapping.Wrap,
+                VerticalAlignment = VerticalAlignment.Center
+            });
+
+            var casilla = new CheckBox
+            {
+                Content = contenido,
+                IsChecked = _cuentas.Contains(cuenta.Id),
+                Margin = new Thickness(0, 0, 0, 8),
+                HorizontalContentAlignment = HorizontalAlignment.Stretch,
+                VerticalContentAlignment = VerticalAlignment.Center
+            };
+            casilla.Click += (_, _) =>
+            {
+                if (casilla.IsChecked == true)
+                    _cuentas.Add(cuenta.Id);
+                else
+                    _cuentas.Remove(cuenta.Id);
+                CambiarCuentas();
+            };
+            PanelCuentas.Children.Add(casilla);
+        }
+
+        if (_pintar.Activa)
+        {
+            var varias = _pintar.Marcadas.Count > 1 ? _pintar.ConVarias(Todas()) : 0;
+            if (_pintar.Marcadas.Count > 1)
+                PanelCuentas.Children.Add(Leyenda(CuentasMapa.Varias, $"Debe más de una de las marcadas ({varias})"));
+            PanelCuentas.Children.Add(Leyenda(CuentasMapa.Ninguna, "No debe las cuentas marcadas"));
+
+            var quitar = new Button
+            {
+                Content = "Quitar colores por cuenta",
+                Style = (Style)FindResource("Mx.SecondaryButton"),
+                HorizontalAlignment = HorizontalAlignment.Stretch,
+                Margin = new Thickness(0, 10, 0, 0)
+            };
+            quitar.Click += (_, _) =>
+            {
+                _cuentas.Clear();
+                CambiarCuentas();
+            };
+            PanelCuentas.Children.Add(quitar);
+        }
+    }
+
+    private static UIElement Leyenda(CuentasMapa.Colores colores, string texto)
+    {
+        var fila = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 2, 0, 6) };
+        fila.Children.Add(new Border
+        {
+            Width = 14,
+            Height = 14,
+            CornerRadius = new CornerRadius(3),
+            Background = colores.PincelFondo,
+            BorderBrush = colores.PincelBorde,
+            BorderThickness = new Thickness(1),
+            Margin = new Thickness(0, 0, 8, 0),
+            VerticalAlignment = VerticalAlignment.Center
+        });
+        fila.Children.Add(new TextBlock { Text = texto, Foreground = Pincel("#5A6B7D"), FontSize = 12.5, TextWrapping = TextWrapping.Wrap, VerticalAlignment = VerticalAlignment.Center });
+        return fila;
+    }
+
+    private void CambiarCuentas()
+    {
+        _pintar = new CuentasMapa(_datos?.Conceptos ?? new(), _cuentas);
+        DibujarCuentas();
+        Dibujar();
+
+        TxtEstado.Text = _pintar.Activa
+            ? $"Pintado por cuenta: {_pintar.Nombres()}. Cada caseta tiene el color de la cuenta que debe."
+            : "Cada cuadro es una unidad. El color indica cómo está con sus pagos.";
+    }
+
+    /// <summary>«Alquiler de caseta: Bs 150,00» por cada cuenta que debe la unidad.</summary>
+    private string DeudaPorCuenta(MapaUnidad u, string separador)
+    {
+        var nombres = (_datos?.Conceptos ?? new()).ToDictionary(c => c.Id, c => c.Nombre);
+        return string.Join(separador, u.Conceptos.Select(c =>
+            $"{nombres.GetValueOrDefault(c.Id, "Otra cuenta")}: {string.Join(" + ", c.Deudas.Select(d => CuentasMapa.Monto(d, Bo)))}"));
+    }
+
+    // ---------------------------------------------------------------
     // Mapa
 
     private void Dibujar()
@@ -271,25 +420,26 @@ public partial class MapaMercadoView : UserControl
         // Casetas.
         foreach (var u in enPlano)
         {
-            var s = Situaciones.GetValueOrDefault(u.Situacion, Situaciones["al-dia"]);
+            var s = Estilo(u);
             var celda = new Border
             {
                 Width = 52,
                 Height = 64,
-                Background = Pincel(s.Fondo),
-                BorderBrush = Pincel(_seleccionada?.Id == u.Id ? "#12304D" : s.Borde),
+                Background = s.Fondo,
+                BorderBrush = _seleccionada?.Id == u.Id ? Pincel("#12304D") : s.Borde,
                 BorderThickness = new Thickness(_seleccionada?.Id == u.Id ? 4 : 1.5),
                 CornerRadius = new CornerRadius(4),
                 Cursor = Cursors.Hand,
                 Opacity = Coincide(u) ? 1 : 0.18,
                 ToolTip = $"{u.TipoTexto} {u.Codigo} · {u.Pasillo ?? "sin pasillo"}\n{u.Titular ?? "Sin titular registrado"}" +
-                          (u.Obligaciones > 0 ? "\nDebe " + TextoDeuda(u, corto: false).Replace("\n", " + ") : ""),
+                          (u.Conceptos.Count > 0 ? "\n" + DeudaPorCuenta(u, "\n")
+                              : u.Obligaciones > 0 ? "\nDebe " + TextoDeuda(u, corto: false).Replace("\n", " + ") : ""),
                 Child = new TextBlock
                 {
                     Text = u.Codigo,
                     FontSize = u.Codigo.Length > 3 ? 13 : 17,
                     FontWeight = FontWeights.Bold,
-                    Foreground = Pincel(s.Texto),
+                    Foreground = s.Texto,
                     HorizontalAlignment = HorizontalAlignment.Center,
                     VerticalAlignment = VerticalAlignment.Center
                 }
@@ -385,8 +535,7 @@ public partial class MapaMercadoView : UserControl
     {
         if (_seleccionada is { } anterior && _celdasPlano.TryGetValue(anterior.Id, out var celdaAnterior))
         {
-            var s = Situaciones.GetValueOrDefault(anterior.Situacion, Situaciones["al-dia"]);
-            celdaAnterior.BorderBrush = Pincel(s.Borde);
+            celdaAnterior.BorderBrush = Estilo(anterior).Borde;
             celdaAnterior.BorderThickness = new Thickness(1.5);
         }
 
@@ -470,7 +619,7 @@ public partial class MapaMercadoView : UserControl
     {
         if (_datos == null)
             return;
-        MapaPdfService.Guardar(Window.GetWindow(this), _datos);
+        MapaPdfService.Guardar(Window.GetWindow(this), _datos, _pintar.Activa ? _pintar : null);
     }
 
     private sealed class ResultadoPlano
@@ -555,8 +704,8 @@ public partial class MapaMercadoView : UserControl
 
     private Button CrearCelda(MapaUnidad u)
     {
-        var s = Situaciones.GetValueOrDefault(u.Situacion, Situaciones["al-dia"]);
-        var texto = Pincel(s.Texto);
+        var s = Estilo(u);
+        var texto = s.Texto;
 
         var linea2 = u.Situacion switch
         {
@@ -587,8 +736,8 @@ public partial class MapaMercadoView : UserControl
         var celda = new Button
         {
             Style = (Style)FindResource("Celda"),
-            Background = Pincel(s.Fondo),
-            BorderBrush = Pincel(s.Borde),
+            Background = s.Fondo,
+            BorderBrush = s.Borde,
             Content = contenido,
             Tag = _seleccionada?.Id == u.Id ? "seleccionada" : null,
             ToolTip = $"{u.TipoTexto} {u.Codigo} · {u.Titular ?? "sin titular registrado"}"
@@ -649,6 +798,8 @@ public partial class MapaMercadoView : UserControl
         if (u.Obligaciones > 0)
         {
             Fila("Debe", TextoDeuda(u, corto: false));
+            if (u.Conceptos.Count > 0)
+                Fila("Por cuenta", DeudaPorCuenta(u, "\n"));
             Fila("Obligaciones pendientes", u.Obligaciones.ToString(Bo));
             Fila("La más antigua", u.DiasDeuda == 1 ? "hace 1 día" : $"hace {u.DiasDeuda} días");
         }

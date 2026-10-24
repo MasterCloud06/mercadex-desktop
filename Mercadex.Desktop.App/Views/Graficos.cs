@@ -17,11 +17,11 @@ public static class ColoresPanel
 {
     public static readonly Brush Serie = Hex("#2A78D6");
     public static readonly Brush SerieHover = Hex("#1C5CAB");
-    public static readonly Brush Pista = Hex("#EEF2F7");
-    public static readonly Brush Rejilla = Hex("#E6ECF2");
-    public static readonly Brush TextoPrincipal = Hex("#173B5C");
-    public static readonly Brush TextoSecundario = Hex("#5A6B7D");
-    public static readonly Brush TextoTenue = Hex("#7A8A9C");
+    public static readonly Brush Pista = Tema.Pincel(Hex("#EEF2F7"), Tema.Rol.Fondo);
+    public static readonly Brush Rejilla = Tema.Pincel(Hex("#E6ECF2"), Tema.Rol.Borde);
+    public static readonly Brush TextoPrincipal = Tema.Pincel(Hex("#173B5C"), Tema.Rol.Texto);
+    public static readonly Brush TextoSecundario = Tema.Pincel(Hex("#5A6B7D"), Tema.Rol.Texto);
+    public static readonly Brush TextoTenue = Tema.Pincel(Hex("#7A8A9C"), Tema.Rol.Texto);
 
     // Estados (antigüedad de deuda): siempre van con etiqueta de texto.
     public static readonly Brush Bueno = Hex("#0CA30C");

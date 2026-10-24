@@ -61,7 +61,7 @@ public sealed class IngresosReporteView : ReporteTablaView
 
     private static string Ayuda(TipoReporteIngresos t) => t switch
     {
-        TipoReporteIngresos.Diario => "Total recaudado en el período, día por día y por forma de pago. Los recibos anulados no se suman.",
+        TipoReporteIngresos.Diario => "Total recaudado en el período: día por día, por servicio (cuenta) y por forma de pago. Los recibos anulados no se suman.",
         TipoReporteIngresos.Servicios => "Cuántos pagos hubo de cada servicio y cuánto dinero representa cada uno en el período.",
         TipoReporteIngresos.Acumulados => "Lo recaudado por cada servicio, mes por mes, con el total acumulado del período.",
         TipoReporteIngresos.Detalle => "Cada cobro del período, uno por uno, con su recibo, caseta y servicio. Sirve para auditar.",
@@ -165,6 +165,18 @@ public sealed class IngresosReporteView : ReporteTablaView
             filas.Add(new(new[] { fecha, moneda(dia.MonedaId), dia.CantidadRecibos.ToString(Bo), Monto(dia.Total), Monto(dia.Acumulado) }));
         }
 
+        // Por servicio (cuenta), como la "Recaudación de servicios" del sistema anterior.
+        if (d.Conceptos.Count > 0)
+        {
+            filas.Add(new(new[] { "Por servicio (cuenta)", "", "", "", "" }, Grupo: true));
+            foreach (var c in d.Conceptos.OrderBy(c => c.MonedaId).ThenByDescending(c => c.Total))
+                filas.Add(new(new[]
+                {
+                    string.IsNullOrWhiteSpace(c.Codigo) ? c.Concepto : $"{c.Codigo} · {c.Concepto}",
+                    moneda(c.MonedaId), c.Cantidad.ToString(Bo), Monto(c.Total), ""
+                }));
+        }
+
         if (d.FormasPago.Count > 0)
         {
             filas.Add(new(new[] { "Por forma de pago", "", "", "", "" }, Grupo: true));
@@ -183,9 +195,9 @@ public sealed class IngresosReporteView : ReporteTablaView
             NombreArchivo = nombre,
             Columnas = new()
             {
-                new("Día / forma de pago", 2.2),
-                new("Moneda", 0.8),
-                new("Recibos", 0.8, Derecha: true),
+                new("Día / servicio / forma de pago", 2.6),
+                new("Moneda", 0.7),
+                new("Cantidad", 0.8, Derecha: true),
                 new("Total", 1.3, Derecha: true, Numero: true),
                 new("Acumulado", 1.3, Derecha: true, Numero: true)
             },
@@ -409,6 +421,7 @@ public sealed class IngresosReporteView : ReporteTablaView
     private sealed class ConceptoCaja
     {
         public Guid MonedaId { get; set; }
+        public string? Codigo { get; set; }
         public string Concepto { get; set; } = "";
         public int Cantidad { get; set; }
         public decimal Total { get; set; }

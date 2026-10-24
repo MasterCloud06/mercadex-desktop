@@ -439,7 +439,9 @@ public sealed class CobranzaView : UserControl
             ? "Elige una deuda de la lista."
             : pendiente
                 ? $"Caseta {d.Caseta} · {d.Concepto} {d.Periodo} · {d.Moneda} {d.Monto.ToString("N2", Bo)}"
-                : $"Esta deuda está {d.Estado.ToLowerInvariant()}: no se puede modificar ni cobrar.";
+                : d.Estado == "Anulada"
+                    ? "Esta deuda está anulada: no se puede modificar ni cobrar. Si hay que cobrarla, regístrala otra vez en «Asignar una deuda»."
+                    : $"Esta deuda está {d.Estado.ToLowerInvariant()}: no se puede modificar ni cobrar.";
     }
 
     /// <summary>Filtros de la búsqueda actual (sin el estado: solo se anulan pendientes).</summary>

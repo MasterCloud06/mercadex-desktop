@@ -1,3 +1,4 @@
+using System.Windows;
 using System.Windows.Controls;
 using Mercadex.Desktop.App.Services;
 
@@ -26,6 +27,12 @@ public sealed class IngresosReporteView : ReporteTablaView
     private readonly ComboBox _concepto = UiKit.Combo(220);
     private readonly ComboBox _bloque = UiKit.Combo(130);
 
+    // Pagos de la deuda de un mes (por ejemplo, la mensualidad de agosto),
+    // sin importar la fecha en que se pagaron.
+    private readonly CheckBox _porPeriodo = new() { Content = "Solo la deuda del mes:", VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 0, 8) };
+    private readonly ComboBox _mes = UiKit.Combo(120);
+    private readonly ComboBox _anio = UiKit.Combo(90);
+
     public IngresosReporteView() : this(TipoReporteIngresos.Diario)
     {
     }
@@ -47,6 +54,34 @@ public sealed class IngresosReporteView : ReporteTablaView
         Filtros.Children.Add(UiKit.Campo(tipo == TipoReporteIngresos.PorBloque ? "Servicio (obligatorio)" : "Servicio", _concepto));
         Filtros.Children.Add(UiKit.Campo("Bloque", _bloque));
 
+        if (tipo != TipoReporteIngresos.Acumulados)
+        {
+            _mes.ItemsSource = Enumerable.Range(1, 12)
+                .Select(m => new UiKit.Item<int>(m, Bo.TextInfo.ToTitleCase(new DateTime(2000, m, 1).ToString("MMMM", Bo))))
+                .ToList();
+            _mes.SelectedIndex = hoy.Month - 1;
+            _anio.ItemsSource = Enumerable.Range(hoy.Year - 3, 5).Select(a => new UiKit.Item<int>(a, a.ToString(Bo))).ToList();
+            _anio.SelectedIndex = 3;
+            _mes.Margin = new Thickness(0, 0, 8, 10);
+            _anio.Margin = new Thickness(0, 0, 0, 10);
+            _mes.IsEnabled = _anio.IsEnabled = false;
+            _porPeriodo.ToolTip = "Muestra solo lo pagado de las deudas de ese mes, sin importar la fecha en que se pagaron.";
+            _porPeriodo.Click += (_, _) =>
+            {
+                var activo = _porPeriodo.IsChecked == true;
+                _mes.IsEnabled = _anio.IsEnabled = activo;
+                _desde.IsEnabled = _hasta.IsEnabled = !activo;
+            };
+
+            var periodo = new StackPanel { Margin = new Thickness(0, 0, 14, 0) };
+            periodo.Children.Add(_porPeriodo);
+            var selectores = new StackPanel { Orientation = Orientation.Horizontal };
+            selectores.Children.Add(_mes);
+            selectores.Children.Add(_anio);
+            periodo.Children.Add(selectores);
+            Filtros.Children.Add(periodo);
+        }
+
         Loaded += async (_, _) => await CargarFiltrosAsync();
     }
 
@@ -56,16 +91,16 @@ public sealed class IngresosReporteView : ReporteTablaView
         TipoReporteIngresos.Servicios => "Servicios por fechas",
         TipoReporteIngresos.Acumulados => "Servicios acumulados",
         TipoReporteIngresos.Detalle => "Detalle de cobros",
-        _ => "Pagos por servicio y bloque"
+        _ => "Pagos de un servicio"
     };
 
     private static string Ayuda(TipoReporteIngresos t) => t switch
     {
-        TipoReporteIngresos.Diario => "Total recaudado en el período: día por día, por servicio (cuenta) y por forma de pago. Los recibos anulados no se suman.",
-        TipoReporteIngresos.Servicios => "Cuántos pagos hubo de cada servicio y cuánto dinero representa cada uno en el período.",
+        TipoReporteIngresos.Diario => "Resumen de lo cobrado en el período, servicio por servicio (código, cantidad y monto). Los recibos anulados no se suman.",
+        TipoReporteIngresos.Servicios => "Día por día: lo cobrado de cada servicio, el total del día y el acumulado del período.",
         TipoReporteIngresos.Acumulados => "Lo recaudado por cada servicio, mes por mes, con el total acumulado del período.",
         TipoReporteIngresos.Detalle => "Cada cobro del período, uno por uno, con su recibo, caseta y servicio. Sirve para auditar.",
-        _ => "Elige un servicio (por ejemplo, Alquiler de caseta) y verás solo sus pagos en el período, agrupados por bloque."
+        _ => "Elige un servicio (por ejemplo, Alquiler de caseta) y verás solo sus pagos, caseta por caseta."
     };
 
     private async Task CargarFiltrosAsync()
@@ -100,8 +135,23 @@ public sealed class IngresosReporteView : ReporteTablaView
 
     protected override async Task<Reporte?> ConstruirAsync()
     {
-        if (LeerRango(_desde, _hasta) is not { } rango)
+        var porPeriodo = _porPeriodo.IsChecked == true &&
+                         _mes.SelectedItem is UiKit.Item<int> mes && _anio.SelectedItem is UiKit.Item<int>;
+        var periodo = porPeriodo ? new DateTime(((UiKit.Item<int>)_anio.SelectedItem!).Valor, ((UiKit.Item<int>)_mes.SelectedItem!).Valor, 1) : default;
+
+        (DateTime Desde, DateTime Hasta) rango;
+        if (porPeriodo)
+        {
+            rango = (periodo, periodo.AddMonths(1).AddDays(-1));
+        }
+        else if (LeerRango(_desde, _hasta) is { } leido)
+        {
+            rango = leido;
+        }
+        else
+        {
             return null;
+        }
 
         var concepto = _concepto.SelectedItem as UiKit.Item<Guid?>;
         var bloque = (_bloque.SelectedItem as UiKit.Item<string?>)?.Valor;
@@ -118,7 +168,9 @@ public sealed class IngresosReporteView : ReporteTablaView
             return null;
         }
 
-        var ruta = $"/api/reportes-caja?desde={rango.Desde:yyyy-MM-dd}&hasta={rango.Hasta:yyyy-MM-dd}";
+        var ruta = porPeriodo
+            ? $"/api/reportes-caja?periodoAnio={periodo.Year}&periodoMes={periodo.Month}"
+            : $"/api/reportes-caja?desde={rango.Desde:yyyy-MM-dd}&hasta={rango.Hasta:yyyy-MM-dd}";
         if (concepto?.Valor is { } cid)
             ruta += $"&conceptoId={cid}";
         if (bloque is not null)
@@ -129,7 +181,9 @@ public sealed class IngresosReporteView : ReporteTablaView
 
         string Moneda(Guid id) => cat.Monedas.TryGetValue(id, out var m) ? m : "?";
 
-        var filtros = Rango(rango.Desde, rango.Hasta) +
+        var filtros = (porPeriodo
+                          ? $"Deuda de {periodo.ToString("MMMM yyyy", Bo)} (pagada en cualquier fecha)"
+                          : Rango(rango.Desde, rango.Hasta)) +
                       $"   ·   Servicio: {concepto?.Texto ?? "Todos"}" +
                       $"   ·   Bloque: {bloque ?? "Todos"}";
 
@@ -141,7 +195,9 @@ public sealed class IngresosReporteView : ReporteTablaView
         if (datos.CantidadAnulaciones > 0)
             resumen.Add($"Recibos anulados en el período: {datos.CantidadAnulaciones} (no se suman)");
 
-        var nombre = $"{Titulo(_tipo)}_{rango.Desde:yyyyMMdd}_{rango.Hasta:yyyyMMdd}";
+        var nombre = porPeriodo
+            ? $"{Titulo(_tipo)}_deuda_{periodo:yyyyMM}"
+            : $"{Titulo(_tipo)}_{rango.Desde:yyyyMMdd}_{rango.Hasta:yyyyMMdd}";
 
         return _tipo switch
         {
@@ -153,39 +209,21 @@ public sealed class IngresosReporteView : ReporteTablaView
         };
     }
 
-    // ---------- A. Diario de recaudaciones ----------
+    // ---------- A. Diario de recaudaciones: solo por servicio (cuenta) ----------
 
+    /// <summary>
+    /// Resumen general de lo cobrado en el período, servicio por servicio, como la
+    /// «Recaudación de servicios» del sistema anterior: código, servicio, cantidad y monto.
+    /// </summary>
     private static Reporte Diario(RespuestaCaja d, Func<Guid, string> moneda, string filtros, List<string> resumen, string nombre)
     {
-        var filas = new List<FilaReporte> { new(new[] { "Día por día", "", "", "", "" }, Grupo: true) };
-
-        foreach (var dia in d.Dias)
+        var filas = new List<FilaReporte>();
+        foreach (var porMoneda in d.Conceptos.GroupBy(c => c.MonedaId))
         {
-            var fecha = DateTime.TryParse(dia.Fecha, out var f) ? Fecha(f) : dia.Fecha;
-            filas.Add(new(new[] { fecha, moneda(dia.MonedaId), dia.CantidadRecibos.ToString(Bo), Monto(dia.Total), Monto(dia.Acumulado) }));
+            foreach (var c in porMoneda.OrderBy(c => c.Concepto, StringComparer.Create(Bo, true)))
+                filas.Add(new(new[] { c.Codigo ?? "", c.Concepto, moneda(c.MonedaId), c.Cantidad.ToString(Bo), Monto(c.Total) }));
+            filas.Add(new(new[] { "", "TOTAL GENERAL", moneda(porMoneda.Key), porMoneda.Sum(c => c.Cantidad).ToString(Bo), Monto(porMoneda.Sum(c => c.Total)) }, Total: true));
         }
-
-        // Por servicio (cuenta), como la "Recaudación de servicios" del sistema anterior.
-        if (d.Conceptos.Count > 0)
-        {
-            filas.Add(new(new[] { "Por servicio (cuenta)", "", "", "", "" }, Grupo: true));
-            foreach (var c in d.Conceptos.OrderBy(c => c.MonedaId).ThenByDescending(c => c.Total))
-                filas.Add(new(new[]
-                {
-                    string.IsNullOrWhiteSpace(c.Codigo) ? c.Concepto : $"{c.Codigo} · {c.Concepto}",
-                    moneda(c.MonedaId), c.Cantidad.ToString(Bo), Monto(c.Total), ""
-                }));
-        }
-
-        if (d.FormasPago.Count > 0)
-        {
-            filas.Add(new(new[] { "Por forma de pago", "", "", "", "" }, Grupo: true));
-            foreach (var fp in d.FormasPago)
-                filas.Add(new(new[] { FormaPago(fp.FormaPago), moneda(fp.MonedaId), fp.Cantidad.ToString(Bo), Monto(fp.Total), "" }));
-        }
-
-        foreach (var r in d.Resumen)
-            filas.Add(new(new[] { "TOTAL DEL PERÍODO", moneda(r.MonedaId), r.CantidadRecibos.ToString(Bo), Monto(r.Total), "" }, Total: true));
 
         return new Reporte
         {
@@ -195,31 +233,44 @@ public sealed class IngresosReporteView : ReporteTablaView
             NombreArchivo = nombre,
             Columnas = new()
             {
-                new("Día / servicio / forma de pago", 2.6),
+                new("Código", 0.8),
+                new("Servicio (cuenta)", 3),
                 new("Moneda", 0.7),
                 new("Cantidad", 0.8, Derecha: true),
-                new("Total", 1.3, Derecha: true, Numero: true),
-                new("Acumulado", 1.3, Derecha: true, Numero: true)
+                new("Monto", 1.3, Derecha: true, Numero: true)
             },
-            Filas = d.Dias.Count == 0 ? new() : filas
+            Filas = filas
         };
     }
 
-    // ---------- B. Servicios por fechas ----------
+    // ---------- B. Servicios por fechas: día por día ----------
 
+    /// <summary>Cada día del período con lo cobrado de cada servicio, el total del día y el acumulado.</summary>
     private static Reporte Servicios(RespuestaCaja d, Func<Guid, string> moneda, string filtros, List<string> resumen, string nombre)
     {
+        var lineas = d.Cobros
+            .SelectMany(c => c.Conceptos.Select(x => new { Dia = c.FechaLocal.Date, c.MonedaId, x.Codigo, x.Concepto, x.Monto }))
+            .ToList();
+
         var filas = new List<FilaReporte>();
-        foreach (var porMoneda in d.Conceptos.GroupBy(c => c.MonedaId))
+        foreach (var porMoneda in lineas.GroupBy(l => l.MonedaId))
         {
-            var total = porMoneda.Sum(c => c.Total);
-            foreach (var c in porMoneda.OrderByDescending(c => c.Total))
-                filas.Add(new(new[]
-                {
-                    c.Concepto, moneda(c.MonedaId), c.Cantidad.ToString(Bo), Monto(c.Total),
-                    total == 0 ? "" : (c.Total / total).ToString("P1", Bo)
-                }));
-            filas.Add(new(new[] { "TOTAL", moneda(porMoneda.Key), porMoneda.Sum(c => c.Cantidad).ToString(Bo), Monto(total), "100 %" }, Total: true));
+            var acumulado = 0m;
+            foreach (var dia in porMoneda.GroupBy(l => l.Dia).OrderBy(g => g.Key))
+            {
+                filas.Add(new(new[] { Fecha(dia.Key), "", "", "", "", "" }, Grupo: true));
+                foreach (var servicio in dia.GroupBy(l => (l.Codigo, l.Concepto)).OrderBy(g => g.Key.Concepto, StringComparer.Create(Bo, true)))
+                    filas.Add(new(new[]
+                    {
+                        servicio.Key.Codigo ?? "", servicio.Key.Concepto, moneda(porMoneda.Key),
+                        servicio.Count().ToString(Bo), Monto(servicio.Sum(l => l.Monto)), ""
+                    }));
+                var total = dia.Sum(l => l.Monto);
+                acumulado += total;
+                filas.Add(new(new[] { "", $"Total del {Fecha(dia.Key)}", moneda(porMoneda.Key), dia.Count().ToString(Bo), Monto(total), Monto(acumulado) }, Total: true));
+            }
+
+            filas.Add(new(new[] { "", "TOTAL DEL PERÍODO", moneda(porMoneda.Key), porMoneda.Count().ToString(Bo), Monto(porMoneda.Sum(l => l.Monto)), "" }, Total: true));
         }
 
         return new Reporte
@@ -230,11 +281,12 @@ public sealed class IngresosReporteView : ReporteTablaView
             NombreArchivo = nombre,
             Columnas = new()
             {
-                new("Servicio", 2.6),
-                new("Moneda", 0.8),
-                new("Cantidad de pagos", 1.1, Derecha: true),
-                new("Recaudado", 1.3, Derecha: true, Numero: true),
-                new("% del total", 0.9, Derecha: true)
+                new("Código", 0.8),
+                new("Fecha / servicio", 2.6),
+                new("Moneda", 0.7),
+                new("Cantidad", 0.8, Derecha: true),
+                new("Monto", 1.2, Derecha: true, Numero: true),
+                new("Acumulado", 1.2, Derecha: true, Numero: true)
             },
             Filas = filas
         };
@@ -333,32 +385,29 @@ public sealed class IngresosReporteView : ReporteTablaView
         };
     }
 
-    // ---------- 7. Pagos de un servicio por bloque ----------
+    // ---------- 7. Pagos de un servicio (caseta por caseta) ----------
 
     private static Reporte PorBloque(RespuestaCaja d, Func<Guid, string> moneda, Catalogos cat, string filtros, List<string> resumen, string nombre, string servicio)
     {
-        var lineas = d.Cobros.Select(c =>
-        {
-            var (caseta, bloque) = cat.Unidades.TryGetValue(c.UnidadComercialId, out var u) ? u : ("?", null);
-            return new { c, Caseta = caseta, Bloque = string.IsNullOrWhiteSpace(bloque) ? "Sin bloque" : bloque! };
-        }).ToList();
+        var lineas = d.Cobros
+            .Select(c => new { c, Caseta = cat.Unidades.TryGetValue(c.UnidadComercialId, out var u) ? u.Codigo : "?" })
+            .ToList();
 
-        var filas = new List<FilaReporte>();
-        foreach (var g in lineas.GroupBy(l => l.Bloque).OrderBy(g => g.Key == "Sin bloque").ThenBy(g => g.Key.Length).ThenBy(g => g.Key))
-        {
-            filas.Add(new(new[] { $"Bloque {g.Key}", "", "", "", "", "" }, Grupo: true));
-            foreach (var l in g.OrderBy(l => l.c.FechaEmisionUtc))
-                filas.Add(new(new[] { l.c.FechaBolivia, l.c.NumeroRecibo.ToString(Bo), l.Caseta, l.c.Pagador, moneda(l.c.MonedaId), Monto(l.c.Monto) }));
-            foreach (var m in g.GroupBy(l => l.c.MonedaId))
-                filas.Add(new(new[] { $"Subtotal bloque {g.Key}", $"{m.Count()} pagos", "", "", moneda(m.Key), Monto(m.Sum(l => l.c.Monto)) }, Total: true));
-        }
+        // Una lista continua por número de caseta, sin cortes por bloque.
+        var filas = lineas
+            .OrderBy(l => int.TryParse(l.Caseta, out _) ? 0 : 1)
+            .ThenBy(l => int.TryParse(l.Caseta, out var n) ? n : 0)
+            .ThenBy(l => l.Caseta, StringComparer.OrdinalIgnoreCase)
+            .ThenBy(l => l.c.FechaEmisionUtc)
+            .Select(l => new FilaReporte(new[] { l.c.FechaBolivia, l.c.NumeroRecibo.ToString(Bo), l.Caseta, l.c.Pagador, moneda(l.c.MonedaId), Monto(l.c.Monto) }))
+            .ToList();
 
         foreach (var r in d.Resumen)
             filas.Add(new(new[] { "TOTAL GENERAL", $"{r.CantidadRecibos} pagos", "", "", moneda(r.MonedaId), Monto(r.Total) }, Total: true));
 
         return new Reporte
         {
-            Titulo = $"Pagos de {servicio} por bloque",
+            Titulo = $"Pagos de {servicio}",
             Filtros = filtros,
             Resumen = resumen,
             NombreArchivo = nombre,
@@ -445,6 +494,8 @@ public sealed class IngresosReporteView : ReporteTablaView
 
     private sealed class DetalleCaja
     {
+        public Guid ConceptoCobroId { get; set; }
+        public string? Codigo { get; set; }
         public string Concepto { get; set; } = "";
         public decimal Monto { get; set; }
     }

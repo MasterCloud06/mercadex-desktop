@@ -34,17 +34,18 @@ public sealed class ReportesView : UserControl
         {
             ("Ingresos", new()
             {
-                new("diario", "Diario de recaudaciones", "Total del período, día por día", () => new IngresosReporteView(TipoReporteIngresos.Diario)),
-                new("servicios", "Servicios por fechas", "Pagos y monto por servicio", () => new IngresosReporteView(TipoReporteIngresos.Servicios)),
+                new("diario", "Diario de recaudaciones", "Lo cobrado por servicio (cuenta)", () => new IngresosReporteView(TipoReporteIngresos.Diario)),
+                new("servicios", "Servicios por fechas", "Día por día, servicio por servicio", () => new IngresosReporteView(TipoReporteIngresos.Servicios)),
                 new("acumulados", "Servicios acumulados", "Cada servicio mes por mes", () => new IngresosReporteView(TipoReporteIngresos.Acumulados)),
                 new("detalle", "Detalle de cobros", "Cada cobro, uno por uno", () => new IngresosReporteView(TipoReporteIngresos.Detalle)),
-                new("bloques", "Pagos por servicio y bloque", "Un servicio, agrupado por bloque", () => new IngresosReporteView(TipoReporteIngresos.PorBloque)),
+                new("bloques", "Pagos de un servicio", "Los pagos de un servicio, caseta por caseta", () => new IngresosReporteView(TipoReporteIngresos.PorBloque)),
                 new("historial", "Historial de pagos de una caseta", "Fecha, cuenta y monto de cada pago", () => new HistorialCasetaReporteView())
             }),
             ("Deudas", new()
             {
                 new("extracto", "Extracto de deuda", "Deudas por pagar de una caseta", () => new ExtractoDeudaView()),
                 new("corte", "Aviso para corte", "Cada caseta deudora una sola vez", () => new DeudoresReporteView(TipoReporteDeudores.Corte)),
+                new("por-cuenta", "Deudores por cuenta", "Solo los números de caseta, cuenta por cuenta", () => new DeudoresPorCuentaView()),
                 new("contabilidad", "Deudores para contabilidad", "Fecha, servicio y monto de cada deuda", () => new DeudoresReporteView(TipoReporteDeudores.Contabilidad))
             }),
             ("Control", new List<Opcion>()

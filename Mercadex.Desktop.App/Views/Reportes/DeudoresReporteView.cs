@@ -167,6 +167,12 @@ public sealed class DeudoresReporteView : ReporteTablaView
             : Contabilidad(d, filtros, resumen, "Deudores_contabilidad_" + sufijo);
     }
 
+    /// <summary>Por número de caseta (1, 2, 10…), sin agrupar por bloque; los códigos no numéricos al final.</summary>
+    private static IEnumerable<FilaDeudor> PorCaseta(IEnumerable<FilaDeudor> filas) =>
+        filas.OrderBy(f => int.TryParse(f.Codigo, out _) ? 0 : 1)
+            .ThenBy(f => int.TryParse(f.Codigo, out var n) ? n : 0)
+            .ThenBy(f => f.Codigo, StringComparer.OrdinalIgnoreCase);
+
     private static string Totales(List<MontoMoneda> totales) =>
         string.Join(" + ", totales.Select(t => $"{t.Moneda} {Monto(t.Monto)}"));
 
@@ -174,22 +180,19 @@ public sealed class DeudoresReporteView : ReporteTablaView
 
     private static Reporte Corte(Respuesta d, string filtros, List<string> resumen, string nombre)
     {
-        var filas = new List<FilaReporte>();
-        foreach (var g in d.Filas.GroupBy(f => string.IsNullOrWhiteSpace(f.Bloque) ? "Sin bloque" : f.Bloque!))
-        {
-            filas.Add(new(new[] { $"Bloque {g.Key} — {g.Count()} {(g.Count() == 1 ? "caseta" : "casetas")}", "", "", "", "", "", "" }, Grupo: true));
-            foreach (var f in g)
-                filas.Add(new(new[]
-                {
-                    f.Codigo,
-                    f.Titular ?? "Sin titular",
-                    f.Telefono ?? "",
-                    string.Join(", ", f.Servicios),
-                    f.Cantidad.ToString(Bo),
-                    Fecha(f.Desde.ToDateTime(TimeOnly.MinValue)),
-                    Totales(f.Totales)
-                }));
-        }
+        // Una lista continua por número de caseta, sin cortes por bloque.
+        var filas = PorCaseta(d.Filas)
+            .Select(f => new FilaReporte(new[]
+            {
+                f.Codigo,
+                f.Titular ?? "Sin titular",
+                f.Telefono ?? "",
+                string.Join(", ", f.Servicios),
+                f.Cantidad.ToString(Bo),
+                Fecha(f.Desde.ToDateTime(TimeOnly.MinValue)),
+                Totales(f.Totales)
+            }))
+            .ToList();
 
         return new Reporte
         {
@@ -213,11 +216,9 @@ public sealed class DeudoresReporteView : ReporteTablaView
     private static Reporte Contabilidad(Respuesta d, string filtros, List<string> resumen, string nombre)
     {
         var filas = new List<FilaReporte>();
-        foreach (var f in d.Filas)
+        foreach (var f in PorCaseta(d.Filas))
         {
-            var encabezado = $"Caseta {f.Codigo}" +
-                             (string.IsNullOrWhiteSpace(f.Bloque) ? "" : $" · Bloque {f.Bloque}") +
-                             $" · {f.Titular ?? "Sin titular"}";
+            var encabezado = $"Caseta {f.Codigo} · {f.Titular ?? "Sin titular"}";
             filas.Add(new(new[] { encabezado, "", "", "", "" }, Grupo: true));
 
             foreach (var x in f.Deudas)

@@ -59,12 +59,18 @@ public static class ReportePdfService
             return;
         }
 
+        GuardarArchivo(dueno, r.Titulo, r.NombreArchivo, filtro, extension, escribir);
+    }
+
+    /// <summary>Pide dónde guardar, escribe el archivo y ofrece abrirlo.</summary>
+    public static void GuardarArchivo(Window? dueno, string titulo, string nombreArchivo, string filtro, string extension, Action<string> escribir)
+    {
         var dialogo = new SaveFileDialog
         {
-            Title = "Guardar " + r.Titulo,
+            Title = "Guardar " + titulo,
             Filter = filtro,
             DefaultExt = extension,
-            FileName = Limpiar(r.NombreArchivo) + extension,
+            FileName = Limpiar(nombreArchivo) + extension,
             AddExtension = true,
             OverwritePrompt = true
         };
@@ -88,7 +94,7 @@ public static class ReportePdfService
             return;
         }
 
-        if (Dialogo.Mostrar(dueno, "Se guardó el reporte.\n\n¿Abrirlo ahora?", r.Titulo,
+        if (Dialogo.Mostrar(dueno, "Se guardó el reporte.\n\n¿Abrirlo ahora?", titulo,
                 MessageBoxButton.YesNo, MessageBoxImage.Information) == MessageBoxResult.Yes)
         {
             try

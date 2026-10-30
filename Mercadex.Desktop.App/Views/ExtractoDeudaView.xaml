@@ -164,7 +164,7 @@
                                 Width="85"/>
 
                             <DataGridTextColumn
-                                Header="Importe"
+                                Header="Saldo"
                                 Binding="{Binding Monto, StringFormat=N2}"
                                 Width="110"/>
 

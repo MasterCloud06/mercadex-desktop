@@ -302,6 +302,7 @@ public sealed class CobranzaView : UserControl
         _tablaDeudas.Columns.Add(UiKit.Columna("Concepto", nameof(DeudaFila.Concepto), 1.8));
         _tablaDeudas.Columns.Add(UiKit.Columna("Período", nameof(DeudaFila.Periodo), 1));
         _tablaDeudas.Columns.Add(UiKit.Columna("Monto", nameof(DeudaFila.Monto), 0.9, "N2", derecha: true));
+        _tablaDeudas.Columns.Add(UiKit.Columna("Saldo", nameof(DeudaFila.SaldoTexto), 0.9, derecha: true));
         _tablaDeudas.Columns.Add(UiKit.Columna("Moneda", nameof(DeudaFila.Moneda), 0.7));
         _tablaDeudas.Columns.Add(UiKit.Columna("Emisión", nameof(DeudaFila.EmisionTexto), 1));
         _tablaDeudas.Columns.Add(UiKit.Columna("Vence", nameof(DeudaFila.VenceTexto), 1));
@@ -1380,11 +1381,18 @@ public sealed class CobranzaView : UserControl
         public string Estado { get; set; } = "";
         public int Modificaciones { get; set; }
 
+        /// <summary>Pagos parciales (null si la API es anterior).</summary>
+        public decimal? Pagado { get; set; }
+        public decimal? Saldo { get; set; }
+
+        public string SaldoTexto => Estado == "Pendiente" ? (Saldo ?? Monto).ToString("N2", CultureInfo.GetCultureInfo("es-BO")) : "—";
+        public bool TieneAbonos => Estado == "Pendiente" && Pagado > 0;
+
         public string BloqueTexto => string.IsNullOrWhiteSpace(Bloque) ? "—" : Bloque!;
         public string Periodo => Anio is { } a && Mes is { } m ? $"{m:00}/{a}" : "Eventual";
         public string EmisionTexto => Emision.ToString("dd/MM/yyyy");
         public string VenceTexto => Vencimiento?.ToString("dd/MM/yyyy") ?? "—";
-        public string Nota => Modificaciones > 0 ? "✎ Modificada" : "";
+        public string Nota => TieneAbonos ? "Pago parcial" : Modificaciones > 0 ? "✎ Modificada" : "";
     }
 
     private sealed class PreviaRespuesta

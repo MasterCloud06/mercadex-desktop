@@ -47,6 +47,7 @@ public sealed class IngresosView : UserControl
 
     // Paso 2: deudas
     private readonly DataGrid _tabla = UiKit.Tabla();
+    private DataGridTextColumn? _columnaAPagar;
     private readonly TextBlock _sinDeudas = new() { Foreground = UiKit.Suave, Margin = new Thickness(2, 8, 0, 0), TextWrapping = TextWrapping.Wrap };
     private readonly Button _marcarTodas = new() { Content = "Marcar todas" };
     private List<FilaCobro> _filas = new();
@@ -469,13 +470,34 @@ public sealed class IngresosView : UserControl
                  {
                      UiKit.Columna("Concepto", nameof(FilaCobro.Concepto), 2.2),
                      UiKit.Columna("Período", nameof(FilaCobro.Periodo), 1),
-                     UiKit.Columna("Importe", nameof(FilaCobro.Monto), 1, "N2", derecha: true),
-                     UiKit.Columna("Moneda", nameof(FilaCobro.Moneda), 0.7)
+                     UiKit.Columna("Saldo", nameof(FilaCobro.Saldo), 1, "N2", derecha: true)
                  })
         {
             c.IsReadOnly = true;
             _tabla.Columns.Add(c);
         }
+
+        // Pago parcial: se puede cobrar menos que el saldo (lo demás queda pendiente).
+        var estiloAPagar = new Style(typeof(TextBox));
+        estiloAPagar.Setters.Add(new Setter(TextBox.TextAlignmentProperty, TextAlignment.Right));
+        estiloAPagar.Setters.Add(new Setter(PaddingProperty, new Thickness(2, 0, 2, 0)));
+        var estiloAPagarVer = new Style(typeof(TextBlock));
+        estiloAPagarVer.Setters.Add(new Setter(TextBlock.TextAlignmentProperty, TextAlignment.Right));
+        estiloAPagarVer.Setters.Add(new Setter(TextBlock.FontWeightProperty, FontWeights.SemiBold));
+        estiloAPagarVer.Setters.Add(new Setter(VerticalAlignmentProperty, VerticalAlignment.Center));
+        _columnaAPagar = new DataGridTextColumn
+        {
+            Header = "A pagar",
+            Binding = new Binding(nameof(FilaCobro.APagarTexto)) { Mode = BindingMode.TwoWay, UpdateSourceTrigger = UpdateSourceTrigger.LostFocus },
+            Width = new DataGridLength(1, DataGridLengthUnitType.Star),
+            EditingElementStyle = estiloAPagar,
+            ElementStyle = estiloAPagarVer
+        };
+        _tabla.Columns.Add(_columnaAPagar);
+
+        var moneda = UiKit.Columna("Moneda", nameof(FilaCobro.Moneda), 0.7);
+        moneda.IsReadOnly = true;
+        _tabla.Columns.Add(moneda);
 
         var nota = UiKit.Columna("Nota", nameof(FilaCobro.Nota), 1.1);
         nota.IsReadOnly = true;
@@ -492,7 +514,8 @@ public sealed class IngresosView : UserControl
             if (e.OriginalSource is DependencyObject d &&
                 ItemsControl.ContainerFromElement(_tabla, d) is DataGridRow fila &&
                 fila.Item is FilaCobro f &&
-                FindParent<CheckBox>(d) is null)
+                FindParent<CheckBox>(d) is null &&
+                FindParent<DataGridCell>(d)?.Column != _columnaAPagar)
             {
                 f.Seleccionada = !f.Seleccionada;
             }
@@ -545,7 +568,7 @@ public sealed class IngresosView : UserControl
         }
         else
         {
-            _total.Text = $"{monedas[0]} {sel.Sum(f => f.Monto).ToString("N2", Bo)}";
+            _total.Text = $"{monedas[0]} {sel.Sum(f => f.APagar).ToString("N2", Bo)}";
             _detalleTotal.Text = sel.Count == 1 ? "1 concepto" : $"{sel.Count} conceptos";
         }
 
@@ -633,7 +656,14 @@ public sealed class IngresosView : UserControl
         var pagador = _pagador.Text.Trim();
         var monedaId = sel[0].MonedaId;
         var moneda = sel[0].Moneda;
-        var total = sel.Sum(f => f.Monto);
+        var total = sel.Sum(f => f.APagar);
+
+        if (sel.Any(f => f.APagar <= 0 || f.APagar > f.Saldo))
+        {
+            Dialogo.Mostrar(owner, "Revisa la columna «A pagar»: cada monto debe ser mayor a cero y no puede superar el saldo de la deuda.",
+                "Monto a pagar", MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
 
         if (forma is null)
         {
@@ -681,7 +711,24 @@ public sealed class IngresosView : UserControl
                 return;
         }
 
-        var lineas = string.Join("\n", sel.Select(f => $"{f.Concepto} {f.Periodo}: {f.Monto.ToString("N2", Bo)}"));
+        var lineas = string.Join("\n", sel.Select(f => f.EsParcial
+            ? $"{f.Concepto} {f.Periodo}: {f.APagar.ToString("N2", Bo)} (pago parcial; queda {(f.Saldo - f.APagar).ToString("N2", Bo)})"
+            : $"{f.Concepto} {f.Periodo}: {f.APagar.ToString("N2", Bo)}"));
+
+        // Los pagos parciales quedan anotados en el recibo (se imprimen y se ven al reimprimir).
+        var parciales = sel.Where(f => f.EsParcial || f.Pagado > 0).Select(f =>
+            $"{f.Concepto} {f.Periodo}: {(f.EsParcial ? "pago parcial" : "pago del saldo")}, " +
+            $"total {f.Monto.ToString("N2", Bo)}, " +
+            $"pagado {(f.Pagado + f.APagar).ToString("N2", Bo)}, " +
+            $"saldo {(f.Saldo - f.APagar).ToString("N2", Bo)}.").ToList();
+        var observaciones = string.Join(" ", new[] { _observaciones.Text.Trim() }.Concat(parciales).Where(t => t.Length > 0));
+        if (observaciones.Length > 500)
+        {
+            Dialogo.Mostrar(owner, "Las observaciones del recibo, junto con el detalle de los pagos parciales, superan los 500 caracteres. Acorta las observaciones.",
+                "Observaciones demasiado largas", MessageBoxButton.OK, MessageBoxImage.Warning);
+            _observaciones.Focus();
+            return;
+        }
 
         var confirmar = Dialogo.Mostrar(owner,
             $"Caseta: {_unidad.Codigo}\nPaga: {pagador}\nForma de pago: {forma.Texto}" +
@@ -712,8 +759,13 @@ public sealed class IngresosView : UserControl
                 NombrePagador = pagador,
                 TipoCambio = tipoCambio,
                 Referencia = forma.Valor == 1 || referencia.Length == 0 ? null : referencia,
-                Items = sel.Select(f => new ItemCobroIngresoModel { ObligacionId = f.Id, NombreConcepto = f.Concepto }).ToList(),
-                Observaciones = string.IsNullOrWhiteSpace(_observaciones.Text) ? null : _observaciones.Text.Trim()
+                Items = sel.Select(f => new ItemCobroIngresoModel
+                {
+                    ObligacionId = f.Id,
+                    NombreConcepto = f.Concepto,
+                    Monto = f.EsParcial ? f.APagar : null
+                }).ToList(),
+                Observaciones = observaciones.Length == 0 ? null : observaciones
             });
 
             if (resultado?.Recibo is null)
@@ -772,16 +824,66 @@ public sealed class IngresosView : UserControl
             Id = o.Id;
             MonedaId = o.MonedaId;
             Monto = o.Monto;
+            Pagado = o.MontoPagado;
+            Saldo = o.Saldo ?? o.Monto - o.MontoPagado;
+            _aPagar = Saldo;
             Concepto = concepto;
             Moneda = moneda;
             Periodo = o.PeriodoAnio is { } a && o.PeriodoMes is { } m ? $"{m:00}/{a}" : o.FechaEmision.ToString("dd/MM/yyyy");
-            Nota = o.Modificaciones > 0 ? "✎ Modificada" : "";
-            NotaDetalle = o.UltimaModificacion;
+            Nota = Pagado > 0
+                ? $"Pagó {Pagado.ToString("N2", CultureInfo.GetCultureInfo("es-BO"))} de {Monto.ToString("N2", CultureInfo.GetCultureInfo("es-BO"))}"
+                : o.Modificaciones > 0 ? "✎ Modificada" : "";
+            NotaDetalle = Pagado > 0 ? "Tiene pagos parciales." : o.UltimaModificacion;
         }
+
+        private decimal _aPagar;
 
         public Guid Id { get; }
         public Guid MonedaId { get; }
+
+        /// <summary>Monto total de la deuda.</summary>
         public decimal Monto { get; }
+
+        /// <summary>Lo pagado antes (pagos parciales).</summary>
+        public decimal Pagado { get; }
+
+        /// <summary>Lo que falta pagar.</summary>
+        public decimal Saldo { get; }
+
+        /// <summary>Lo que se cobra ahora: el saldo, o menos (pago parcial).</summary>
+        public decimal APagar
+        {
+            get => _aPagar;
+            set
+            {
+                if (_aPagar == value)
+                    return;
+                _aPagar = value;
+                Avisar();
+                Avisar(nameof(APagarTexto));
+                Avisar(nameof(EsParcial));
+            }
+        }
+
+        public bool EsParcial => APagar < Saldo;
+
+        /// <summary>Lo que se escribe en la columna «A pagar». Un valor inválido se descarta.</summary>
+        public string APagarTexto
+        {
+            get => APagar.ToString("N2", CultureInfo.GetCultureInfo("es-BO"));
+            set
+            {
+                if (ApiJson.LeerMonto(value) is { } monto && monto > 0 && monto <= Saldo && decimal.Round(monto, 2) == monto)
+                {
+                    APagar = monto;
+                    Seleccionada = true;
+                }
+                else
+                {
+                    Avisar();
+                }
+            }
+        }
         public string Concepto { get; }
         public string Moneda { get; }
         public string Periodo { get; }

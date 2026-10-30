@@ -54,6 +54,12 @@ public sealed class ObligacionIngresoModel
     public int? PeriodoMes { get; set; }
     public string Estado { get; set; } = string.Empty;
 
+    /// <summary>Lo abonado con pagos parciales (0 si no hay abonos).</summary>
+    public decimal MontoPagado { get; set; }
+
+    /// <summary>Lo que falta pagar. Null si la API es anterior a los pagos parciales.</summary>
+    public decimal? Saldo { get; set; }
+
     /// <summary>Veces que se modificó el monto (0 si nunca).</summary>
     public int Modificaciones { get; set; }
 
@@ -65,6 +71,9 @@ public sealed class ItemCobroIngresoModel
 {
     public Guid ObligacionId { get; set; }
     public string NombreConcepto { get; set; } = string.Empty;
+
+    /// <summary>Pago parcial: lo que se paga de esta deuda. Null = todo el saldo.</summary>
+    public decimal? Monto { get; set; }
 }
 
 public sealed class ProcesarCobroIngresoModel

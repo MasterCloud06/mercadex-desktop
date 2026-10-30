@@ -223,11 +223,14 @@ public partial class ExtractoDeudaView : UserControl
                     ? moneda
                     : "Sin identificar",
 
-                Monto = o.Monto,
+                // Lo que falta pagar (con pagos parciales, menos que el monto).
+                Monto = o.Saldo ?? o.Monto - o.MontoPagado,
 
-                Nota = o.Modificaciones > 0 ? "✎ Modificada" : "",
+                Nota = o.MontoPagado > 0
+                    ? $"Pagó {o.MontoPagado:N2} de {o.Monto:N2}"
+                    : o.Modificaciones > 0 ? "✎ Modificada" : "",
 
-                NotaDetalle = o.UltimaModificacion
+                NotaDetalle = o.MontoPagado > 0 ? "Tiene pagos parciales." : o.UltimaModificacion
             })
             .OrderBy(d => d.Concepto)
             .ThenBy(d => d.Periodo)
@@ -403,6 +406,10 @@ public partial class ExtractoDeudaView : UserControl
         public Guid MonedaId { get; set; }
 
         public decimal Monto { get; set; }
+
+        public decimal MontoPagado { get; set; }
+
+        public decimal? Saldo { get; set; }
 
         public DateOnly FechaEmision { get; set; }
 

@@ -90,6 +90,9 @@ public sealed class ProcesarCobroIngresoModel
 
     /// <summary>Observaciones que se imprimen en el recibo (opcional).</summary>
     public string? Observaciones { get; set; }
+
+    /// <summary>Fecha del cobro si no es hoy (por ejemplo, un QR del domingo). Null = hoy.</summary>
+    public DateOnly? FechaCobro { get; set; }
 }
 
 public sealed class ResultadoCobroIngresoModel

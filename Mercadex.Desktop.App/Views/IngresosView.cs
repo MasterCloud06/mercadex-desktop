@@ -47,7 +47,22 @@ public sealed class IngresosView : UserControl
 
     // Paso 2: deudas
     private readonly DataGrid _tabla = UiKit.Tabla();
-    private DataGridTextColumn? _columnaAPagar;
+    private DataGridColumn? _columnaAPagar;
+
+    /// <summary>Días hacia atrás que acepta la API para la fecha de cobro.</summary>
+    private const int DiasAtrasMaximo = 31;
+
+    // Fecha de cobro: hoy, o un día anterior (por ejemplo, un QR del domingo que se registra el lunes).
+    private readonly DatePicker _fechaCobro = UiKit.Fecha(DateTime.Today);
+    private readonly TextBlock _avisoFecha = new()
+    {
+        TextWrapping = TextWrapping.Wrap,
+        FontSize = 12.5,
+        FontWeight = FontWeights.SemiBold,
+        Foreground = ColoresPanel.Hex("#8A5A00"),
+        Margin = new Thickness(0, 4, 0, 0),
+        Visibility = Visibility.Collapsed
+    };
     private readonly TextBlock _sinDeudas = new() { Foreground = UiKit.Suave, Margin = new Thickness(2, 8, 0, 0), TextWrapping = TextWrapping.Wrap };
     private readonly Button _marcarTodas = new() { Content = "Marcar todas" };
     private List<FilaCobro> _filas = new();
@@ -154,6 +169,18 @@ public sealed class IngresosView : UserControl
         // ---------- Derecha: resumen y datos del cobro ----------
 
         var resumen = new StackPanel();
+
+        _fechaCobro.Width = double.NaN;
+        _fechaCobro.DisplayDateEnd = DateTime.Today;
+        _fechaCobro.DisplayDateStart = DateTime.Today.AddDays(-DiasAtrasMaximo);
+        _fechaCobro.ToolTip = "Hoy, o un día anterior si el pago se hizo antes (por ejemplo, un QR del domingo).";
+        _fechaCobro.SelectedDateChanged += (_, _) => ActualizarFecha();
+        var fecha = UiKit.Campo("Fecha de cobro", _fechaCobro, 0);
+        fecha.Margin = new Thickness(0, 0, 0, 2);
+        resumen.Children.Add(fecha);
+        resumen.Children.Add(_avisoFecha);
+        resumen.Children.Add(new Border { Height = 1, Background = ColoresPanel.Hex("#E1E7EF"), Margin = new Thickness(0, 12, 0, 12) });
+
         resumen.Children.Add(new TextBlock { Text = "Total a cobrar", FontSize = 13, FontWeight = FontWeights.SemiBold, Foreground = UiKit.Etiqueta });
         resumen.Children.Add(_total);
         resumen.Children.Add(_detalleTotal);
@@ -477,21 +504,47 @@ public sealed class IngresosView : UserControl
             _tabla.Columns.Add(c);
         }
 
-        // Pago parcial: se puede cobrar menos que el saldo (lo demás queda pendiente).
-        var estiloAPagar = new Style(typeof(TextBox));
-        estiloAPagar.Setters.Add(new Setter(TextBox.TextAlignmentProperty, TextAlignment.Right));
-        estiloAPagar.Setters.Add(new Setter(PaddingProperty, new Thickness(2, 0, 2, 0)));
-        var estiloAPagarVer = new Style(typeof(TextBlock));
-        estiloAPagarVer.Setters.Add(new Setter(TextBlock.TextAlignmentProperty, TextAlignment.Right));
-        estiloAPagarVer.Setters.Add(new Setter(TextBlock.FontWeightProperty, FontWeights.SemiBold));
-        estiloAPagarVer.Setters.Add(new Setter(VerticalAlignmentProperty, VerticalAlignment.Center));
-        _columnaAPagar = new DataGridTextColumn
+        // Pago parcial: un recuadro siempre visible para escribir cuánto paga ahora
+        // (por defecto, todo el saldo; si es menos, el resto queda pendiente).
+        var cajaAPagar = new FrameworkElementFactory(typeof(TextBox));
+        cajaAPagar.SetBinding(TextBox.TextProperty,
+            new Binding(nameof(FilaCobro.APagarTexto)) { Mode = BindingMode.TwoWay, UpdateSourceTrigger = UpdateSourceTrigger.LostFocus });
+        cajaAPagar.SetValue(TextBox.TextAlignmentProperty, TextAlignment.Right);
+        cajaAPagar.SetValue(FontWeightProperty, FontWeights.SemiBold);
+        cajaAPagar.SetValue(HeightProperty, 28.0);
+        cajaAPagar.SetValue(PaddingProperty, new Thickness(4, 0, 4, 0));
+        cajaAPagar.SetValue(MarginProperty, new Thickness(2, 2, 6, 2));
+        cajaAPagar.SetValue(VerticalContentAlignmentProperty, VerticalAlignment.Center);
+        cajaAPagar.SetValue(BorderThicknessProperty, new Thickness(1));
+        cajaAPagar.SetValue(BorderBrushProperty, ColoresPanel.Hex("#9FB3C8"));
+        cajaAPagar.SetValue(ToolTipProperty, "Escribe cuánto paga ahora. Si es menos que el saldo, es un pago parcial.");
+        // Al entrar, se selecciona el monto para escribir encima; Enter lo confirma.
+        cajaAPagar.AddHandler(GotKeyboardFocusEvent, new KeyboardFocusChangedEventHandler((o, _) => ((TextBox)o).SelectAll()));
+        cajaAPagar.AddHandler(PreviewMouseLeftButtonDownEvent, new MouseButtonEventHandler((o, e) =>
         {
-            Header = "A pagar",
-            Binding = new Binding(nameof(FilaCobro.APagarTexto)) { Mode = BindingMode.TwoWay, UpdateSourceTrigger = UpdateSourceTrigger.LostFocus },
-            Width = new DataGridLength(1, DataGridLengthUnitType.Star),
-            EditingElementStyle = estiloAPagar,
-            ElementStyle = estiloAPagarVer
+            var caja = (TextBox)o;
+            if (!caja.IsKeyboardFocusWithin)
+            {
+                caja.Focus();
+                e.Handled = true;
+            }
+        }));
+        cajaAPagar.AddHandler(KeyDownEvent, new KeyEventHandler((o, e) =>
+        {
+            if (e.Key == Key.Enter)
+            {
+                var caja = (TextBox)o;
+                caja.GetBindingExpression(TextBox.TextProperty)?.UpdateSource();
+                caja.SelectAll();
+                e.Handled = true;
+            }
+        }));
+        _columnaAPagar = new DataGridTemplateColumn
+        {
+            Header = "A pagar (editable)",
+            CellTemplate = new DataTemplate { VisualTree = cajaAPagar },
+            Width = new DataGridLength(1.3, DataGridLengthUnitType.Star),
+            MinWidth = 110
         };
         _tabla.Columns.Add(_columnaAPagar);
 
@@ -522,7 +575,7 @@ public sealed class IngresosView : UserControl
         };
         _tabla.PreviewKeyDown += (_, e) =>
         {
-            if (e.Key == Key.Space && _tabla.SelectedItem is FilaCobro f)
+            if (e.Key == Key.Space && e.OriginalSource is not TextBox && _tabla.SelectedItem is FilaCobro f)
             {
                 f.Seleccionada = !f.Seleccionada;
                 e.Handled = true;
@@ -538,6 +591,16 @@ public sealed class IngresosView : UserControl
         while (d is not null && d is not T)
             d = d is Visual or System.Windows.Media.Media3D.Visual3D ? VisualTreeHelper.GetParent(d) : LogicalTreeHelper.GetParent(d);
         return d as T;
+    }
+
+    private void ActualizarFecha()
+    {
+        var f = _fechaCobro.SelectedDate?.Date;
+        var otra = f is { } d && d != DateTime.Today;
+        _avisoFecha.Visibility = otra ? Visibility.Visible : Visibility.Collapsed;
+        if (otra)
+            _avisoFecha.Text = $"El cobro se registrará con fecha {f!.Value.ToString("dddd dd/MM/yyyy", Bo)}, no con la de hoy.";
+        ActualizarResumen();
     }
 
     private void MarcarTodas()
@@ -591,7 +654,9 @@ public sealed class IngresosView : UserControl
 
         if (!_cobrando && (!SesionActual.Iniciada || SesionActual.PuedeCobrar))
             _cobrar.Content = sel.Count > 0 && monedas.Count == 1
-                ? $"Cobrar {_total.Text} y emitir recibo"
+                ? _fechaCobro.SelectedDate?.Date is { } f && f != DateTime.Today
+                    ? $"Cobrar {_total.Text} con fecha {f.ToString("dd/MM", Bo)}"
+                    : $"Cobrar {_total.Text} y emitir recibo"
                 : "Cobrar y emitir recibo";
     }
 
@@ -657,6 +722,17 @@ public sealed class IngresosView : UserControl
         var monedaId = sel[0].MonedaId;
         var moneda = sel[0].Moneda;
         var total = sel.Sum(f => f.APagar);
+
+        var fechaCobro = _fechaCobro.SelectedDate?.Date;
+        if (fechaCobro is null || fechaCobro > DateTime.Today || fechaCobro < DateTime.Today.AddDays(-DiasAtrasMaximo))
+        {
+            Dialogo.Mostrar(owner, $"Elige la fecha de cobro: hoy o un día anterior (hasta {DiasAtrasMaximo} días atrás).",
+                "Fecha de cobro", MessageBoxButton.OK, MessageBoxImage.Warning);
+            _fechaCobro.Focus();
+            return;
+        }
+
+        var otraFecha = fechaCobro.Value != DateTime.Today;
 
         if (sel.Any(f => f.APagar <= 0 || f.APagar > f.Saldo))
         {
@@ -731,6 +807,7 @@ public sealed class IngresosView : UserControl
         }
 
         var confirmar = Dialogo.Mostrar(owner,
+            (otraFecha ? $"FECHA DE COBRO: {fechaCobro.Value.ToString("dddd dd/MM/yyyy", Bo)} (no es hoy)\n\n" : "") +
             $"Caseta: {_unidad.Codigo}\nPaga: {pagador}\nForma de pago: {forma.Texto}" +
             (referencia.Length > 0 && forma.Valor != 1 ? $"\nN.º de transacción: {referencia}" : "") +
             (moneda != "BOB" ? $"\nTipo de cambio: {tipoCambio.ToString("N2", Bo)}" : "") +
@@ -765,7 +842,8 @@ public sealed class IngresosView : UserControl
                     NombreConcepto = f.Concepto,
                     Monto = f.EsParcial ? f.APagar : null
                 }).ToList(),
-                Observaciones = observaciones.Length == 0 ? null : observaciones
+                Observaciones = observaciones.Length == 0 ? null : observaciones,
+                FechaCobro = otraFecha ? DateOnly.FromDateTime(fechaCobro.Value) : null
             });
 
             if (resultado?.Recibo is null)

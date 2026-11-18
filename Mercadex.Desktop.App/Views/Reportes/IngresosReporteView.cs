@@ -90,7 +90,7 @@ public sealed class IngresosReporteView : ReporteTablaView
         TipoReporteIngresos.Diario => "Diario de recaudaciones",
         TipoReporteIngresos.Servicios => "Servicios por fechas",
         TipoReporteIngresos.Acumulados => "Servicios acumulados",
-        TipoReporteIngresos.Detalle => "Detalle de cobros",
+        TipoReporteIngresos.Detalle => "Detalle de cobros diarios",
         _ => "Pagos de un servicio"
     };
 
@@ -99,7 +99,7 @@ public sealed class IngresosReporteView : ReporteTablaView
         TipoReporteIngresos.Diario => "Resumen de lo cobrado en el período, servicio por servicio (código, cantidad y monto). Los recibos anulados no se suman.",
         TipoReporteIngresos.Servicios => "Día por día: lo cobrado de cada servicio, el total del día y el acumulado del período.",
         TipoReporteIngresos.Acumulados => "Lo recaudado por cada servicio, mes por mes, con el total acumulado del período.",
-        TipoReporteIngresos.Detalle => "Cada cobro del período, uno por uno, con su recibo, caseta y servicio. Sirve para auditar.",
+        TipoReporteIngresos.Detalle => "Cada cobro del período, concepto por concepto: fecha, recibo, caseta, quién pagó y detalle. Primero los recibos anulados (no se suman).",
         _ => "Elige un servicio (por ejemplo, Alquiler de caseta) y verás solo sus pagos, caseta por caseta."
     };
 
@@ -349,39 +349,79 @@ public sealed class IngresosReporteView : ReporteTablaView
         };
     }
 
-    // ---------- C. Detalle de cobros ----------
+    // ---------- C. Detalle de cobros diarios ----------
 
+    private static readonly string[] MesesCortos = { "ENE", "FEB", "MAR", "ABR", "MAY", "JUN", "JUL", "AGO", "SEP", "OCT", "NOV", "DIC" };
+
+    /// <summary>«APORTE MENSUAL JUL/2026», como en el «Parte diario de recaudaciones» anterior.</summary>
+    private static string DetalleConcepto(string concepto, int? anio, int? mes) =>
+        anio is { } a && mes is >= 1 and <= 12 ? $"{concepto.ToUpper(Bo)} {MesesCortos[mes.Value - 1]}/{a}" : concepto.ToUpper(Bo);
+
+    /// <summary>
+    /// Vertical y con lo necesario (pedido de contabilidad): primero los recibos
+    /// anulados del período (no se suman), después los vigentes, una fila por
+    /// concepto. Sin hora, bloque, moneda ni quién cobró.
+    /// </summary>
     private static Reporte Detalle(RespuestaCaja d, Func<Guid, string> moneda, Catalogos cat, string filtros, List<string> resumen, string nombre)
     {
+        string Caseta(Guid id) => cat.Unidades.TryGetValue(id, out var u) ? u.Codigo : "?";
+        string Fecha(DateTimeOffset f) => f.ToOffset(TimeSpan.FromHours(-4)).ToString("dd/MM/yyyy", Bo);
+        var variasMonedas = d.Resumen.Select(r => r.MonedaId).Distinct().Count() > 1;
+        string Importe(Guid monedaId, decimal monto) => variasMonedas ? $"{moneda(monedaId)} {Monto(monto)}" : Monto(monto);
+
         var filas = new List<FilaReporte>();
-        foreach (var c in d.Cobros)
+
+        var anulados = d.Anulaciones.Where(a => a.Conceptos.Count > 0).OrderBy(a => a.FechaEmisionUtc).ThenBy(a => a.NumeroRecibo).ToList();
+        if (anulados.Count > 0)
         {
-            var (caseta, bloque) = cat.Unidades.TryGetValue(c.UnidadComercialId, out var u) ? u : ("?", null);
-            foreach (var x in c.Conceptos)
-                filas.Add(new(new[]
-                {
-                    c.FechaBolivia, c.NumeroRecibo.ToString(Bo), caseta, bloque ?? "", x.Concepto,
-                    c.Pagador, FormaPago(c.FormaPago), moneda(c.MonedaId), Monto(x.Monto), c.CobradoPor ?? ""
-                }));
+            filas.Add(new(new[] { "ESTADO: ANULADO", "", "", "", "", "" }, Grupo: true));
+            foreach (var a in anulados)
+                foreach (var x in a.Conceptos)
+                    filas.Add(new(new[]
+                    {
+                        a.FechaEmisionUtc is { } f ? Fecha(f) : "", a.NumeroRecibo.ToString(Bo), Caseta(a.UnidadComercialId),
+                        a.Pagador ?? "", DetalleConcepto(x.Concepto, x.PeriodoAnio, x.PeriodoMes),
+                        Importe(a.MonedaId ?? Guid.Empty, x.Monto)
+                    }));
+            foreach (var m in anulados.GroupBy(a => a.MonedaId ?? Guid.Empty))
+                filas.Add(new(new[] { "", "", "", "", "TOTAL ANULADO (no se suma)", Importe(m.Key, m.Sum(a => a.MontoExcluido)) }, Total: true));
         }
 
-        foreach (var r in d.Resumen)
-            filas.Add(new(new[] { "TOTAL", "", "", "", "", "", "", moneda(r.MonedaId), Monto(r.Total), "" }, Total: true));
+        if (d.Cobros.Count > 0)
+        {
+            filas.Add(new(new[] { "ESTADO: VIGENTE", "", "", "", "", "" }, Grupo: true));
+            foreach (var c in d.Cobros)
+                foreach (var x in c.Conceptos)
+                    filas.Add(new(new[]
+                    {
+                        Fecha(c.FechaEmisionUtc), c.NumeroRecibo.ToString(Bo), Caseta(c.UnidadComercialId),
+                        c.Pagador, DetalleConcepto(x.Concepto, x.PeriodoAnio, x.PeriodoMes), Importe(c.MonedaId, x.Monto)
+                    }));
+            foreach (var r in d.Resumen)
+                filas.Add(new(new[] { "", "", "", "", variasMonedas ? $"TOTAL {moneda(r.MonedaId)}" : "TOTAL Bs", Importe(r.MonedaId, r.Total) }, Total: true));
+        }
+
+        // Total por forma de pago (efectivo, QR…), debajo del total recaudado.
+        var formas = d.FormasPago
+            .GroupBy(f => f.MonedaId)
+            .Select(g => string.Join("   ·   ", g.OrderBy(f => f.FormaPago).Select(f => $"{FormaPago(f.FormaPago)}: {moneda(g.Key)} {Monto(f.Total)}")))
+            .ToList();
+        var lineas = new List<string>(resumen);
+        lineas.InsertRange(Math.Min(d.Resumen.Count, lineas.Count), formas);
 
         return new Reporte
         {
-            Titulo = "Detalle de cobros",
+            Titulo = "Detalle de cobros diarios",
             Filtros = filtros,
-            Resumen = resumen,
+            Resumen = lineas,
             NombreArchivo = nombre,
-            Horizontal = true,
+            PieSoloPagina = true,
             Columnas = new()
             {
-                new("Fecha", 1.3), new("Recibo", 0.6, Derecha: true), new("Caseta", 0.6), new("Bloque", 0.6),
-                new("Servicio", 1.8), new("Pagó", 1.7), new("Forma de pago", 0.9), new("Moneda", 0.6),
-                new("Monto", 1, Derecha: true, Numero: true), new("Cobró", 1.1)
+                new("Fecha", 0.95), new("Recibo", 0.7, Derecha: true), new("Caseta", 0.65),
+                new("Pagado por", 2.3), new("Detalle", 2.7), new(variasMonedas ? "Monto" : "Monto Bs", 0.95, Derecha: true, Numero: !variasMonedas)
             },
-            Filas = d.Cobros.Count == 0 ? new() : filas
+            Filas = filas
         };
     }
 
@@ -441,6 +481,18 @@ public sealed class IngresosReporteView : ReporteTablaView
         public List<FormaPagoCaja> FormasPago { get; set; } = new();
         public List<ConceptoCaja> Conceptos { get; set; } = new();
         public List<CobroCaja> Cobros { get; set; } = new();
+        public List<AnulacionCaja> Anulaciones { get; set; } = new();
+    }
+
+    private sealed class AnulacionCaja
+    {
+        public long NumeroRecibo { get; set; }
+        public Guid UnidadComercialId { get; set; }
+        public Guid? MonedaId { get; set; }
+        public decimal MontoExcluido { get; set; }
+        public string? Pagador { get; set; }
+        public DateTimeOffset? FechaEmisionUtc { get; set; }
+        public List<DetalleCaja> Conceptos { get; set; } = new();
     }
 
     private sealed class ResumenMoneda
@@ -498,5 +550,7 @@ public sealed class IngresosReporteView : ReporteTablaView
         public string? Codigo { get; set; }
         public string Concepto { get; set; } = "";
         public decimal Monto { get; set; }
+        public int? PeriodoAnio { get; set; }
+        public int? PeriodoMes { get; set; }
     }
 }

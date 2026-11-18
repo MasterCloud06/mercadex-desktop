@@ -200,12 +200,12 @@ public sealed class DeudoresReporteView : ReporteTablaView
             Filtros = filtros,
             Resumen = resumen,
             NombreArchivo = nombre,
-            Horizontal = true,
+            // Vertical, como todos los documentos de la asociación.
             Nota = "Listado preventivo para notificar a los socios. No es una orden automática de corte.",
             Columnas = new()
             {
-                new("Caseta", 0.7), new("Titular", 2), new("Celular", 1), new("Servicios pendientes", 3),
-                new("Deudas", 0.6, Derecha: true), new("Debe desde", 0.9), new("Total", 1.3, Derecha: true)
+                new("Caseta", 0.6), new("Titular", 2), new("Celular", 0.9), new("Servicios pendientes", 2.2),
+                new("Deudas", 0.55, Derecha: true), new("Debe desde", 0.95), new("Total", 1.15, Derecha: true)
             },
             Filas = filas
         };

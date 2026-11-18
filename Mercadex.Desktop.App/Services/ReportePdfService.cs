@@ -28,6 +28,10 @@ public sealed class Reporte
     public List<FilaReporte> Filas { get; init; } = new();
     public string? Nota { get; init; }
     public bool Horizontal { get; init; }
+
+    /// <summary>Pie de página solo con «Página N» (sin quién ni cuándo se generó).</summary>
+    public bool PieSoloPagina { get; init; }
+
     public string NombreArchivo { get; init; } = "Reporte";
 }
 
@@ -224,10 +228,18 @@ public static class ReportePdfService
 
             g.DrawRectangle(azul, 0, 0, pagina.Width.Point, 8);
             g.DrawRectangle(amarillo, 0, 8, 90, 3);
-            g.DrawString($"Mercadex · {r.Titulo} · Página {pdf.PageCount}", fPie, gris,
-                new XRect(margen, pagina.Height.Point - 26, ancho, 10), XStringFormats.TopLeft);
-            g.DrawString(generado, fPie, gris,
-                new XRect(margen, pagina.Height.Point - 26, ancho, 10), XStringFormats.TopRight);
+            if (r.PieSoloPagina)
+            {
+                g.DrawString($"Página {pdf.PageCount}", fPie, gris,
+                    new XRect(margen, pagina.Height.Point - 26, ancho, 10), XStringFormats.TopRight);
+            }
+            else
+            {
+                g.DrawString($"Mercadex · {r.Titulo} · Página {pdf.PageCount}", fPie, gris,
+                    new XRect(margen, pagina.Height.Point - 26, ancho, 10), XStringFormats.TopLeft);
+                g.DrawString(generado, fPie, gris,
+                    new XRect(margen, pagina.Height.Point - 26, ancho, 10), XStringFormats.TopRight);
+            }
 
             y = 26;
             if (primera)

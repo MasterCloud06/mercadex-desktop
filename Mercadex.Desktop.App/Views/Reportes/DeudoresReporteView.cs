@@ -29,9 +29,9 @@ public sealed class DeudoresReporteView : ReporteTablaView
 
     public DeudoresReporteView(TipoReporteDeudores tipo)
         : base(
-            tipo == TipoReporteDeudores.Corte ? "Aviso para corte" : "Deudores para contabilidad",
+            tipo == TipoReporteDeudores.Corte ? "Deudores" : "Deudores para contabilidad",
             tipo == TipoReporteDeudores.Corte
-                ? "Casetas que deben: cada una aparece una sola vez, aunque deba uno o varios servicios. Sirve para notificar antes de un corte."
+                ? "Casetas que deben, con su socio, cuántas deudas tiene y el total; al final, cuántas casetas son y el total por cobrar."
                 : "Cada deuda pendiente de cada caseta con su fecha, servicio y monto, el total por caseta y el total general.")
     {
         _tipo = tipo;
@@ -136,12 +136,14 @@ public sealed class DeudoresReporteView : ReporteTablaView
         var bloque = (_bloque.SelectedItem as UiKit.Item<string?>)?.Valor;
         if (bloque is not null)
             parametros.Add("bloque=" + Uri.EscapeDataString(bloque));
-        textoFiltros.Add("Bloque: " + (bloque ?? "Todos"));
+        if (bloque is not null)
+            textoFiltros.Add("Bloque: " + bloque);
 
         var moneda = (_moneda.SelectedItem as UiKit.Item<string?>)?.Valor;
         if (moneda is not null)
             parametros.Add("moneda=" + Uri.EscapeDataString(moneda));
-        textoFiltros.Add("Moneda: " + (moneda ?? "Todas"));
+        if (moneda is not null)
+            textoFiltros.Add("Moneda: " + moneda);
 
         var marcados = _servicios.Children.OfType<CheckBox>().Where(c => c.IsChecked == true).ToList();
         if (marcados.Count > 0)
@@ -163,7 +165,8 @@ public sealed class DeudoresReporteView : ReporteTablaView
         var sufijo = DateTime.Today.ToString("yyyyMMdd");
 
         return _tipo == TipoReporteDeudores.Corte
-            ? Corte(d, filtros, resumen, "Aviso_para_corte_" + sufijo)
+            ? Corte(d, filtros, resumen, "Deudores_" + sufijo,
+                marcados.Count == 1 ? marcados[0].Content?.ToString() : null)
             : Contabilidad(d, filtros, resumen, "Deudores_contabilidad_" + sufijo);
     }
 
@@ -176,36 +179,53 @@ public sealed class DeudoresReporteView : ReporteTablaView
     private static string Totales(List<MontoMoneda> totales) =>
         string.Join(" + ", totales.Select(t => $"{t.Moneda} {Monto(t.Monto)}"));
 
-    // ---------- Aviso / lista para corte: una fila por caseta ----------
+    // ---------- Deudores (antes «Aviso para corte»): una fila por caseta ----------
 
-    private static Reporte Corte(Respuesta d, string filtros, List<string> resumen, string nombre)
+    /// <summary>
+    /// «Deudores» (antes «Aviso para corte»), como pidió contabilidad: vertical,
+    /// caseta, socio, cantidad de deudas y total, con el total de casetas y el
+    /// total por cobrar al final.
+    /// </summary>
+    private static Reporte Corte(Respuesta d, string filtros, List<string> resumen, string nombre, string? servicio)
     {
+        var variasMonedas = d.Totales.Count > 1;
+        string Total(List<MontoMoneda> totales) =>
+            variasMonedas ? Totales(totales) : string.Join(" + ", totales.Select(t => Monto(t.Monto)));
+
         // Una lista continua por número de caseta, sin cortes por bloque.
         var filas = PorCaseta(d.Filas)
             .Select(f => new FilaReporte(new[]
             {
                 f.Codigo,
-                f.Titular ?? "Sin titular",
-                f.Telefono ?? "",
-                string.Join(", ", f.Servicios),
+                f.Titular ?? "Sin socio titular",
                 f.Cantidad.ToString(Bo),
-                Fecha(f.Desde.ToDateTime(TimeOnly.MinValue)),
-                Totales(f.Totales)
+                Total(f.Totales)
             }))
             .ToList();
 
+        if (filas.Count > 0)
+        {
+            filas.Add(new(new[]
+            {
+                d.Casetas.ToString(Bo),
+                d.Casetas == 1 ? "caseta" : "casetas",
+                d.Deudas.ToString(Bo),
+                Total(d.Totales)
+            }, Total: true));
+        }
+
         return new Reporte
         {
-            Titulo = "Aviso para corte",
+            Titulo = servicio is null ? "Deudores" : $"Deudores — {servicio}",
             Filtros = filtros,
             Resumen = resumen,
             NombreArchivo = nombre,
-            // Vertical, como todos los documentos de la asociación.
+            PieSoloPagina = true,
             Nota = "Listado preventivo para notificar a los socios. No es una orden automática de corte.",
             Columnas = new()
             {
-                new("Caseta", 0.6), new("Titular", 2), new("Celular", 0.9), new("Servicios pendientes", 2.2),
-                new("Deudas", 0.55, Derecha: true), new("Debe desde", 0.95), new("Total", 1.15, Derecha: true)
+                new("Caseta", 0.8), new("Socio", 3.4),
+                new("Deudas", 0.8, Derecha: true), new(variasMonedas ? "Total" : "Total Bs", 1.4, Derecha: true, Numero: !variasMonedas)
             },
             Filas = filas
         };

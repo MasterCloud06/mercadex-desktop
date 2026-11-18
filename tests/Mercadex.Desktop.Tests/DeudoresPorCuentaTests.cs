@@ -56,6 +56,30 @@ public sealed class DeudoresPorCuentaTests
     }
 
     [Fact]
+    public void Lista_de_corte_cada_local_una_vez_de_menor_a_mayor_con_cuantas_cuentas_debe()
+    {
+        var cuentas = V.Agrupar(Datos);
+
+        var locales = V.Locales(cuentas);
+
+        Assert.Equal(new[] { "9", "26", "300", "354", "S/N" }, locales.Select(l => l.Caseta));
+        Assert.Equal(new[] { "9 (2)", "26", "300", "354 (3)", "S/N" }, locales.Select(V.Local));
+    }
+
+    [Fact]
+    public void Lista_de_corte_servicios_arriba_y_locales_debajo()
+    {
+        var cuentas = V.Agrupar(Datos);
+
+        var texto = V.Texto(cuentas);
+
+        Assert.StartsWith("LISTA DE CORTE", texto);
+        Assert.Contains("SERVICIOS: MENSUALIDAD ago/2026,  MENSUALIDAD sep/2026,  TECHO-ESCOMBRO ago/2026", texto);
+        Assert.True(texto.IndexOf("SERVICIOS:", StringComparison.Ordinal) < texto.IndexOf("LOCALES:", StringComparison.Ordinal));
+        Assert.Contains("TOTAL DE CASETAS: 5", texto);
+    }
+
+    [Fact]
     public void El_pdf_se_genera_aunque_haya_muchas_casetas()
     {
         var muchas = new V.Cuenta("MENSUALIDAD", "09/2026", V.Ordenar(Enumerable.Range(1, 400).Select(n => n.ToString())));

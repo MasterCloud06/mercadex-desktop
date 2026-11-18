@@ -43,11 +43,11 @@ public sealed class DeudoresPorCuentaView : UserControl
         acciones.Children.Add(_copiar);
         DockPanel.SetDock(acciones, Dock.Right);
         cabeza.Children.Add(acciones);
-        cabeza.Children.Add(new TextBlock { Text = "Deudores por cuenta (solo número de caseta)", FontSize = 22, FontWeight = FontWeights.Bold, Foreground = UiKit.Titulo, VerticalAlignment = VerticalAlignment.Center });
+        cabeza.Children.Add(new TextBlock { Text = "Lista de corte", FontSize = 22, FontWeight = FontWeights.Bold, Foreground = UiKit.Titulo, VerticalAlignment = VerticalAlignment.Center });
         arriba.Children.Add(cabeza);
         arriba.Children.Add(UiKit.Ayuda(
-            "Marca las cuentas que quieres ver. Cada una se agrega abajo con los números de las casetas que la deben " +
-            "y el total de casetas deudoras, en el orden en que las marcas.", 10));
+            "Marca las cuentas (servicio y mes). Arriba salen todas las cuentas marcadas y debajo los locales que deben " +
+            "alguna, cada uno una sola vez; entre paréntesis, cuántas de esas cuentas debe.", 10));
         arriba.Children.Add(_estado);
         raiz.Children.Add(arriba);
 
@@ -161,6 +161,27 @@ public sealed class DeudoresPorCuentaView : UserControl
         DibujarVista();
     }
 
+    /// <summary>
+    /// Los locales que deben alguna de las cuentas, cada uno una sola vez y de
+    /// menor a mayor, con cuántas de esas cuentas debe.
+    /// </summary>
+    public static List<(string Caseta, int Cuentas)> Locales(IEnumerable<Cuenta> cuentas) =>
+        cuentas.SelectMany(c => c.Casetas.Distinct(StringComparer.OrdinalIgnoreCase))
+            .GroupBy(x => x, StringComparer.OrdinalIgnoreCase)
+            .Select(g => (Caseta: g.Key, Cuentas: g.Count()))
+            .OrderBy(x => int.TryParse(x.Caseta, out _) ? 0 : 1)
+            .ThenBy(x => int.TryParse(x.Caseta, out var n) ? n : 0)
+            .ThenBy(x => x.Caseta, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+    /// <summary>«1 (4)»: la caseta 1 debe 4 de las cuentas marcadas; «5» si debe una.</summary>
+    public static string Local((string Caseta, int Cuentas) l) =>
+        l.Cuentas > 1 ? $"{l.Caseta} ({l.Cuentas})" : l.Caseta;
+
+    public static string Servicios(IEnumerable<Cuenta> cuentas) => string.Join(",  ", cuentas.Select(c => c.Etiqueta));
+
+    private const string Leyenda = "(n) = cuántas de las cuentas de la lista debe ese local.";
+
     private void DibujarVista()
     {
         _vista.Children.Clear();
@@ -174,18 +195,39 @@ public sealed class DeudoresPorCuentaView : UserControl
 
         var negro = new SolidColorBrush(Color.FromRgb(0x11, 0x11, 0x11));
         negro.Freeze();
-        var fuente = new FontFamily("Times New Roman");
-        foreach (var c in _marcadas)
-        {
-            _vista.Children.Add(new TextBlock { Text = c.Titulo, FontFamily = fuente, FontSize = 16, Foreground = negro, HorizontalAlignment = HorizontalAlignment.Center, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 0, 0, 12) });
-            _vista.Children.Add(new TextBlock { Text = c.Numeros, FontFamily = fuente, FontSize = 15, Foreground = negro, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 0, 0, 12) });
-            _vista.Children.Add(new TextBlock { Text = c.Total, FontFamily = fuente, FontSize = 15, Foreground = negro, Margin = new Thickness(0, 0, 0, 34) });
-        }
+        var fuente = new FontFamily("Arial");
+        var locales = Locales(_marcadas);
+
+        _vista.Children.Add(new TextBlock { Text = "LISTA DE CORTE", FontFamily = fuente, FontSize = 16, FontWeight = FontWeights.Bold, Foreground = negro, HorizontalAlignment = HorizontalAlignment.Center, Margin = new Thickness(0, 0, 0, 14) });
+
+        var servicios = new DockPanel { Margin = new Thickness(0, 0, 0, 14) };
+        var etiqueta = new TextBlock { Text = "SERVICIOS:", FontFamily = fuente, FontSize = 13, FontWeight = FontWeights.Bold, Foreground = negro, Margin = new Thickness(0, 0, 10, 0) };
+        DockPanel.SetDock(etiqueta, Dock.Left);
+        servicios.Children.Add(etiqueta);
+        servicios.Children.Add(new TextBlock { Text = Servicios(_marcadas), FontFamily = fuente, FontSize = 13, Foreground = negro, TextWrapping = TextWrapping.Wrap });
+        _vista.Children.Add(servicios);
+
+        _vista.Children.Add(new Border { BorderBrush = negro, BorderThickness = new Thickness(0, 1, 0, 1), Padding = new Thickness(0, 3, 0, 3), Margin = new Thickness(0, 0, 0, 8),
+            Child = new TextBlock { Text = "LOCALES", FontFamily = fuente, FontSize = 13, FontWeight = FontWeights.Bold, Foreground = negro, HorizontalAlignment = HorizontalAlignment.Center } });
+
+        var grilla = new WrapPanel();
+        foreach (var l in locales)
+            grilla.Children.Add(new TextBlock { Text = Local(l), FontFamily = fuente, FontSize = 13, Foreground = negro, Width = 62, Margin = new Thickness(0, 0, 0, 4) });
+        _vista.Children.Add(grilla);
+
+        _vista.Children.Add(new TextBlock { Text = $"TOTAL DE CASETAS: {locales.Count}", FontFamily = fuente, FontSize = 13, FontWeight = FontWeights.Bold, Foreground = negro, Margin = new Thickness(0, 14, 0, 4) });
+        if (locales.Any(l => l.Cuentas > 1))
+            _vista.Children.Add(new TextBlock { Text = Leyenda, FontFamily = fuente, FontSize = 11.5, Foreground = Brushes.Gray });
     }
 
     /// <summary>El mismo contenido en texto, para pegarlo en Word o WhatsApp.</summary>
-    public static string Texto(IEnumerable<Cuenta> cuentas) =>
-        string.Join("\n\n", cuentas.Select(c => $"{c.Titulo}\n\n{c.Numeros}\n\n{c.Total}"));
+    public static string Texto(IEnumerable<Cuenta> cuentas)
+    {
+        var lista = cuentas.ToList();
+        var locales = Locales(lista);
+        return $"LISTA DE CORTE\n\nSERVICIOS: {Servicios(lista)}\n\nLOCALES:\n{string.Join("   ", locales.Select(Local))}\n\nTOTAL DE CASETAS: {locales.Count}" +
+               (locales.Any(l => l.Cuentas > 1) ? "\n" + Leyenda : "");
+    }
 
     private void Copiar()
     {
@@ -206,32 +248,36 @@ public sealed class DeudoresPorCuentaView : UserControl
             return;
 
         var cuentas = _marcadas.ToList();
-        ReportePdfService.GuardarArchivo(Window.GetWindow(this), "Deudores por cuenta",
-            $"Deudores_por_cuenta_{DateTime.Today:yyyyMMdd}", "Documento PDF (*.pdf)|*.pdf", ".pdf",
+        ReportePdfService.GuardarArchivo(Window.GetWindow(this), "Lista de corte",
+            $"Lista_de_corte_{DateTime.Today:yyyyMMdd}", "Documento PDF (*.pdf)|*.pdf", ".pdf",
             ruta => EscribirPdf(ruta, cuentas));
     }
 
+    /// <summary>Como la «Lista de corte» del sistema anterior: servicios arriba y los locales en una grilla.</summary>
     public static void EscribirPdf(string ruta, IReadOnlyList<Cuenta> cuentas)
     {
         using var pdf = new PdfDocument();
-        pdf.Info.Title = "Deudores por cuenta";
+        pdf.Info.Title = "Lista de corte";
         pdf.Info.Creator = "Mercadex";
 
-        var fTitulo = new XFont("Times New Roman", 12, XFontStyleEx.Regular);
-        var fTexto = new XFont("Times New Roman", 11.5, XFontStyleEx.Regular);
-        var fPie = new XFont("Arial", 7, XFontStyleEx.Regular);
+        var fAsociacion = new XFont("Arial", 10, XFontStyleEx.Bold);
+        var fTitulo = new XFont("Arial", 13, XFontStyleEx.Bold);
+        var fNegrita = new XFont("Arial", 10, XFontStyleEx.Bold);
+        var fTexto = new XFont("Arial", 10, XFontStyleEx.Regular);
+        var fPie = new XFont("Arial", 7.5, XFontStyleEx.Regular);
         var gris = new XSolidBrush(XColor.FromArgb(90, 107, 125));
+        var linea = new XPen(XColors.Black, 0.8);
 
-        const double margen = 56;
-        PdfPage? pagina = null;
+        const double margen = 42;
         XGraphics? g = null;
         double y = 0, ancho = 0, alto = 0;
         var numero = 0;
+        var locales = Locales(cuentas);
 
         void NuevaPagina()
         {
             g?.Dispose();
-            pagina = pdf.AddPage();
+            var pagina = pdf.AddPage();
             pagina.Width = XUnit.FromPoint(595);   // A4 vertical
             pagina.Height = XUnit.FromPoint(842);
             g = XGraphics.FromPdfPage(pagina);
@@ -239,66 +285,73 @@ public sealed class DeudoresPorCuentaView : UserControl
             alto = pagina.Height.Point;
             y = margen;
             numero++;
-            g.DrawString($"Mercadex · Deudores por cuenta · Página {numero}", fPie, gris, new XRect(margen, alto - 30, ancho, 10), XStringFormats.TopLeft);
-            g.DrawString($"Deudas pendientes al {DateTime.Today.ToString("dd/MM/yyyy", Bo)}", fPie, gris, new XRect(margen, alto - 30, ancho, 10), XStringFormats.TopRight);
-        }
-
-        double Alto(string texto, XFont fuente)
-        {
-            // Alto aproximado del párrafo: líneas según el ancho del texto.
-            var linea = fuente.GetHeight() * 1.15;
-            var palabras = texto.Split(' ');
-            var lineas = 1;
-            var actual = 0.0;
-            foreach (var p in palabras)
-            {
-                var w = g!.MeasureString(p + " ", fuente).Width;
-                if (actual + w > ancho && actual > 0)
-                {
-                    lineas++;
-                    actual = 0;
-                }
-                actual += w;
-            }
-            return lineas * linea;
+            g.DrawString($"Página {numero}", fPie, gris, new XRect(margen, alto - 26, ancho, 10), XStringFormats.TopRight);
         }
 
         NuevaPagina();
-        foreach (var c in cuentas)
+        g!.DrawString("ASOCIACIÓN DE COMERCIANTES 13 DE JULIO", fAsociacion, XBrushes.Black, new XRect(margen, y, ancho, 12), XStringFormats.TopLeft);
+        g.DrawString($"Fecha: {DateTime.Today.ToString("dd/MM/yyyy", Bo)}", fTexto, XBrushes.Black, new XRect(margen, y, ancho, 12), XStringFormats.TopRight);
+        y += 18;
+        g.DrawString("LISTA DE CORTE", fTitulo, XBrushes.Black, new XRect(margen, y, ancho, 16), XStringFormats.TopCenter);
+        y += 22;
+        g.DrawLine(linea, margen, y, margen + ancho, y);
+        y += 8;
+
+        // SERVICIOS: todas las cuentas marcadas, en un párrafo.
+        const double sangria = 72;
+        g.DrawString("SERVICIOS:", fNegrita, XBrushes.Black, new XRect(margen, y, sangria, 12), XStringFormats.TopLeft);
+        var texto = Servicios(cuentas);
+        var palabras = texto.Split(' ');
+        var lineas = 1;
+        var actual = 0.0;
+        foreach (var p in palabras)
         {
-            var altoNumeros = Alto(c.Numeros, fTexto);
-            var necesario = fTitulo.GetHeight() + 14 + altoNumeros + 14 + fTexto.GetHeight() + 30;
-            if (y + Math.Min(necesario, 160) > alto - margen)
-                NuevaPagina();
+            var w = g.MeasureString(p + " ", fTexto).Width;
+            if (actual + w > ancho - sangria && actual > 0) { lineas++; actual = 0; }
+            actual += w;
+        }
+        var altoServicios = lineas * fTexto.GetHeight() * 1.2 + 4;
+        new XTextFormatter(g).DrawString(texto, fTexto, XBrushes.Black, new XRect(margen + sangria, y, ancho - sangria, altoServicios), XStringFormats.TopLeft);
+        y += altoServicios + 6;
 
-            g!.DrawString(c.Titulo, fTitulo, XBrushes.Black, new XRect(margen, y, ancho, fTitulo.GetHeight()), XStringFormats.TopCenter);
-            y += fTitulo.GetHeight() + 14;
-
-            // Si los números no entran en lo que queda de la hoja, siguen en la próxima.
-            var restantes = c.Casetas.ToList();
-            while (restantes.Count > 0)
-            {
-                var disponible = alto - margen - y - 20;
-                var cuantas = restantes.Count;
-                while (cuantas > 1 && Alto(string.Join(" - ", restantes.Take(cuantas)), fTexto) > disponible)
-                    cuantas--;
-                var parte = string.Join(" - ", restantes.Take(cuantas)) + (cuantas < restantes.Count ? " -" : "");
-                var h = Alto(parte, fTexto);
-                new XTextFormatter(g) { Alignment = XParagraphAlignment.Justify }
-                    .DrawString(parte, fTexto, XBrushes.Black, new XRect(margen, y, ancho, h + 4), XStringFormats.TopLeft);
-                y += h + 14;
-                restantes = restantes.Skip(cuantas).ToList();
-                if (restantes.Count > 0)
-                    NuevaPagina();
-            }
-
-            if (y + fTexto.GetHeight() > alto - margen)
-                NuevaPagina();
-            g!.DrawString(c.Total, fTexto, XBrushes.Black, new XRect(margen, y, ancho, fTexto.GetHeight()), XStringFormats.TopLeft);
-            y += fTexto.GetHeight() + 34;
+        void Encabezado()
+        {
+            g!.DrawLine(linea, margen, y, margen + ancho, y);
+            g.DrawString("LOCALES", fNegrita, XBrushes.Black, new XRect(margen, y + 3, ancho, 12), XStringFormats.TopCenter);
+            y += 18;
+            g.DrawLine(linea, margen, y, margen + ancho, y);
+            y += 6;
         }
 
-        g?.Dispose();
+        Encabezado();
+
+        // Grilla de locales: columnas iguales, tantas como entren.
+        var anchoCelda = Math.Max(34, locales.Count == 0 ? 34 : locales.Max(l => g.MeasureString(Local(l), fTexto).Width) + 10);
+        var columnas = Math.Max(1, (int)(ancho / anchoCelda));
+        anchoCelda = ancho / columnas;
+        var altoFila = fTexto.GetHeight() * 1.45;
+        for (var i = 0; i < locales.Count; i += columnas)
+        {
+            if (y + altoFila > alto - margen - 30)
+            {
+                NuevaPagina();
+                Encabezado();
+            }
+            for (var k = 0; k < columnas && i + k < locales.Count; k++)
+                g!.DrawString(Local(locales[i + k]), fTexto, XBrushes.Black, new XRect(margen + k * anchoCelda, y, anchoCelda, altoFila), XStringFormats.TopLeft);
+            y += altoFila;
+        }
+
+        if (y + 40 > alto - margen)
+            NuevaPagina();
+        y += 4;
+        g!.DrawLine(linea, margen, y, margen + ancho, y);
+        y += 6;
+        g.DrawString($"TOTAL DE CASETAS: {locales.Count}", fNegrita, XBrushes.Black, new XRect(margen, y, ancho, 12), XStringFormats.TopLeft);
+        if (locales.Any(l => l.Cuentas > 1))
+            g.DrawString(Leyenda, fPie, gris, new XRect(margen, y + 16, ancho, 10), XStringFormats.TopLeft);
+
+        g.Dispose();
         pdf.Save(ruta);
     }
 
@@ -310,6 +363,13 @@ public sealed class DeudoresPorCuentaView : UserControl
 
         /// <summary>Para ordenar los meses: 202608.</summary>
         public int Orden => Periodo.Split('/') is [var m, var a] && int.TryParse(m, out var mm) && int.TryParse(a, out var aa) ? aa * 100 + mm : 0;
+
+        private static readonly string[] MesesCortos = { "ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic" };
+
+        /// <summary>«APORTE MENSUAL oct/2026», como en la lista de corte anterior.</summary>
+        public string Etiqueta => Orden == 0
+            ? (Concepto.ToUpper(Bo) + (Periodo.Length == 0 ? "" : " " + Periodo))
+            : $"{Concepto.ToUpper(Bo)} {MesesCortos[Orden % 100 - 1]}/{Orden / 100}";
 
         /// <summary>«Mensualidad · Agosto 2026».</summary>
         public string Nombre => Periodo.Length == 0 ? Concepto : $"{Concepto} · {Mes(false)}";

@@ -97,7 +97,7 @@ public sealed class IngresosReporteView : ReporteTablaView
     private static string Ayuda(TipoReporteIngresos t) => t switch
     {
         TipoReporteIngresos.Diario => "Resumen de lo cobrado en el período, servicio por servicio (código, cantidad y monto). Los recibos anulados no se suman.",
-        TipoReporteIngresos.Servicios => "Día por día: lo cobrado de cada servicio, el total del día y el acumulado del período.",
+        TipoReporteIngresos.Servicios => "Día por día: código, servicio y monto de lo cobrado, con el total de cada día.",
         TipoReporteIngresos.Acumulados => "Lo recaudado por cada servicio, mes por mes, con el total acumulado del período.",
         TipoReporteIngresos.Detalle => "Cada cobro del período, concepto por concepto: fecha, recibo, caseta, quién pagó y detalle. Primero los recibos anulados (no se suman).",
         _ => "Elige un servicio (por ejemplo, Alquiler de caseta) y verás solo sus pagos, caseta por caseta."
@@ -220,8 +220,8 @@ public sealed class IngresosReporteView : ReporteTablaView
         var filas = new List<FilaReporte>();
         foreach (var porMoneda in d.Conceptos.GroupBy(c => c.MonedaId))
         {
-            foreach (var c in porMoneda.OrderBy(c => c.Concepto, StringComparer.Create(Bo, true)))
-                filas.Add(new(new[] { c.Codigo ?? "", c.Concepto, moneda(c.MonedaId), c.Cantidad.ToString(Bo), Monto(c.Total) }));
+            foreach (var c in porMoneda.OrderBy(c => c.Numero ?? int.MaxValue).ThenBy(c => c.Concepto, StringComparer.Create(Bo, true)))
+                filas.Add(new(new[] { CodigoServicio(c.Numero, c.Codigo), c.Concepto, moneda(c.MonedaId), c.Cantidad.ToString(Bo), Monto(c.Total) }));
             filas.Add(new(new[] { "", "TOTAL GENERAL", moneda(porMoneda.Key), porMoneda.Sum(c => c.Cantidad).ToString(Bo), Monto(porMoneda.Sum(c => c.Total)) }, Total: true));
         }
 
@@ -245,33 +245,30 @@ public sealed class IngresosReporteView : ReporteTablaView
 
     // ---------- B. Servicios por fechas: día por día ----------
 
-    /// <summary>Cada día del período con lo cobrado de cada servicio, el total del día y el acumulado.</summary>
+    /// <summary>
+    /// Como el «Informe de servicios por rango de fecha» anterior: cada día con
+    /// el código, el servicio y el monto, y el total del día. Vertical.
+    /// </summary>
     private static Reporte Servicios(RespuestaCaja d, Func<Guid, string> moneda, string filtros, List<string> resumen, string nombre)
     {
         var lineas = d.Cobros
-            .SelectMany(c => c.Conceptos.Select(x => new { Dia = c.FechaLocal.Date, c.MonedaId, x.Codigo, x.Concepto, x.Monto }))
+            .SelectMany(c => c.Conceptos.Select(x => new { Dia = c.FechaLocal.Date, c.MonedaId, Codigo = CodigoServicio(x.Numero, x.Codigo), x.Concepto, x.Monto }))
             .ToList();
+        var variasMonedas = lineas.Select(l => l.MonedaId).Distinct().Count() > 1;
+        string Importe(Guid monedaId, decimal monto) => variasMonedas ? $"{moneda(monedaId)} {Monto(monto)}" : Monto(monto);
 
         var filas = new List<FilaReporte>();
-        foreach (var porMoneda in lineas.GroupBy(l => l.MonedaId))
+        foreach (var dia in lineas.GroupBy(l => l.Dia).OrderBy(g => g.Key))
         {
-            var acumulado = 0m;
-            foreach (var dia in porMoneda.GroupBy(l => l.Dia).OrderBy(g => g.Key))
-            {
-                filas.Add(new(new[] { Fecha(dia.Key), "", "", "", "", "" }, Grupo: true));
-                foreach (var servicio in dia.GroupBy(l => (l.Codigo, l.Concepto)).OrderBy(g => g.Key.Concepto, StringComparer.Create(Bo, true)))
-                    filas.Add(new(new[]
-                    {
-                        servicio.Key.Codigo ?? "", servicio.Key.Concepto, moneda(porMoneda.Key),
-                        servicio.Count().ToString(Bo), Monto(servicio.Sum(l => l.Monto)), ""
-                    }));
-                var total = dia.Sum(l => l.Monto);
-                acumulado += total;
-                filas.Add(new(new[] { "", $"Total del {Fecha(dia.Key)}", moneda(porMoneda.Key), dia.Count().ToString(Bo), Monto(total), Monto(acumulado) }, Total: true));
-            }
-
-            filas.Add(new(new[] { "", "TOTAL DEL PERÍODO", moneda(porMoneda.Key), porMoneda.Count().ToString(Bo), Monto(porMoneda.Sum(l => l.Monto)), "" }, Total: true));
+            filas.Add(new(new[] { "FECHA:", dia.Key.ToString("dddd, d 'de' MMMM 'de' yyyy", Bo), "" }, Grupo: true));
+            foreach (var servicio in dia.GroupBy(l => (l.Codigo, l.Concepto, l.MonedaId)).OrderBy(g => g.Key.Codigo).ThenBy(g => g.Key.Concepto))
+                filas.Add(new(new[] { servicio.Key.Codigo, servicio.Key.Concepto.ToUpper(Bo), Importe(servicio.Key.MonedaId, servicio.Sum(l => l.Monto)) }));
+            foreach (var m in dia.GroupBy(l => l.MonedaId))
+                filas.Add(new(new[] { "", $"TOTAL {Fecha(dia.Key)}", Importe(m.Key, m.Sum(l => l.Monto)) }, Total: true));
         }
+
+        foreach (var m in lineas.GroupBy(l => l.MonedaId))
+            filas.Add(new(new[] { "", "TOTAL DEL PERÍODO", Importe(m.Key, m.Sum(l => l.Monto)) }, Total: true));
 
         return new Reporte
         {
@@ -279,18 +276,20 @@ public sealed class IngresosReporteView : ReporteTablaView
             Filtros = filtros,
             Resumen = resumen,
             NombreArchivo = nombre,
+            PieSoloPagina = true,
             Columnas = new()
             {
                 new("Código", 0.8),
-                new("Fecha / servicio", 2.6),
-                new("Moneda", 0.7),
-                new("Cantidad", 0.8, Derecha: true),
-                new("Monto", 1.2, Derecha: true, Numero: true),
-                new("Acumulado", 1.2, Derecha: true, Numero: true)
+                new("Servicio", 3.4),
+                new(variasMonedas ? "Monto" : "Monto Bs", 1.1, Derecha: true, Numero: !variasMonedas)
             },
             Filas = filas
         };
     }
+
+    /// <summary>El número del servicio con cuatro cifras (0024); sin número, su código.</summary>
+    private static string CodigoServicio(int? numero, string? codigo) =>
+        numero is { } n ? n.ToString("0000", Bo) : codigo ?? "";
 
     // ---------- Servicios acumulados (mes por mes) ----------
 
@@ -523,6 +522,7 @@ public sealed class IngresosReporteView : ReporteTablaView
     {
         public Guid MonedaId { get; set; }
         public string? Codigo { get; set; }
+        public int? Numero { get; set; }
         public string Concepto { get; set; } = "";
         public int Cantidad { get; set; }
         public decimal Total { get; set; }
@@ -548,6 +548,7 @@ public sealed class IngresosReporteView : ReporteTablaView
     {
         public Guid ConceptoCobroId { get; set; }
         public string? Codigo { get; set; }
+        public int? Numero { get; set; }
         public string Concepto { get; set; } = "";
         public decimal Monto { get; set; }
         public int? PeriodoAnio { get; set; }

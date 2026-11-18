@@ -151,7 +151,7 @@ public sealed class ConceptosView : UserControl
         nombre.SetValue(TextBlock.ForegroundProperty, UiKit.Tinta);
         nombre.SetValue(TextBlock.TextTrimmingProperty, TextTrimming.CharacterEllipsis);
         var codigo = new FrameworkElementFactory(typeof(TextBlock));
-        codigo.SetBinding(TextBlock.TextProperty, new Binding(nameof(ConceptoFila.Codigo)));
+        codigo.SetBinding(TextBlock.TextProperty, new Binding(nameof(ConceptoFila.Subtitulo)));
         codigo.SetValue(TextBlock.FontSizeProperty, 12.0);
         codigo.SetValue(TextBlock.ForegroundProperty, UiKit.Suave);
         codigo.SetValue(TextBlock.TextTrimmingProperty, TextTrimming.CharacterEllipsis);
@@ -387,15 +387,33 @@ public sealed class ConceptosView : UserControl
 
         _ficha.Children.Add(Seccion("Corregir"));
 
+        var numero = new TextBox { MaxLength = 4, Style = UiKit.Estilo("Mx.TextBox"), Text = c.Numero?.ToString() ?? "" };
+        numero.ToolTip = "Número que sale en la columna Código de los reportes (por ejemplo 1 = 0001).";
         var nombre = new TextBox { MaxLength = 150, Style = UiKit.Estilo("Mx.TextBox"), Text = c.Nombre };
         var descripcion = new TextBox { MaxLength = 300, Style = UiKit.Estilo("Mx.TextBox"), Text = c.Descripcion ?? "" };
+        _ficha.Children.Add(CampoAncho("Número en los reportes (1 a 9999)", numero));
         _ficha.Children.Add(CampoAncho("Nombre (como sale en el recibo)", nombre));
         _ficha.Children.Add(CampoAncho("Descripción (opcional)", descripcion));
 
         var guardar = UiKit.Boton("Guardar cambios", principal: true);
         guardar.HorizontalAlignment = HorizontalAlignment.Stretch;
         guardar.Margin = new Thickness(0, 4, 0, 0);
-        guardar.Click += async (_, _) => await GuardarAsync(c, nombre.Text, descripcion.Text);
+        guardar.Click += async (_, _) =>
+        {
+            int? n = null;
+            if (numero.Text.Trim().Length > 0)
+            {
+                if (!int.TryParse(numero.Text.Trim(), out var leido) || leido < 1 || leido > 9999)
+                {
+                    Dialogo.Mostrar(Window.GetWindow(this), "El número debe estar entre 1 y 9999.", "Número del concepto",
+                        MessageBoxButton.OK, MessageBoxImage.Warning);
+                    numero.Focus();
+                    return;
+                }
+                n = leido;
+            }
+            await GuardarAsync(c, nombre.Text, descripcion.Text, n);
+        };
         _ficha.Children.Add(guardar);
         _ficha.Children.Add(new TextBlock
         {
@@ -519,9 +537,9 @@ public sealed class ConceptosView : UserControl
         }
     }
 
-    private Task GuardarAsync(ConceptoFila c, string nombre, string descripcion) =>
+    private Task GuardarAsync(ConceptoFila c, string nombre, string descripcion, int? numero) =>
         Ejecutar(() => ApiJson.PutAsync<Mensaje>($"/api/conceptos-cobro/{c.Id}",
-                new { nombre = nombre.Trim(), descripcion = string.IsNullOrWhiteSpace(descripcion) ? null : descripcion.Trim() }),
+                new { nombre = nombre.Trim(), descripcion = string.IsNullOrWhiteSpace(descripcion) ? null : descripcion.Trim(), numero }),
             c.Id, "No se guardó el concepto");
 
     private async Task CambiarEstadoAsync(ConceptoFila c)
@@ -558,6 +576,12 @@ public sealed class ConceptosView : UserControl
     {
         public Guid Id { get; set; }
         public string Codigo { get; set; } = "";
+
+        /// <summary>Número en los reportes (null con una API anterior).</summary>
+        public int? Numero { get; set; }
+
+        public string Subtitulo => Numero is { } n ? $"N.º {n:0000} · {Codigo}" : Codigo;
+
         public string Nombre { get; set; } = "";
         public string? Descripcion { get; set; }
         public bool Activo { get; set; }

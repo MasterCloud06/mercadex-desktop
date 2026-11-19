@@ -394,11 +394,9 @@ public sealed class IngresosReporteView : ReporteTablaView
 
     // ---------- C. Detalle de cobros diarios ----------
 
-    private static readonly string[] MesesCortos = { "ENE", "FEB", "MAR", "ABR", "MAY", "JUN", "JUL", "AGO", "SEP", "OCT", "NOV", "DIC" };
-
     /// <summary>«APORTE MENSUAL JUL/2026», como en el «Parte diario de recaudaciones» anterior.</summary>
     private static string DetalleConcepto(string concepto, int? anio, int? mes) =>
-        anio is { } a && mes is >= 1 and <= 12 ? $"{concepto.ToUpper(Bo)} {MesesCortos[mes.Value - 1]}/{a}" : concepto.ToUpper(Bo);
+        FormatoRecibo.ConceptoConPeriodo(concepto, anio, mes);
 
     /// <summary>
     /// Vertical y con lo necesario (pedido de contabilidad): primero los recibos

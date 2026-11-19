@@ -16,7 +16,6 @@ public sealed class VistaPreviaReciboWindow : Window
     private readonly string _caseta;
     private readonly string _bloque;
     private readonly string _moneda;
-    private string _titular = "Consultando titular...";
 
     private readonly bool _reimpresion;
 
@@ -133,37 +132,21 @@ public sealed class VistaPreviaReciboWindow : Window
 
         Content = contenedor;
 
-        Loaded += async (_, _) =>
-        {
-            try
-            {
-                var servicio =
-                    new Mercadex.Desktop.App.Services.TitularCasetaService();
-
-                _titular = await servicio.ObtenerAsync(
-                    _recibo.UnidadComercialId);
-            }
-            catch (Exception)
-            {
-                _titular = "No disponible: error de consulta";
-            }
-            finally
-            {
-                visor.Document = CrearDocumento();
-
-                imprimir.IsEnabled = true;
-                guardarPdf.IsEnabled = true;
-            }
-        };
+        imprimir.IsEnabled = true;
+        guardarPdf.IsEnabled = true;
     }
 
+    /// <summary>Recibo oficial de caja, como el del sistema anterior (ver <see cref="Services.FormatoRecibo"/>).</summary>
     private FlowDocument CrearDocumento()
     {
+        var r = Services.FormatoRecibo.Crear(_recibo, _pago, _caseta, _bloque, _moneda, DateTime.Now, _reimpresion);
+        var rojo = new SolidColorBrush(Color.FromRgb(165, 32, 32));
+
         var documento = new FlowDocument
         {
-            PageWidth = 793.7,
-            PageHeight = 1122.5,
-            PagePadding = new Thickness(45),
+            PageWidth = 816,
+            PageHeight = 1056,
+            PagePadding = new Thickness(40),
             ColumnWidth = double.PositiveInfinity,
             FontFamily = new FontFamily("Arial"),
             FontSize = 12,
@@ -171,144 +154,120 @@ public sealed class VistaPreviaReciboWindow : Window
             Background = Brushes.White
         };
 
-        AgregarLinea(
-            documento,
-            "ASOCIACIÓN DE COMERCIANTES 13 DE JULIO",
-            negrita: true,
-            tamano: 18,
-            centrado: true);
+        // Cabecera: asociación a la izquierda, fecha y hora de impresión a la derecha.
+        var cabecera = Tabla(documento, 3, 1);
+        Fila(cabecera,
+            Celda(Parrafo(Negrita(Services.FormatoRecibo.Asociacion))),
+            Celda(Parrafo(new Run($"Fecha:  {r.ImpresoFecha}"), new LineBreak(), new Run($"Hora:    {r.ImpresoHora}")), alineacion: TextAlignment.Right, tamano: 10));
 
-        var anulado = string.Equals(
-            _recibo.Estado,
-            "Anulado",
-            StringComparison.OrdinalIgnoreCase);
+        var titulo = Parrafo(new Run(r.Titulo) { FontWeight = FontWeights.Bold, FontSize = 16 });
+        titulo.TextAlignment = TextAlignment.Center;
+        titulo.Margin = new Thickness(0, 0, 0, 8);
+        if (r.Anulado)
+            titulo.Foreground = rojo;
+        documento.Blocks.Add(titulo);
 
-        AgregarLinea(
-            documento,
-            anulado ? "RECIBO ANULADO" : "RECIBO DE CAJA",
-            negrita: true,
-            tamano: 16,
-            centrado: true);
+        if (r.Reimpresion is { } reimp)
+            documento.Blocks.Add(new Paragraph(new Run(reimp)) { FontSize = 10, TextAlignment = TextAlignment.Center, Margin = new Thickness(0, 0, 0, 6) });
 
-        if (_reimpresion)
+        // Datos del pago.
+        var datos = Tabla(documento, 1.4, 1.05, 0.95);
+        Fila(datos,
+            Celda(Dato("NRO RECIBO:", r.Numero.ToString())),
+            Celda(r.Bloque is null ? new Paragraph() : Dato("BLOQUE:", r.Bloque)),
+            Celda(Dato("FECHA:", r.Fecha)));
+        Fila(datos,
+            Celda(Dato("RECIBIMOS DE:", r.RecibimosDe), columnas: 2),
+            Celda(Dato("CASETA:", r.Caseta)));
+        if (r.FormaPago is not null || r.TipoCambio is not null)
+            Fila(datos,
+                Celda(r.FormaPago is null ? new Paragraph() : Dato("FORMA DE PAGO:", r.FormaPago), columnas: 2),
+                Celda(r.TipoCambio is null ? new Paragraph() : Dato("T/C:", r.TipoCambio)));
+        Fila(datos, Celda(Dato("OBSERVACIÓN:", r.Observacion), columnas: 3));
+
+        // Detalle y total en letras.
+        var detalle = Tabla(documento, 5, 1);
+        detalle.Margin = new Thickness(0, 8, 0, 0);
+        Fila(detalle,
+            Celda(Parrafo(Negrita("DETALLE")), alineacion: TextAlignment.Center, borde: new Thickness(0, 1, 0, 1)),
+            Celda(Parrafo(Negrita("MONTO")), alineacion: TextAlignment.Right, borde: new Thickness(0, 1, 0, 1)));
+        foreach (var (texto, monto) in r.Lineas)
+            Fila(detalle, Celda(Parrafo(new Run(texto))), Celda(Parrafo(new Run(monto)), alineacion: TextAlignment.Right));
+        Fila(detalle,
+            Celda(Dato("SON:", r.Son), borde: new Thickness(0, 1, 0, 0)),
+            Celda(Parrafo(Negrita(r.Total)), alineacion: TextAlignment.Right, borde: new Thickness(0, 1, 0, 0)));
+
+        if (r.Anulacion is { } anulacion)
         {
-            AgregarLinea(
-                documento,
-                Services.TextoRecibo.Reimpresion,
-                negrita: true,
-                centrado: true);
+            documento.Blocks.Add(new Paragraph(new Run(anulacion)) { FontWeight = FontWeights.Bold, Foreground = rojo, Margin = new Thickness(0, 10, 0, 0) });
+            documento.Blocks.Add(new Paragraph(new Run("SIN VALIDEZ COMO COMPROBANTE DE PAGO")) { FontWeight = FontWeights.Bold, Foreground = rojo, Margin = new Thickness(0) });
         }
 
-        if (Services.TextoRecibo.Anulacion(_recibo) is { } anulacion)
+        // Firmas: quien elaboró y quien entrega conforme.
+        var firmas = Tabla(documento, 1, 0.15, 1);
+        firmas.Margin = new Thickness(0, 60, 0, 0);
+        var emisor = Parrafo(new Run(r.Emisor ?? ""));
+        if (r.CargoEmisor is { } cargo)
         {
-            AgregarLinea(documento, anulacion, negrita: true);
+            emisor.Inlines.Add(new LineBreak());
+            emisor.Inlines.Add(new Run(cargo) { FontSize = 10 });
         }
-
-        AgregarLinea(
-            documento,
-            $"Recibo N.º: {_recibo.Numero}");
-
-        AgregarLinea(
-            documento,
-            $"Fecha: {_recibo.FechaEmision.ToLocalTime():dd/MM/yyyy HH:mm}");
-
-        AgregarLinea(documento, $"Caseta/local: {_caseta}");
-
-        if (!string.IsNullOrWhiteSpace(_bloque))
-        {
-            AgregarLinea(documento, $"Bloque: {_bloque}");
-        }
-
-        AgregarLinea(
-            documento,
-            $"Titular actual registrado: {_titular}");
-
-        AgregarLinea(
-            documento,
-            $"Persona que realizó el pago: {_pago.NombrePagador}");
-
-        AgregarLinea(
-            documento,
-            $"Forma de pago: {_pago.FormaPago}");
-
-        if (Services.TextoRecibo.Referencia(_pago) is { } referencia)
-            AgregarLinea(documento, referencia);
-
-        AgregarLinea(documento, $"Moneda: {_moneda}");
-
-        if (Services.TextoRecibo.TipoCambio(_pago) is { } tipoCambio)
-            AgregarLinea(documento, tipoCambio);
-
-        AgregarLinea(documento, Services.TextoRecibo.TipoIngreso(_recibo));
-        AgregarLinea(documento, Services.TextoRecibo.Cantidad(_recibo));
-
-        AgregarLinea(
-            documento,
-            "CONCEPTOS COBRADOS",
-            negrita: true);
-
-        foreach (var detalle in _recibo.Detalles)
-        {
-            AgregarLinea(
-                documento,
-                Services.TextoRecibo.Concepto(detalle, _moneda));
-        }
-
-        AgregarLinea(
-            documento,
-            $"TOTAL: {_recibo.Total:N2} {_moneda}",
-            negrita: true,
-            tamano: 18);
-
-        if (Services.TextoRecibo.Observaciones(_recibo) is { } observaciones)
-        {
-            AgregarLinea(documento, " ");
-            AgregarLinea(documento, observaciones);
-        }
-
-        if (Services.TextoRecibo.Emisor(_recibo) is (string nombreEmisor, var cargoEmisor))
-        {
-            AgregarLinea(documento, " ");
-            AgregarLinea(documento, Services.TextoRecibo.LineaFirma, centrado: true);
-            AgregarLinea(documento, "Elaborado por: " + nombreEmisor, negrita: true, centrado: true);
-            if (cargoEmisor is not null)
-                AgregarLinea(documento, cargoEmisor, centrado: true);
-        }
-
-        if (anulado)
-        {
-            AgregarLinea(
-                documento,
-                "ANULADO — SIN VALIDEZ COMO COMPROBANTE DE PAGO",
-                negrita: true);
-        }
+        Fila(firmas,
+            Celda(emisor, alineacion: TextAlignment.Center, borde: new Thickness(0, 1, 0, 0)),
+            Celda(new Paragraph()),
+            Celda(Parrafo(new Run(Services.FormatoRecibo.EntregueConforme)), alineacion: TextAlignment.Center, borde: new Thickness(0, 1, 0, 0)));
 
         return documento;
     }
 
-    private static void AgregarLinea(
-        FlowDocument documento,
-        string texto,
-        bool negrita = false,
-        double tamano = 12,
-        bool centrado = false)
+    private static Table Tabla(FlowDocument documento, params double[] anchos)
     {
-        documento.Blocks.Add(
-            new Paragraph(new Run(texto))
-            {
-                FontWeight = negrita
-                    ? FontWeights.Bold
-                    : FontWeights.Normal,
-
-                FontSize = tamano,
-
-                TextAlignment = centrado
-                    ? TextAlignment.Center
-                    : TextAlignment.Left,
-
-                Margin = new Thickness(0, 5, 0, 5)
-            });
+        var tabla = new Table { CellSpacing = 0, Margin = new Thickness(0) };
+        foreach (var a in anchos)
+            tabla.Columns.Add(new TableColumn { Width = new GridLength(a, GridUnitType.Star) });
+        tabla.RowGroups.Add(new TableRowGroup());
+        documento.Blocks.Add(tabla);
+        return tabla;
     }
+
+    private static void Fila(Table tabla, params TableCell[] celdas)
+    {
+        var fila = new TableRow();
+        foreach (var c in celdas)
+            fila.Cells.Add(c);
+        tabla.RowGroups[0].Rows.Add(fila);
+    }
+
+    private static TableCell Celda(
+        Paragraph parrafo,
+        int columnas = 1,
+        TextAlignment alineacion = TextAlignment.Left,
+        Thickness? borde = null,
+        double? tamano = null)
+    {
+        parrafo.TextAlignment = alineacion;
+        parrafo.Margin = new Thickness(0);
+        if (tamano is { } t)
+            parrafo.FontSize = t;
+        return new TableCell(parrafo)
+        {
+            ColumnSpan = columnas,
+            BorderBrush = Brushes.Black,
+            BorderThickness = borde ?? new Thickness(0),
+            Padding = new Thickness(2, 3, 2, 3)
+        };
+    }
+
+    private static Paragraph Parrafo(params Inline[] partes)
+    {
+        var p = new Paragraph();
+        p.Inlines.AddRange(partes);
+        return p;
+    }
+
+    private static Run Negrita(string texto) => new(texto) { FontWeight = FontWeights.Bold };
+
+    private static Paragraph Dato(string etiqueta, string valor) => Parrafo(Negrita(etiqueta + " "), new Run(valor));
 
     private void GuardarPdf_Click(
         object sender,
@@ -336,7 +295,6 @@ public sealed class VistaPreviaReciboWindow : Window
                 _caseta,
                 _bloque,
                 _moneda,
-                _titular,
                 _reimpresion);
 
             var respuesta = Dialogo.Mostrar(

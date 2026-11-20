@@ -278,14 +278,15 @@ public sealed class DeudoresPorCuentaView : UserControl
         {
             g?.Dispose();
             var pagina = pdf.AddPage();
-            pagina.Width = XUnit.FromPoint(595);   // A4 vertical
-            pagina.Height = XUnit.FromPoint(842);
+            pagina.Width = XUnit.FromPoint(612);   // carta vertical
+            pagina.Height = XUnit.FromPoint(792);
             g = XGraphics.FromPdfPage(pagina);
             ancho = pagina.Width.Point - margen * 2;
             alto = pagina.Height.Point;
             y = margen;
             numero++;
-            g.DrawString($"Página {numero}", fPie, gris, new XRect(margen, alto - 26, ancho, 10), XStringFormats.TopRight);
+            // Número de página arriba a la derecha (pedido de contabilidad).
+            g.DrawString($"Página {numero}", fPie, gris, new XRect(margen, 20, ancho, 10), XStringFormats.TopRight);
         }
 
         NuevaPagina();

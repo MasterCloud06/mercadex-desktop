@@ -22,6 +22,8 @@ public partial class ExtractoDeudaView : UserControl
 
     private UnidadExtracto? _unidadSeleccionada;
 
+    private string _socio = "";
+
     private bool _consultando;
 
     public ExtractoDeudaView()
@@ -174,10 +176,21 @@ public partial class ExtractoDeudaView : UserControl
                     "/api/monedas")
             ?? new();
 
-        var catalogos =
+        // Lista de conceptos con su número (orden de caja), incluidos los inactivos.
+        var conceptos =
             await Api.GetFromJsonAsync<
-                CatalogosExtracto>(
-                    "/api/ingresos/catalogos");
+                List<ConceptoExtracto>>(
+                    "/api/conceptos-cobro")
+            ?? new();
+
+        try
+        {
+            _socio = await new Services.TitularCasetaService().ObtenerAsync(unidad.Id);
+        }
+        catch (Exception)
+        {
+            _socio = "";
+        }
 
         var monedasPorId = monedas
             .GroupBy(m => m.Id)
@@ -185,12 +198,11 @@ public partial class ExtractoDeudaView : UserControl
                 g => g.Key,
                 g => g.First().Codigo);
 
-        var conceptosPorId =
-            (catalogos?.Conceptos ?? new())
+        var conceptosPorId = conceptos
             .GroupBy(c => c.Id)
             .ToDictionary(
                 g => g.Key,
-                g => g.First().Nombre);
+                g => g.First());
 
         _deudas = obligaciones
             .Where(o =>
@@ -204,8 +216,20 @@ public partial class ExtractoDeudaView : UserControl
                 Concepto = conceptosPorId.TryGetValue(
                     o.ConceptoCobroId,
                     out var concepto)
-                    ? concepto
+                    ? concepto.Nombre
                     : "Sin identificar",
+
+                NumeroConcepto = conceptosPorId.TryGetValue(
+                    o.ConceptoCobroId,
+                    out var c2)
+                    ? c2.Numero
+                    : null,
+
+                Anio = o.PeriodoAnio,
+
+                Mes = o.PeriodoMes,
+
+                TieneAbonos = o.MontoPagado > 0,
 
                 Periodo =
                     o.PeriodoAnio.HasValue &&
@@ -232,15 +256,18 @@ public partial class ExtractoDeudaView : UserControl
 
                 NotaDetalle = o.MontoPagado > 0 ? "Tiene pagos parciales." : o.UltimaModificacion
             })
-            .OrderBy(d => d.Concepto)
-            .ThenBy(d => d.Periodo)
             .ToList();
+
+        // Mes por mes y, dentro del mes, en el orden de los conceptos (como el aviso anterior).
+        var orden = Services.AvisoCobranza.Ordenar(_deudas.Select(d => d.Aviso)).ToList();
+        _deudas = _deudas.OrderBy(d => orden.IndexOf(d.Aviso)).ToList();
 
         _unidadSeleccionada = unidad;
 
         TxtUnidad.Text =
-            $"Caseta: {unidad.Codigo}    " +
-            $"Bloque: {unidad.Bloque ?? "Sin bloque"}";
+            $"Local: {unidad.Codigo}    " +
+            $"Bloque: {unidad.Bloque ?? "Sin bloque"}" +
+            (string.IsNullOrWhiteSpace(_socio) ? "" : $"    Socio: {_socio}");
 
         TxtFecha.Text =
             $"Fecha de consulta: " +
@@ -252,7 +279,7 @@ public partial class ExtractoDeudaView : UserControl
             .GroupBy(d => d.Moneda)
             .OrderBy(g => g.Key)
             .Select(g =>
-                $"{g.Key}: {g.Sum(d => d.Monto):N2}");
+                $"{Services.AvisoCobranza.Moneda(g.Key)}: {g.Sum(d => d.Monto):N2}");
 
         TxtTotales.Text = _deudas.Count == 0
             ? "Sin deudas pendientes"
@@ -273,86 +300,14 @@ public partial class ExtractoDeudaView : UserControl
         if (_unidadSeleccionada is null)
             return;
 
-        var documento = new FlowDocument
-        {
-            PagePadding = new Thickness(45),
-            FontFamily = new FontFamily("Arial"),
-            FontSize = 12,
-            ColumnWidth = 650
-        };
+        var aviso = Services.AvisoCobranza.Crear(
+            _unidadSeleccionada.Codigo,
+            _unidadSeleccionada.Bloque,
+            _socio,
+            _deudas.Select(d => d.Aviso),
+            DateTime.Now);
 
-        documento.Blocks.Add(
-            new Paragraph(
-                new Run("DEUDAS POR PAGAR"))
-            {
-                FontSize = 23,
-                FontWeight = FontWeights.Bold,
-                Foreground = Brushes.DarkRed,
-                TextAlignment = TextAlignment.Center
-            });
-
-        documento.Blocks.Add(
-            new Paragraph(new Run(
-                "EXTRACTO INFORMATIVO - " +
-                "NO ES RECIBO DE PAGO"))
-            {
-                FontWeight = FontWeights.Bold,
-                Foreground = Brushes.DarkRed,
-                TextAlignment = TextAlignment.Center,
-                Margin = new Thickness(0, 0, 0, 20)
-            });
-
-        AgregarLinea(
-            documento,
-            $"Caseta: {_unidadSeleccionada.Codigo}");
-
-        AgregarLinea(
-            documento,
-            $"Bloque: " +
-            $"{_unidadSeleccionada.Bloque ?? "Sin bloque"}");
-
-        AgregarLinea(
-            documento,
-            $"Fecha de consulta: " +
-            $"{DateTime.Now:dd/MM/yyyy HH:mm}");
-
-        documento.Blocks.Add(
-            new Paragraph(
-                new Run("OBLIGACIONES PENDIENTES"))
-            {
-                FontWeight = FontWeights.Bold,
-                Margin = new Thickness(0, 20, 0, 10)
-            });
-
-        if (_deudas.Count == 0)
-        {
-            AgregarLinea(
-                documento,
-                "No se encontraron deudas pendientes.");
-        }
-
-        foreach (var deuda in _deudas)
-        {
-            AgregarLinea(
-                documento,
-                $"{deuda.Concepto} | " +
-                $"{deuda.Periodo} | " +
-                $"{deuda.Fecha} | " +
-                $"{deuda.Monto:N2} {deuda.Moneda}");
-        }
-
-        foreach (var grupo in _deudas.GroupBy(d => d.Moneda))
-        {
-            documento.Blocks.Add(
-                new Paragraph(new Run(
-                    $"TOTAL {grupo.Key}: " +
-                    $"{grupo.Sum(d => d.Monto):N2}"))
-                {
-                    FontSize = 16,
-                    FontWeight = FontWeights.Bold,
-                    Margin = new Thickness(0, 18, 0, 0)
-                });
-        }
+        var documento = AvisoCobranzaDocumento.Crear(aviso);
 
         var dialogo = new PrintDialog();
 
@@ -369,17 +324,6 @@ public partial class ExtractoDeudaView : UserControl
             ((IDocumentPaginatorSource)documento)
                 .DocumentPaginator,
             "Extracto de deuda");
-    }
-
-    private static void AgregarLinea(
-        FlowDocument documento,
-        string texto)
-    {
-        documento.Blocks.Add(
-            new Paragraph(new Run(texto))
-            {
-                Margin = new Thickness(0, 4, 0, 4)
-            });
     }
 
     private sealed class UnidadExtracto
@@ -431,17 +375,13 @@ public partial class ExtractoDeudaView : UserControl
         public string Codigo { get; set; } = "";
     }
 
-    private sealed class CatalogosExtracto
-    {
-        public List<ConceptoExtracto> Conceptos { get; set; }
-            = new();
-    }
-
     private sealed class ConceptoExtracto
     {
         public Guid Id { get; set; }
 
         public string Nombre { get; set; } = "";
+
+        public int? Numero { get; set; }
     }
 }
 
@@ -461,4 +401,21 @@ public sealed class FilaExtracto
     public string Moneda { get; set; } = "";
 
     public decimal Monto { get; set; }
+
+    public int? NumeroConcepto { get; set; }
+
+    public int? Anio { get; set; }
+
+    public int? Mes { get; set; }
+
+    public bool TieneAbonos { get; set; }
+
+    private Services.DeudaAviso? _aviso;
+
+    /// <summary>La deuda para el aviso de cobranza (se arma una sola vez).</summary>
+    public Services.DeudaAviso Aviso =>
+        _aviso ??= new(Concepto, NumeroConcepto, Anio, Mes, Moneda, Monto, TieneAbonos);
+
+    /// <summary>«APORTE MENSUAL feb/2024», como en el aviso impreso.</summary>
+    public string Servicio => Services.AvisoCobranza.Servicio(Aviso);
 }

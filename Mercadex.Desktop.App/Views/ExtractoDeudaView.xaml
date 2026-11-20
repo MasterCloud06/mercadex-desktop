@@ -25,7 +25,7 @@
                            Foreground="#173B5C"/>
 
                 <TextBlock
-                    Text="Consulta de obligaciones pendientes por caseta"
+                    Text="Aviso de cobranza: lo que debe una caseta, mes por mes"
                     Foreground="#60748A"
                     TextWrapping="Wrap"
                     Margin="0,5,0,0"/>
@@ -105,7 +105,7 @@
 
                 <StackPanel>
 
-                    <TextBlock Text="DEUDAS POR PAGAR"
+                    <TextBlock Text="AVISO DE COBRANZA"
                                FontSize="24"
                                FontWeight="Bold"
                                Foreground="#A52A2A"
@@ -113,7 +113,7 @@
                                Margin="0,0,0,8"/>
 
                     <TextBlock
-                        Text="EXTRACTO INFORMATIVO - NO ES RECIBO DE PAGO"
+                        Text="Servicios adeudados de la caseta (no es recibo de pago)"
                         FontSize="13"
                         FontWeight="SemiBold"
                         TextAlignment="Center"
@@ -143,30 +143,21 @@
                         <DataGrid.Columns>
 
                             <DataGridTextColumn
-                                Header="Servicio"
-                                Binding="{Binding Concepto}"
+                                Header="Servicio(s) adeudado(s)"
+                                Binding="{Binding Servicio}"
                                 Width="*"
-                                MinWidth="150"/>
+                                MinWidth="200"/>
 
                             <DataGridTextColumn
-                                Header="Período"
-                                Binding="{Binding Periodo}"
-                                Width="95"/>
-
-                            <DataGridTextColumn
-                                Header="Fecha de emisión"
-                                Binding="{Binding Fecha}"
-                                Width="125"/>
-
-                            <DataGridTextColumn
-                                Header="Moneda"
-                                Binding="{Binding Moneda}"
-                                Width="85"/>
-
-                            <DataGridTextColumn
-                                Header="Saldo"
+                                Header="Monto"
                                 Binding="{Binding Monto, StringFormat=N2}"
-                                Width="110"/>
+                                Width="110">
+                                <DataGridTextColumn.ElementStyle>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="HorizontalAlignment" Value="Right"/>
+                                    </Style>
+                                </DataGridTextColumn.ElementStyle>
+                            </DataGridTextColumn>
 
                             <DataGridTextColumn
                                 Header="Nota"
@@ -194,7 +185,7 @@
                         <StackPanel>
 
                             <TextBlock
-                                Text="TOTAL DE DEUDAS PENDIENTES"
+                                Text="TOTAL"
                                 FontWeight="SemiBold"
                                 Foreground="#173B5C"/>
 
@@ -211,7 +202,7 @@
                     </Border>
 
                     <Button x:Name="BtnImprimir"
-                            Content="Imprimir extracto de deuda"
+                            Content="Imprimir aviso de cobranza"
                             Click="Imprimir_Click"
                             IsEnabled="False"
                             Height="42"

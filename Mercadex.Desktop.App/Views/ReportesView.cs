@@ -48,6 +48,10 @@ public sealed class ReportesView : UserControl
                 new("por-cuenta", "Lista de corte", "Las cuentas arriba y los locales que deben", () => new DeudoresPorCuentaView()),
                 new("contabilidad", "Deudores para contabilidad", "Fecha, servicio y monto de cada deuda", () => new DeudoresReporteView(TipoReporteDeudores.Contabilidad))
             }),
+            ("Socios", new()
+            {
+                new("listado-socios", "Listado de socios", "Cada socio con todos sus locales", () => new ListadoSociosReporteView())
+            }),
             ("Control", new List<Opcion>()
                 .Concat(admin
                     ? new[] { new Opcion("anular", "Anular cobro", "Anula un recibo y devuelve la deuda", () => new AnularCobroView()) }

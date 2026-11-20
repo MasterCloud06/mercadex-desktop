@@ -219,23 +219,22 @@ public static class ReportePdfService
         {
             g?.Dispose();
             pagina = pdf.AddPage();
-            // A4 vertical (595 x 842 pt) u horizontal (842 x 595 pt).
-            pagina.Width = XUnit.FromPoint(r.Horizontal ? 842 : 595);
-            pagina.Height = XUnit.FromPoint(r.Horizontal ? 595 : 842);
+            // Tamaño carta (612 x 792 pt), vertical u horizontal: es el papel de la
+            // asociación; en A4 la impresora cortaba el pie de página.
+            pagina.Width = XUnit.FromPoint(r.Horizontal ? 792 : 612);
+            pagina.Height = XUnit.FromPoint(r.Horizontal ? 612 : 792);
             g = XGraphics.FromPdfPage(pagina);
             ancho = pagina.Width.Point - margen * 2;
             Medidas();
 
             g.DrawRectangle(azul, 0, 0, pagina.Width.Point, 8);
             g.DrawRectangle(amarillo, 0, 8, 90, 3);
-            if (r.PieSoloPagina)
+            // Número de página arriba a la derecha (pedido de contabilidad).
+            g.DrawString($"Página {pdf.PageCount}", fSub, gris,
+                new XRect(margen, 15, ancho, 10), XStringFormats.TopRight);
+            if (!r.PieSoloPagina)
             {
-                g.DrawString($"Página {pdf.PageCount}", fPie, gris,
-                    new XRect(margen, pagina.Height.Point - 26, ancho, 10), XStringFormats.TopRight);
-            }
-            else
-            {
-                g.DrawString($"Mercadex · {r.Titulo} · Página {pdf.PageCount}", fPie, gris,
+                g.DrawString($"Mercadex · {r.Titulo}", fPie, gris,
                     new XRect(margen, pagina.Height.Point - 26, ancho, 10), XStringFormats.TopLeft);
                 g.DrawString(generado, fPie, gris,
                     new XRect(margen, pagina.Height.Point - 26, ancho, 10), XStringFormats.TopRight);
@@ -291,7 +290,16 @@ public static class ReportePdfService
             if (f.Grupo)
             {
                 g.DrawRectangle(fondo, margen, y, ancho, altoFila);
-                Celdas(f.Celdas, fNegrita);
+                if (f.Celdas.Skip(1).All(string.IsNullOrEmpty))
+                {
+                    // Título de grupo («ESTADO: ANULADO», «FECHA: …»): ocupa toda la fila.
+                    g.DrawString(Ajustar(f.Celdas.FirstOrDefault() ?? "", fNegrita, ancho - 8), fNegrita, XBrushes.Black,
+                        new XRect(margen + 4, y + 3, ancho - 8, altoFila - 3), XStringFormats.TopLeft);
+                }
+                else
+                {
+                    Celdas(f.Celdas, fNegrita);
+                }
             }
             else if (f.Total)
             {

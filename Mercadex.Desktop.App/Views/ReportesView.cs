@@ -43,7 +43,7 @@ public sealed class ReportesView : UserControl
             }),
             ("Deudas", new()
             {
-                new("extracto", "Extracto de deuda", "Deudas por pagar de una caseta", () => new ExtractoDeudaView()),
+                new("extracto", "Extracto de deuda", "Aviso de cobranza de una caseta", () => new ExtractoDeudaView()),
                 new("corte", "Deudores", "Caseta, socio y total que debe", () => new DeudoresReporteView(TipoReporteDeudores.Corte)),
                 new("por-cuenta", "Lista de corte", "Las cuentas arriba y los locales que deben", () => new DeudoresPorCuentaView()),
                 new("contabilidad", "Deudores para contabilidad", "Fecha, servicio y monto de cada deuda", () => new DeudoresReporteView(TipoReporteDeudores.Contabilidad))

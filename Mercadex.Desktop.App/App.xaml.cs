@@ -96,8 +96,8 @@ public partial class App : Application
 
     // ---------------- Sesión ----------------
 
-    /// <summary>Minutos sin usar el teclado ni el mouse antes de bloquear.</summary>
-    private static readonly TimeSpan TiempoInactividad = TimeSpan.FromMinutes(15);
+    /// <summary>Tiempo sin usar el teclado ni el mouse antes de bloquear (lo elige el administrador).</summary>
+    private static TimeSpan TiempoInactividad => TimeSpan.FromMinutes(Preferencias.MinutosBloqueo);
 
     private DateTime _ultimaActividadUtc = DateTime.UtcNow;
     private DispatcherTimer? _relojSesion;

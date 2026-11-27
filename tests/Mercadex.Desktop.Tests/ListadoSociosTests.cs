@@ -1,3 +1,5 @@
+using System.Text.Json;
+using Mercadex.Desktop.App.Services;
 using Mercadex.Desktop.App.Views.Reportes;
 using Xunit;
 using V = Mercadex.Desktop.App.Views.Reportes.ListadoSociosReporteView;
@@ -46,5 +48,24 @@ public sealed class ListadoSociosTests
     public void Los_inactivos_no_salen()
     {
         Assert.DoesNotContain(V.Filas(Socios, true), f => f.Celdas[1].StartsWith("INACTIVO"));
+    }
+
+    [Fact]
+    public void Lee_la_respuesta_real_del_padron()
+    {
+        // Forma de GET /api/socios/padron: un objeto con la lista en «socios».
+        const string json = """
+            {"total":2,"activos":2,"noSocios":0,"inactivos":0,"socios":[
+              {"id":"0193a5b2-0000-7000-8000-000000000001","nombres":"Jose","apellidos":"Sequeiros Delgado","nombreCompleto":"Jose Sequeiros Delgado",
+               "documento":"123","activo":true,"casetas":["13","2","7"],"deuda":[],"deudasPendientes":0,"app":"Sin cuenta"},
+              {"id":"0193a5b2-0000-7000-8000-000000000002","nombres":"Rocio","apellidos":"Loayza Bustillos","nombreCompleto":"Rocio Loayza Bustillos",
+               "documento":"456","activo":true,"casetas":["1"],"deuda":[],"deudasPendientes":0,"app":"Activada"}]}
+            """;
+
+        var r = JsonSerializer.Deserialize<V.PadronRespuesta>(json, ApiJson.Opciones)!;
+        var filas = V.Filas(r.Socios, false);
+
+        Assert.Equal(new[] { "LOAYZA BUSTILLOS ROCIO", "SEQUEIROS DELGADO JOSE" }, filas.Select(f => f.Celdas[1]));
+        Assert.Equal("2  7  13", filas[1].Celdas[2]);
     }
 }

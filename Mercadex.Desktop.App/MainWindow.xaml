@@ -209,7 +209,9 @@
                             <Button x:Name="BtnCambiarContrasena" Content="Cambiar contraseña" Click="CambiarContrasena_Click"
                                     Style="{StaticResource Mx.NavLink}" Margin="0,0,14,0"/>
                             <Button Content="Cerrar sesión" Click="CerrarSesion_Click" Style="{StaticResource Mx.NavLink}" Margin="0,0,14,0"/>
-                            <Button x:Name="BtnModoOscuro" Content="Modo oscuro" Click="ModoOscuro_Click" Style="{StaticResource Mx.NavLink}"/>
+                            <Button x:Name="BtnModoOscuro" Content="Modo oscuro" Click="ModoOscuro_Click" Style="{StaticResource Mx.NavLink}" Margin="0,0,14,0"/>
+                            <Button x:Name="BtnBloqueo" Content="Bloqueo: 15 min" Click="Bloqueo_Click" Style="{StaticResource Mx.NavLink}"
+                                    ToolTip="Minutos sin usar Mercadex antes de pedir la contraseña"/>
                         </WrapPanel>
                         <TextBlock x:Name="VersionTexto" Text="Versión" Foreground="#7F9BB5" FontSize="11.5"/>
                     </StackPanel>

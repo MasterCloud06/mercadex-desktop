@@ -18,7 +18,18 @@ public static class Preferencias
         public bool MenuPlegado { get; set; }
 
         public bool ModoOscuro { get; set; }
+
+        public int MinutosBloqueo { get; set; } = BloqueoPorDefecto;
     }
+
+    /// <summary>Minutos sin usar Mercadex antes de bloquearlo (a elegir).</summary>
+    public static readonly int[] OpcionesBloqueo = { 10, 15, 20, 30, 60 };
+
+    public const int BloqueoPorDefecto = 15;
+
+    /// <summary>Un valor fuera de las opciones (archivo editado o viejo) vuelve a 15.</summary>
+    public static int NormalizarBloqueo(int minutos) =>
+        Array.IndexOf(OpcionesBloqueo, minutos) >= 0 ? minutos : BloqueoPorDefecto;
 
     private static Datos? _datos;
 
@@ -59,6 +70,17 @@ public static class Preferencias
         set
         {
             Leer().ModoOscuro = value;
+            Guardar();
+        }
+    }
+
+    /// <summary>Tiempo sin teclado ni mouse antes de pedir la contraseña.</summary>
+    public static int MinutosBloqueo
+    {
+        get => NormalizarBloqueo(Leer().MinutosBloqueo);
+        set
+        {
+            Leer().MinutosBloqueo = NormalizarBloqueo(value);
             Guardar();
         }
     }

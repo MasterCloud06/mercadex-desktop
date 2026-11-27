@@ -26,6 +26,7 @@ public partial class MainWindow : Window
 
         Loaded += (_, _) => PlegarMenu(Preferencias.MenuPlegado);
         BtnModoOscuro.Content = Tema.Oscuro ? "Modo claro" : "Modo oscuro";
+        BtnBloqueo.Content = TextoBloqueo(Preferencias.MinutosBloqueo);
 
         Navegacion.CobroSolicitado += AbrirCobro;
         Navegacion.DeudasSolicitadas += AbrirDeudas;
@@ -245,6 +246,45 @@ public partial class MainWindow : Window
 
         if (respuesta == MessageBoxResult.Yes)
             ((App)Application.Current).CerrarSesion();
+    }
+
+    // ---------------- Bloqueo por inactividad ----------------
+
+    public static string TextoBloqueo(int minutos) => $"Bloqueo: {minutos} min";
+
+    /// <summary>
+    /// Elegir en cuántos minutos sin uso se bloquea Mercadex (10, 15, 20, 30 o 60).
+    /// Se guarda en esta computadora. Solo el administrador lo cambia.
+    /// </summary>
+    private void Bloqueo_Click(object sender, RoutedEventArgs e)
+    {
+        if (Sesion.SesionActual.Iniciada && !Sesion.SesionActual.EsAdministrador)
+        {
+            Dialogo.Mostrar(this,
+                $"Mercadex se bloquea tras {Preferencias.MinutosBloqueo} minutos sin uso. Solo el administrador puede cambiar este tiempo.",
+                "Bloqueo por inactividad", MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+
+        var menu = new ContextMenu { PlacementTarget = BtnBloqueo, Placement = System.Windows.Controls.Primitives.PlacementMode.Top };
+        menu.Items.Add(new MenuItem { Header = "Bloquear Mercadex tras… sin uso", IsEnabled = false });
+        foreach (var minutos in Preferencias.OpcionesBloqueo)
+        {
+            var opcion = new MenuItem
+            {
+                Header = $"{minutos} minutos",
+                IsCheckable = true,
+                IsChecked = minutos == Preferencias.MinutosBloqueo
+            };
+            opcion.Click += (_, _) =>
+            {
+                Preferencias.MinutosBloqueo = minutos;
+                BtnBloqueo.Content = TextoBloqueo(minutos);
+            };
+            menu.Items.Add(opcion);
+        }
+
+        menu.IsOpen = true;
     }
 
     private void ModoOscuro_Click(object sender, RoutedEventArgs e)

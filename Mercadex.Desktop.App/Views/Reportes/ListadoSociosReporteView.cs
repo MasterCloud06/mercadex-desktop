@@ -28,7 +28,8 @@ public sealed class ListadoSociosReporteView : ReporteTablaView
 
     protected override async Task<Reporte?> ConstruirAsync()
     {
-        var socios = await ApiJson.GetAsync<List<SocioPadron>>("/api/socios/padron?estado=activos") ?? new();
+        // El padrón responde { total, activos, …, socios: [...] }.
+        var socios = (await ApiJson.GetAsync<PadronRespuesta>("/api/socios/padron?estado=activos"))?.Socios ?? new();
         var filas = Filas(socios, _sinLocal.IsChecked == true);
         var conLocal = filas.Count(f => f.Celdas[0].Length > 0);
 
@@ -87,7 +88,13 @@ public sealed class ListadoSociosReporteView : ReporteTablaView
             .ToList();
     }
 
-    /// <summary>Parte de la respuesta de GET /api/socios/padron.</summary>
+    /// <summary>Respuesta de GET /api/socios/padron (solo lo que usa el listado).</summary>
+    public sealed class PadronRespuesta
+    {
+        public List<SocioPadron> Socios { get; set; } = new();
+    }
+
+    /// <summary>Un socio del padrón.</summary>
     public sealed class SocioPadron
     {
         public string Nombres { get; set; } = "";
